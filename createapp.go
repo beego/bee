@@ -120,8 +120,8 @@ import (
 )
 
 func main() {
-	beego.BeeApp.RegisterController("/", &controllers.MainController{})
-	beego.BeeApp.Run()
+	beego.RegisterController("/", &controllers.MainController{})
+	beego.Run()
 }
 
 `
