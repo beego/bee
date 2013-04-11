@@ -120,7 +120,7 @@ import (
 )
 
 func main() {
-	beego.RegisterController("/", &controllers.MainController{})
+	beego.Router("/", &controllers.MainController{})
 	beego.Run()
 }
 
