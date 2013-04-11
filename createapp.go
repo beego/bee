@@ -100,7 +100,7 @@ func createapp(cmd *Command, args []string) {
 	fmt.Println("create views:", path.Join(apppath, "views"))
 	os.Mkdir(path.Join(apppath, "views"), 0755)
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"), "appname = "+args[0])
+	writetofile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", args[0], -1))
 
 	fmt.Println("create controllers default.go:", path.Join(apppath, "controllers", "default.go"))
 	writetofile(path.Join(apppath, "controllers", "default.go"), controllers)
@@ -111,6 +111,12 @@ func createapp(cmd *Command, args []string) {
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
 	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", args[0], -1))
 }
+
+var appconf = `
+appname = {{.Appname}}
+httpport = 8080
+runmode = dev
+`
 
 var maingo = `package main
 
