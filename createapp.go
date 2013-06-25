@@ -68,7 +68,7 @@ func createapp(cmd *Command, args []string) {
 				for _, wg := range lgopath {
 					if strings.HasPrefix(crupath, path.Join(wg, "src")) {
 						haspath = true
-						appsrcpath = path.Join(strings.TrimLeft(crupath, wg), args[0])
+						appsrcpath = path.Join(strings.TrimLeft(crupath, path.Join(wg, "src")), args[0])
 						break
 					}
 				}
@@ -77,7 +77,7 @@ func createapp(cmd *Command, args []string) {
 
 	} else {
 		haspath = true
-		appsrcpath = path.Join(strings.TrimLeft(crupath, path.Join(gopath, "src")), args[0])
+		appsrcpath = args[0]
 	}
 	if !haspath {
 		fmt.Println("can't create application outside of GOPATH")
@@ -113,7 +113,7 @@ func createapp(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", appsrcpath, -1))
+	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.TrimPrefix(appsrcpath, "/"), -1))
 }
 
 var appconf = `
