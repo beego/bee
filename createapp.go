@@ -57,7 +57,7 @@ func createapp(cmd *Command, args []string) {
 				wg = wg + `\src`
 				if strings.HasPrefix(crupath, wg) {
 					haspath = true
-					appsrcpath = path.Join(strings.TrimLeft(crupath, wg), args[0])
+					appsrcpath = path.Join(strings.TrimPrefix(crupath, wg), args[0])
 					break
 				}
 			}
@@ -68,7 +68,7 @@ func createapp(cmd *Command, args []string) {
 				for _, wg := range lgopath {
 					if strings.HasPrefix(crupath, path.Join(wg, "src")) {
 						haspath = true
-						appsrcpath = path.Join(strings.TrimLeft(crupath, path.Join(wg, "src")), args[0])
+						appsrcpath = path.Join(strings.TrimPrefix(crupath, path.Join(wg, "src")), args[0])
 						break
 					}
 				}
