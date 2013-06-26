@@ -113,7 +113,7 @@ func createapp(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.TrimPrefix(appsrcpath, "/"), -1))
+	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.TrimPrefix(strings.Replace(appsrcpath, "\\", "/", -1), "/"), -1))
 }
 
 var appconf = `
