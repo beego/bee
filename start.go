@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
+	path "path/filepath"
 )
 
 var cmdStart = &Command{
