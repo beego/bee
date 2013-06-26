@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
-	"path"
+	path "path/filepath"
 	"strings"
 )
 
@@ -17,18 +17,18 @@ In the current path, will create a folder named [appname]
 
 In the appname folder has the follow struct:
 
-	|- main.go
-	|- conf
-	    |-  app.conf
-	|- controllers
-	     |- default.go
-	|- models
-	|- static
-	     |- js
-		 |- css
-	     |- img				
-	|- views
-	    index.tpl					
+    |- main.go
+    |- conf
+        |-  app.conf
+    |- controllers
+         |- default.go
+    |- models
+    |- static
+         |- js
+         |- css
+         |- img             
+    |- views
+        index.tpl                   
 
 `,
 }
@@ -38,11 +38,12 @@ func init() {
 }
 
 func createapp(cmd *Command, args []string) {
-	crupath, _ := os.Getwd()
+	curpath, _ := os.Getwd()
 	if len(args) != 1 {
 		fmt.Println("error args")
 		os.Exit(2)
 	}
+
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
 		fmt.Println("you should set GOPATH in the env")
@@ -50,42 +51,32 @@ func createapp(cmd *Command, args []string) {
 	}
 	haspath := false
 	appsrcpath := ""
-	if crupath != path.Join(gopath, "src") {
-		wgopath := strings.Split(gopath, ";")
-		if len(wgopath) >= 1 {
-			for _, wg := range wgopath {
-				wg = wg + `\src`
-				if strings.HasPrefix(crupath, wg) {
-					haspath = true
-					appsrcpath = path.Join(strings.TrimPrefix(crupath, wg), args[0])
-					break
-				}
-			}
-		}
-		if !haspath {
-			lgopath := strings.Split(gopath, ":")
-			if len(lgopath) >= 1 {
-				for _, wg := range lgopath {
-					if strings.HasPrefix(crupath, path.Join(wg, "src")) {
-						haspath = true
-						appsrcpath = path.Join(strings.TrimPrefix(crupath, path.Join(wg, "src")), args[0])
-						break
-					}
-				}
-			}
-		}
 
-	} else {
-		haspath = true
-		appsrcpath = args[0]
+	wgopath := path.SplitList(gopath)
+	for _, wg := range wgopath {
+		wg = path.Join(wg, "src")
+
+		if path.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
+			haspath = true
+			appsrcpath = wg
+			break
+		}
 	}
+
 	if !haspath {
-		fmt.Println("can't create application outside of GOPATH")
-		fmt.Println("you first should `cd $GOPATH/src` then use create")
+		fmt.Printf("can't create application outside of GOPATH `%s`\n", gopath)
+		fmt.Printf("you first should `cd $GOPATH%ssrc` then use create\n", string(path.Separator))
 		os.Exit(2)
 	}
-	apppath := path.Join(crupath, args[0])
-	os.Mkdir(apppath, 0755)
+
+	apppath := path.Join(curpath, args[0])
+
+	if _, err := os.Stat(apppath); os.IsNotExist(err) == false {
+		fmt.Printf("path `%s` exists, can not create app without remove it\n", apppath)
+		os.Exit(2)
+	}
+
+	os.MkdirAll(apppath, 0755)
 	fmt.Println("create app folder:", apppath)
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
 	fmt.Println("create conf:", path.Join(apppath, "conf"))
@@ -113,7 +104,7 @@ func createapp(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.TrimPrefix(strings.Replace(appsrcpath, "\\", "/", -1), "/"), -1))
+	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
 }
 
 var appconf = `
