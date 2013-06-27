@@ -83,13 +83,8 @@ func main() {
 			if cmd.CustomFlags {
 				args = args[1:]
 			} else {
-				if len(args) > 2 {
-					cmd.Flag.Parse(args[2:])
-					args = append([]string{args[1]}, cmd.Flag.Args()...)
-				} else {
-					cmd.Flag.Parse(args[1:])
-					args = cmd.Flag.Args()
-				}
+				cmd.Flag.Parse(args[1:])
+				args = cmd.Flag.Args()
 			}
 			cmd.Run(cmd, args)
 			os.Exit(2)

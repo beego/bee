@@ -7,9 +7,11 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	path "path/filepath"
+	"regexp"
 	"runtime"
 	"sort"
 	"strconv"
@@ -19,13 +21,15 @@ import (
 )
 
 var cmdPack = &Command{
-	UsageLine: "pack [appPath]",
-	Short:     "pack an beego project into one execute file",
+	CustomFlags: true,
+	UsageLine:   "pack",
+	Short:       "compress an beego project",
 	Long: `
-compress an project
+compress an beego project
 
+-p        app path. default is current path
 -b        build specify platform app. default true
--o        compressed file output path. default use appname
+-o        compressed file output dir. default use current path
 -f        format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
 -exp      path exclude prefix
 -exs      path exclude suffix. default: .go:.DS_Store:.tmp
@@ -38,6 +42,7 @@ compress an project
 }
 
 var (
+	appPath  string
 	excludeP string
 	excludeS string
 	outputP  string
@@ -49,9 +54,10 @@ var (
 )
 
 func init() {
-	fs := flag.NewFlagSet("pack", flag.ExitOnError)
+	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
+	fs.StringVar(&appPath, "p", "", "")
 	fs.StringVar(&excludeP, "exp", "", "")
-	fs.StringVar(&excludeS, "exs", ".go:.DS_Store", "")
+	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "")
 	fs.StringVar(&outputP, "o", "", "")
 	fs.BoolVar(&build, "b", true, "")
 	fs.BoolVar(&fsym, "fs", false, "")
@@ -161,6 +167,10 @@ func (wft *walkFileTree) readDir(dirname string) ([]os.FileInfo, error) {
 func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error {
 	if err != nil {
 		return err
+	}
+
+	if fpath == outputP {
+		return nil
 	}
 
 	if fi.IsDir() {
@@ -363,26 +373,57 @@ func packDirectory(excludePrefix []string, excludeSuffix []string, includePath .
 	return
 }
 
-func packApp(cmd *Command, args []string) {
-	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "need appPath")
-		cmdPack.Usage()
+func isBeegoProject(thePath string) bool {
+	fh, _ := os.Open(thePath)
+	fis, _ := fh.Readdir(-1)
+	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?"github.com/astaxie/beego".*?\).*func main()`)
+	for _, fi := range fis {
+		if fi.IsDir() == false && strings.HasSuffix(fi.Name(), ".go") {
+			data, err := ioutil.ReadFile(path.Join(thePath, fi.Name()))
+			if err != nil {
+				continue
+			}
+			if len(regex.Find(data)) > 0 {
+				return true
+			}
+		}
 	}
+	return false
+}
 
+func packApp(cmd *Command, args []string) {
 	curPath, _ := os.Getwd()
 	thePath := ""
-	appPath := args[0]
+
+	nArgs := []string{}
+	has := false
+	for _, a := range args {
+		if a != "" && a[0] == '-' {
+			has = true
+		}
+		if has {
+			nArgs = append(nArgs, a)
+		}
+	}
+	cmdPack.Flag.Parse(nArgs)
 
 	if path.IsAbs(appPath) == false {
-		thePath = path.Join(curPath, appPath)
+		appPath = path.Join(curPath, appPath)
 	}
-	thePath, err := path.Abs(thePath)
+
+	thePath, err := path.Abs(appPath)
 	if err != nil {
 		exitPrint(fmt.Sprintf("wrong app path: %s", thePath))
 	}
 	if stat, err := os.Stat(thePath); os.IsNotExist(err) || stat.IsDir() == false {
 		exitPrint(fmt.Sprintf("not exist app path: %s", thePath))
 	}
+
+	if isBeegoProject(thePath) == false {
+		exitPrint(fmt.Sprintf("not support non beego project"))
+	}
+
+	fmt.Printf("app path: %s\n", thePath)
 
 	appName := path.Base(thePath)
 
@@ -427,13 +468,20 @@ func packApp(cmd *Command, args []string) {
 		format = "tar.gz"
 	}
 
-	if outputP == "" {
-		outputP = path.Join(curPath, appName+"."+format)
+	outputN := appName + "." + format
+
+	if outputP == "" || path.IsAbs(outputP) == false {
+		outputP = path.Join(curPath, outputP)
 	}
 
-	if stat, err := os.Stat(outputP); err == nil && stat.IsDir() {
-		outputP = path.Join(outputP, appName+"."+format)
+	if _, err := os.Stat(outputP); err != nil {
+		err = os.MkdirAll(outputP, 0755)
+		if err != nil {
+			exitPrint(err.Error())
+		}
 	}
+
+	outputP = path.Join(outputP, outputN)
 
 	var exp, exs []string
 	for _, p := range strings.Split(excludeP, ":") {
