@@ -58,6 +58,7 @@ func (c *Command) Runnable() bool {
 var commands = []*Command{
 	cmdCreate,
 	cmdStart,
+	cmdPack,
 	//cmdReStart,
 }
 
@@ -82,8 +83,13 @@ func main() {
 			if cmd.CustomFlags {
 				args = args[1:]
 			} else {
-				cmd.Flag.Parse(args[1:])
-				args = cmd.Flag.Args()
+				if len(args) > 2 {
+					cmd.Flag.Parse(args[2:])
+					args = append([]string{args[1]}, cmd.Flag.Args()...)
+				} else {
+					cmd.Flag.Parse(args[1:])
+					args = cmd.Flag.Args()
+				}
 			}
 			cmd.Run(cmd, args)
 			os.Exit(2)
@@ -91,7 +97,7 @@ func main() {
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "go: unknown subcommand %q\nRun 'go help' for usage.\n", args[0])
+	fmt.Fprintf(os.Stderr, "bee: unknown subcommand %q\nRun 'bee help' for usage.\n", args[0])
 	os.Exit(2)
 }
 
