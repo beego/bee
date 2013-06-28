@@ -454,6 +454,7 @@ func packApp(cmd *Command, args []string) {
 		execmd := exec.Command(gobin, "build", "-o", binPath)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
+		execmd.Dir = thePath
 		err = execmd.Run()
 		if err != nil {
 			exitPrint(err.Error())
