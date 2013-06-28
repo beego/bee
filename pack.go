@@ -93,6 +93,7 @@ type walkFileTree struct {
 	prefix        string
 	excludePrefix []string
 	excludeSuffix []string
+	allfiles      map[string]bool
 }
 
 func (wft *walkFileTree) setPrefix(prefix string) {
@@ -186,10 +187,15 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 		return nil
 	}
 
+	if wft.allfiles[name] {
+		return nil
+	}
+
 	if added, err := wft.wak.compress(name, fpath, fi); added {
 		if verbose {
 			fmt.Printf("Compressed: %s\n", name)
 		}
+		wft.allfiles[name] = true
 		return err
 	} else {
 		return err
@@ -340,6 +346,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string, includePath .
 		defer func() {
 			zw.Close()
 		}()
+		walk.allfiles = make(map[string]bool)
 		walk.zw = zw
 		walk.wak = walk
 		walk.excludePrefix = excludePrefix
@@ -356,6 +363,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string, includePath .
 			tw.Close()
 			cw.Close()
 		}()
+		walk.allfiles = make(map[string]bool)
 		walk.tw = tw
 		walk.wak = walk
 		walk.excludePrefix = excludePrefix
@@ -451,6 +459,10 @@ func packApp(cmd *Command, args []string) {
 		os.Setenv("GOARCH", goarch)
 
 		binPath := path.Join(tmpdir, appName)
+		if goos == "windows" {
+			binPath += ".exe"
+		}
+
 		execmd := exec.Command(gobin, "build", "-o", binPath)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
@@ -496,7 +508,7 @@ func packApp(cmd *Command, args []string) {
 		}
 	}
 
-	err = packDirectory(exp, exs, thePath, tmpdir)
+	err = packDirectory(exp, exs, tmpdir, thePath)
 	if err != nil {
 		exitPrint(err.Error())
 	}
