@@ -6,13 +6,11 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"runtime"
 	"sync"
 	"time"
 )
 
 var (
-	restart   chan bool
 	cmd       *exec.Cmd
 	state     sync.Mutex
 	eventTime = make(map[string]time.Time)
@@ -60,19 +58,7 @@ func NewWatcher(paths []string) {
 func Autobuild() {
 	state.Lock()
 	defer state.Unlock()
-	defer func() {
-		if err := recover(); err != nil {
-			str := ""
-			for i := 1; ; i += 1 {
-				_, file, line, ok := runtime.Caller(i)
-				if !ok {
-					break
-				}
-				str = str + fmt.Sprintf("%v,%v", file, line)
-			}
 
-		}
-	}()
 	fmt.Println("start autobuild")
 	path, _ := os.Getwd()
 	os.Chdir(path)
