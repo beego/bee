@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	path "path/filepath"
+	"runtime"
 )
 
 var cmdStart = &Command{
@@ -32,22 +33,31 @@ func init() {
 	cmdStart.Run = startapp
 }
 
+var appname string
+
 func startapp(cmd *Command, args []string) {
 	if len(args) != 1 {
 		fmt.Println("error args")
 		os.Exit(2)
 	}
 	crupath, _ := os.Getwd()
+	Debugf("current path:%s\n", crupath)
+
 	var paths []string
 	paths = append(paths, path.Join(crupath, "controllers"), path.Join(crupath, "models"))
 	NewWatcher(paths)
-	go Start(args[0])
+	appname = args[0]
+	Autobuild()
 	for {
-		select {
-		case <-restart:
-			go Start(args[0])
-		case <-builderror:
-			fmt.Println("build error:", builderror)
-		}
+		runtime.Gosched()
 	}
+	//go Start(args[0])
+	//for {
+	//	select {
+	//	case <-restart:
+	//		go Start(args[0])
+	//	case err := <-builderror:
+	//		fmt.Println("build error:", err)
+	//	}
+	//}
 }
