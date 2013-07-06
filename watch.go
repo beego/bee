@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/howeyc/fsnotify"
-	//"io"
 	"log"
 	"os"
 	"os/exec"
@@ -13,20 +12,11 @@ import (
 )
 
 var (
-	builderror chan string
-	restart    chan bool
-	cmd        *exec.Cmd
-	state      sync.Mutex
-	running    bool
+	restart   chan bool
+	cmd       *exec.Cmd
+	state     sync.Mutex
+	eventTime = make(map[string]time.Time)
 )
-
-func init() {
-	builderror = make(chan string)
-	//restart = make(chan bool)
-	running = false
-}
-
-var eventTime = make(map[string]time.Time)
 
 func NewWatcher(paths []string) {
 	watcher, err := fsnotify.NewWatcher()
@@ -38,15 +28,14 @@ func NewWatcher(paths []string) {
 		for {
 			select {
 			case e := <-watcher.Event:
-
 				isbuild := true
 				if t, ok := eventTime[e.String()]; ok {
-					//Debugf("%s pk %s", t, time.Now())
+					// if 500ms change many times, then ignore it.
+					// for liteide often gofmt code after save.
 					if t.Add(time.Millisecond * 500).After(time.Now()) {
 						isbuild = false
 					}
 				}
-				Debugf("isbuild:%v", isbuild)
 				eventTime[e.String()] = time.Now()
 
 				if isbuild {
@@ -69,6 +58,8 @@ func NewWatcher(paths []string) {
 }
 
 func Autobuild() {
+	state.Lock()
+	defer state.Unlock()
 	defer func() {
 		if err := recover(); err != nil {
 			str := ""
@@ -79,35 +70,42 @@ func Autobuild() {
 				}
 				str = str + fmt.Sprintf("%v,%v", file, line)
 			}
-			builderror <- str
 
 		}
 	}()
-	fmt.Println("autobuild")
+	fmt.Println("start autobuild")
 	path, _ := os.Getwd()
 	os.Chdir(path)
 	bcmd := exec.Command("go", "build")
 	bcmd.Stdout = os.Stdout
 	bcmd.Stderr = os.Stderr
 	err := bcmd.Run()
+
 	if err != nil {
-		builderror <- err.Error()
+		fmt.Println("============== build failed ===================")
 		return
 	}
+	fmt.Println("build success")
 	Restart(appname)
 }
 
 func Kill() {
-	err := cmd.Process.Kill()
-	if err != nil {
-		panic(err)
+	defer func() {
+		if e := recover(); e != nil {
+			fmt.Println("Kill -> ", e)
+		}
+	}()
+	if cmd != nil {
+		cmd.Process.Kill()
 	}
 }
 
 func Restart(appname string) {
+	Debugf("kill running process")
 	Kill()
-	go Start()
+	go Start(appname)
 }
+
 func Start(appname string) {
 	fmt.Println("start", appname)
 
@@ -115,47 +113,5 @@ func Start(appname string) {
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
-	ch := Go(func() error {
-		state.Lock()
-		defer state.Unlock()
-		running = true
-		return cmd.Run()
-	})
-	for {
-		select {
-		case err := <-ch:
-			fmt.Println("cmd start error: ", err)
-			state.Lock()
-			defer state.Unlock()
-			running = false
-			return
-		case <-time.After(2 * time.Second):
-		}
-	}
-
-	//stdout, err := cmd.StdoutPipe()
-
-	//if err != nil {
-	//fmt.Println("stdout:", err)
-	//}
-	//stderr, err := cmd.StderrPipe()
-	//if err != nil {
-	//fmt.Println("stdin:", err)
-	//}
-	//r := io.MultiReader(stdout, stderr)
-	//err = cmd.Start()
-	//if err != nil {
-	//	fmt.Println("cmd start:", err)
-	//}
-	//for {
-	//	buf := make([]byte, 1024)
-	//	count, err := r.Read(buf)
-	//	if err != nil || count == 0 {
-	//		fmt.Println("process exit")
-	//		restart <- true
-	//		return
-	//	} else {
-	//		fmt.Println("result:", string(buf))
-	//	}
-	//}
+	go cmd.Run()
 }

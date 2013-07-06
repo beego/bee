@@ -51,13 +51,4 @@ func startapp(cmd *Command, args []string) {
 	for {
 		runtime.Gosched()
 	}
-	//go Start(args[0])
-	//for {
-	//	select {
-	//	case <-restart:
-	//		go Start(args[0])
-	//	case err := <-builderror:
-	//		fmt.Println("build error:", err)
-	//	}
-	//}
 }
