@@ -45,6 +45,7 @@ func createapp(cmd *Command, args []string) {
 	}
 
 	gopath := os.Getenv("GOPATH")
+	Debugf("gopath:%s", gopath)
 	if gopath == "" {
 		fmt.Println("you should set GOPATH in the env")
 		os.Exit(2)
