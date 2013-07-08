@@ -59,6 +59,7 @@ var commands = []*Command{
 	cmdCreate,
 	cmdStart,
 	cmdPack,
+	cmdApiapp,
 	//cmdReStart,
 }
 
