@@ -43,46 +43,100 @@ import (
 )
 
 func main() {
-	beego.Router("/", &controllers.MainController{})
+	beego.Router("/{{.Version}}/users/:objectId", &controllers.UserController{})
+	beego.Router("/{{.Version}}/users", &controllers.UserController{})
 	beego.Run()
 }
 `
 var apiModels = `package models
 
 type User struct {
+	Id    interface{}
 	Name  string
 	Email string
+}
+
+func (this *User) One(id interface{}) (user User, err error) {
+	// get user from DB
+	// user, err = query(id)
+	user = User{id, "astaxie", "astaxie@gmail.com"}
+	return
 }
 
 func (this *User) All() (users []User, err error) {
 	// get all users from DB
 	// users, err = queryAll()
-	users = append([]User{}, User{"astaxie", "astaxie@gmail.com"})
+	users = append([]User{}, User{1, "astaxie", "astaxie@gmail.com"})
+	users = append(users, User{2, "someone", "someone@gmail.com"})
 	return
 }
+
+func (this *User) Update(id interface{}) (err error) {
+	// user, err = update(id, this)
+	return
+}
+
 `
 
 var apiControllers = `package controllers
 
 import (
+	"encoding/json"
 	"{{.Appname}}/models"
 	"github.com/astaxie/beego"
+	"io/ioutil"
 )
 
-type MainController struct {
+type UserController struct {
 	beego.Controller
 }
 
-func (this *MainController) Get() {
+func (this *UserController) Get() {
 	var user models.User
-	users, err := user.All()
-	if err != nil {
-		this.Data["json"] = err
+	objectId := this.Ctx.Params[":objectId"]
+	if objectId != "" {
+		user, err := user.One(objectId)
+		if err != nil {
+			this.Data["json"] = err
+		} else {
+			this.Data["json"] = user
+		}
 	} else {
-		this.Data["json"] = users
+		users, err := user.All()
+		if err != nil {
+			this.Data["json"] = err
+		} else {
+			this.Data["json"] = users
+		}
 	}
 	this.ServeJson()
 }
+
+func (this *UserController) Put() {
+	defer this.ServeJson()
+	var user models.User
+	objectId := this.Ctx.Params[":objectId"]
+
+	body, err := ioutil.ReadAll(this.Ctx.Request.Body)
+	if err != nil {
+		this.Data["json"] = err
+		return
+	}
+	this.Ctx.Request.Body.Close()
+
+	if err = json.Unmarshal(body, &user); err != nil {
+		this.Data["json"] = err
+		return
+	}
+
+	err = user.Update(objectId)
+	if err != nil {
+		this.Data["json"] = err
+	} else {
+		this.Data["json"] = "update success!"
+	}
+}
+
 `
 
 func init() {
@@ -90,7 +144,10 @@ func init() {
 }
 
 func createapi(cmd *Command, args []string) {
-	if len(args) != 1 {
+	version := "1"
+	if len(args) == 2 {
+		version = args[1]
+	} else if len(args) != 1 {
 		fmt.Println("error args")
 		os.Exit(2)
 	}
@@ -120,6 +177,7 @@ func createapi(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "models", "default.go"), apiModels)
 
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+	apiMaingo = strings.Replace(apiMaingo, "{{.Version}}", version, -1)
 	writetofile(path.Join(apppath, "main.go"),
 		strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 }
