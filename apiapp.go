@@ -24,7 +24,7 @@ In the appname folder has the follow struct:
 	│   └── default.go
 	├── main.go
 	└── models
-	    └── default.go             
+	    └── object.go             
 
 `,
 }
@@ -34,109 +34,142 @@ appname = {{.Appname}}
 httpport = 8080
 runmode = dev
 autorender = false
+copyrequestbody = true
 `
 var apiMaingo = `package main
 
 import (
-	"{{.Appname}}/controllers"
 	"github.com/astaxie/beego"
+	"{{.Appname}}/controllers"
 )
 
+//		Objects
+
+//	URL					HTTP Verb				Functionality
+//	/object				POST					Creating Objects
+//	/object/<objectId>	GET						Retrieving Objects
+//	/object/<objectId>	PUT						Updating Objects
+//	/object				GET						Queries
+//	/object/<objectId>	DELETE					Deleting Objects
+
 func main() {
-	beego.Router("/{{.Version}}/users/:objectId", &controllers.UserController{})
-	beego.Router("/{{.Version}}/users", &controllers.UserController{})
+	beego.RESTRouter("/object", &controllers.ObejctController{})
 	beego.Run()
 }
 `
 var apiModels = `package models
 
-type User struct {
-	Id    interface{}
-	Name  string
-	Email string
+import (
+	"errors"
+	"strconv"
+	"time"
+)
+
+var (
+	Objects map[string]*Object
+)
+
+type Object struct {
+	ObjectId   string
+	Score      int64
+	PlayerName string
 }
 
-func (this *User) One(id interface{}) (user User, err error) {
-	// get user from DB
-	// user, err = query(id)
-	user = User{id, "astaxie", "astaxie@gmail.com"}
-	return
+func init() {
+	Objects = make(map[string]*Object)
+	Objects["hjkhsbnmn123"] = &Object{"hjkhsbnmn123", 100, "astaxie"}
+	Objects["mjjkxsxsaa23"] = &Object{"mjjkxsxsaa23", 101, "someone"}
 }
 
-func (this *User) All() (users []User, err error) {
-	// get all users from DB
-	// users, err = queryAll()
-	users = append([]User{}, User{1, "astaxie", "astaxie@gmail.com"})
-	users = append(users, User{2, "someone", "someone@gmail.com"})
-	return
+func AddOne(object Object) (ObjectId string) {
+	object.ObjectId = "astaxie" + strconv.FormatInt(time.Now().UnixNano(), 10)
+	Objects[object.ObjectId] = &object
+	return object.ObjectId
 }
 
-func (this *User) Update(id interface{}) (err error) {
-	// user, err = update(id, this)
-	return
+func GetOne(ObjectId string) (object *Object, err error) {
+	if v, ok := Objects[ObjectId]; ok {
+		return v, nil
+	}
+	return nil, errors.New("ObjectId Not Exist")
 }
 
+func GetAll() map[string]*Object {
+	return Objects
+}
+
+func Update(ObjectId string, Score int64) (err error) {
+	if v, ok := Objects[ObjectId]; ok {
+		v.Score = Score
+		return nil
+	}
+	return errors.New("ObjectId Not Exist")
+}
+
+func Delete(ObjectId string) {
+	delete(Objects, ObjectId)
+}
 `
 
 var apiControllers = `package controllers
 
 import (
 	"encoding/json"
-	"{{.Appname}}/models"
 	"github.com/astaxie/beego"
-	"io/ioutil"
+	"{{.Appname}}/models"
 )
 
-type UserController struct {
+type ResponseInfo struct {
+}
+
+type ObejctController struct {
 	beego.Controller
 }
 
-func (this *UserController) Get() {
-	var user models.User
+func (this *ObejctController) Post() {
+	var ob models.Object
+	json.Unmarshal(this.Ctx.RequestBody, &ob)
+	objectid := models.AddOne(ob)
+	this.Data["json"] = "{\"ObjectId\":\"" + objectid + "\"}"
+	this.ServeJson()
+}
+
+func (this *ObejctController) Get() {
 	objectId := this.Ctx.Params[":objectId"]
 	if objectId != "" {
-		user, err := user.One(objectId)
+		ob, err := models.GetOne(objectId)
 		if err != nil {
 			this.Data["json"] = err
 		} else {
-			this.Data["json"] = user
+			this.Data["json"] = ob
 		}
 	} else {
-		users, err := user.All()
-		if err != nil {
-			this.Data["json"] = err
-		} else {
-			this.Data["json"] = users
-		}
+		obs := models.GetAll()
+		this.Data["json"] = obs
 	}
 	this.ServeJson()
 }
 
-func (this *UserController) Put() {
-	defer this.ServeJson()
-	var user models.User
+func (this *ObejctController) Put() {
 	objectId := this.Ctx.Params[":objectId"]
+	var ob models.Object
+	json.Unmarshal(this.Ctx.RequestBody, &ob)
 
-	body, err := ioutil.ReadAll(this.Ctx.Request.Body)
-	if err != nil {
-		this.Data["json"] = err
-		return
-	}
-	this.Ctx.Request.Body.Close()
-
-	if err = json.Unmarshal(body, &user); err != nil {
-		this.Data["json"] = err
-		return
-	}
-
-	err = user.Update(objectId)
+	err := models.Update(objectId, ob.Score)
 	if err != nil {
 		this.Data["json"] = err
 	} else {
 		this.Data["json"] = "update success!"
 	}
+	this.ServeJson()
 }
 
+func (this *ObejctController) Delete() {
+	objectId := this.Ctx.Params[":objectId"]
+	models.Delete(objectId)
+	this.Data["json"] = "delete success!"
+	this.ServeJson()
+}
 `
 
 func init() {
@@ -144,10 +177,7 @@ func init() {
 }
 
 func createapi(cmd *Command, args []string) {
-	version := "1"
-	if len(args) == 2 {
-		version = args[1]
-	} else if len(args) != 1 {
+	if len(args) != 1 {
 		fmt.Println("error args")
 		os.Exit(2)
 	}
@@ -173,11 +203,10 @@ func createapi(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "controllers", "default.go"),
 		strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-	fmt.Println("create models default.go:", path.Join(apppath, "models", "default.go"))
-	writetofile(path.Join(apppath, "models", "default.go"), apiModels)
+	fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
+	writetofile(path.Join(apppath, "models", "object.go"), apiModels)
 
 	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-	apiMaingo = strings.Replace(apiMaingo, "{{.Version}}", version, -1)
 	writetofile(path.Join(apppath, "main.go"),
 		strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 }
