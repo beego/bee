@@ -8,6 +8,7 @@ import (
 	"os/exec"
 	"sync"
 	"time"
+	"strings"
 )
 
 var (
@@ -94,6 +95,10 @@ func Restart(appname string) {
 
 func Start(appname string) {
 	fmt.Println("start", appname)
+	
+	if strings.Index(appname, "./") == -1 {
+		appname = "./" + appname
+	}
 
 	cmd = exec.Command(appname)
 	cmd.Stdout = os.Stdout
