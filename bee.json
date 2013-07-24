@@ -1,0 +1,9 @@
+{
+	"dir_structure":{
+		"controllers": "",
+		"models": ""
+	},
+	"files": [
+		"main.go"
+	]
+}
