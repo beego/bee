@@ -1,3 +1,4 @@
+// Bee is a tool for developling applications based on beego framework.
 package main
 
 import (
@@ -56,7 +57,7 @@ func (c *Command) Runnable() bool {
 }
 
 var commands = []*Command{
-	cmdCreate,
+	cmdNew,
 	cmdStart,
 	cmdPack,
 	cmdApiapp,
