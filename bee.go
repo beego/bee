@@ -58,7 +58,7 @@ func (c *Command) Runnable() bool {
 
 var commands = []*Command{
 	cmdNew,
-	cmdStart,
+	cmdRun,
 	cmdPack,
 	cmdApiapp,
 	//cmdReStart,

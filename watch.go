@@ -45,7 +45,7 @@ func NewWatcher(paths []string) {
 				eventTime[e.Name] = time.Now()
 
 				if isbuild {
-					fmt.Println(e)
+					fmt.Println("[EVEN]", e)
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
@@ -67,7 +67,7 @@ func Autobuild() {
 	state.Lock()
 	defer state.Unlock()
 
-	fmt.Println("start autobuild")
+	fmt.Println("[INFO] Start building...")
 	path, _ := os.Getwd()
 	os.Chdir(path)
 	bcmd := exec.Command("go", "build")
@@ -76,10 +76,10 @@ func Autobuild() {
 	err := bcmd.Run()
 
 	if err != nil {
-		fmt.Println("============== build failed ===================")
+		fmt.Println("[ERRO] ============== Build failed ===================")
 		return
 	}
-	fmt.Println("build success")
+	fmt.Println("[SUCC] Build was successful")
 	Restart(appname)
 }
 
@@ -101,8 +101,7 @@ func Restart(appname string) {
 }
 
 func Start(appname string) {
-	fmt.Println("start", appname)
-
+	fmt.Println("[INFO] Restarting", appname)
 	if strings.Index(appname, "./") == -1 {
 		appname = "./" + appname
 	}
