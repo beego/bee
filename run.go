@@ -40,6 +40,7 @@ var conf struct {
 		Controllers string
 		Models      string
 	} `json:"dir_structure"`
+	Files []string
 }
 
 func runApp(cmd *Command, args []string) {
@@ -58,6 +59,7 @@ func runApp(cmd *Command, args []string) {
 	paths = append(paths,
 		path.Join(crupath, conf.DirStruct.Controllers),
 		path.Join(crupath, conf.DirStruct.Models))
+	paths = append(paths, conf.Files...)
 
 	NewWatcher(paths)
 	appname = args[0]

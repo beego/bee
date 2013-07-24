@@ -1,5 +1,9 @@
 {
 	"dir_structure":{
-		"controllers": "routers"
-	}
+		"controllers": "",
+		"models": ""
+	},
+	"files": [
+		"main.go"
+	]
 }

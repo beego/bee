@@ -53,6 +53,8 @@ func NewWatcher(paths []string) {
 			}
 		}
 	}()
+
+	fmt.Println("[INFO] Initializing watcher...")
 	for _, path := range paths {
 		fmt.Println(path)
 		err = watcher.Watch(path)
