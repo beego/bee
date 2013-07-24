@@ -6,9 +6,9 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
-	"strings"
 )
 
 var (
@@ -28,14 +28,21 @@ func NewWatcher(paths []string) {
 			select {
 			case e := <-watcher.Event:
 				isbuild := true
-				if t, ok := eventTime[e.String()]; ok {
+
+				// Skip TMP files for Sublime Text.
+				if checkTMPFile(e.Name) {
+					continue
+				}
+
+				if t, ok := eventTime[e.Name]; ok {
 					// if 500ms change many times, then ignore it.
 					// for liteide often gofmt code after save.
 					if t.Add(time.Millisecond * 500).After(time.Now()) {
+						fmt.Println("[SKIP]", e.String())
 						isbuild = false
 					}
 				}
-				eventTime[e.String()] = time.Now()
+				eventTime[e.Name] = time.Now()
 
 				if isbuild {
 					fmt.Println(e)
@@ -95,7 +102,7 @@ func Restart(appname string) {
 
 func Start(appname string) {
 	fmt.Println("start", appname)
-	
+
 	if strings.Index(appname, "./") == -1 {
 		appname = "./" + appname
 	}
@@ -105,4 +112,12 @@ func Start(appname string) {
 	cmd.Stderr = os.Stderr
 
 	go cmd.Run()
+}
+
+// checkTMPFile returns true if the event was for TMP files.
+func checkTMPFile(name string) bool {
+	if strings.HasSuffix(strings.ToLower(name), ".tmp") {
+		return true
+	}
+	return false
 }
