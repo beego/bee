@@ -1,4 +1,5 @@
 {
+	"go_install": false,
 	"dir_structure":{
 		"controllers": "",
 		"models": ""

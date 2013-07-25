@@ -72,10 +72,23 @@ func Autobuild() {
 	fmt.Println("[INFO] Start building...")
 	path, _ := os.Getwd()
 	os.Chdir(path)
-	bcmd := exec.Command("go", "build")
-	bcmd.Stdout = os.Stdout
-	bcmd.Stderr = os.Stderr
-	err := bcmd.Run()
+
+	var err error
+	// For applications use full import path like "github.com/.../.."
+	// are able to use "go install" to reduce build time.
+	if conf.GoInstall {
+		icmd := exec.Command("go", "install")
+		icmd.Stdout = os.Stdout
+		icmd.Stderr = os.Stderr
+		err = icmd.Run()
+	}
+
+	if err == nil {
+		bcmd := exec.Command("go", "build")
+		bcmd.Stdout = os.Stdout
+		bcmd.Stderr = os.Stderr
+		err = bcmd.Run()
+	}
 
 	if err != nil {
 		fmt.Println("[ERRO] ============== Build failed ===================")

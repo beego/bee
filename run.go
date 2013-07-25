@@ -36,6 +36,8 @@ func init() {
 
 var appname string
 var conf struct {
+	// Indicates whether execute "go install" before "go build".
+	GoInstall bool `json:"go_install"`
 	DirStruct struct {
 		Controllers string
 		Models      string
@@ -71,6 +73,7 @@ func runApp(cmd *Command, args []string) {
 
 // loadConfig loads customized configuration.
 func loadConfig() error {
+	fmt.Println("[INFO] Detect bee.json")
 	f, err := os.Open("bee.json")
 	if err != nil {
 		// Use default.
