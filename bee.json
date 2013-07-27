@@ -2,9 +2,11 @@
 	"go_install": false,
 	"dir_structure":{
 		"controllers": "",
-		"models": ""
+		"models": "",
+		"others": []
 	},
-	"files": [
-		"main.go"
-	]
+	"main_files":{
+		"main.go": "",
+		"others": []
+	}
 }
