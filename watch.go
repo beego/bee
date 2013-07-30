@@ -33,6 +33,9 @@ func NewWatcher(paths []string) {
 				if checkTMPFile(e.Name) {
 					continue
 				}
+				if !checkIsGoFile(e.Name) {
+					continue
+				}
 
 				if t, ok := eventTime[e.Name]; ok {
 					// if 500ms change many times, then ignore it.
@@ -131,6 +134,14 @@ func Start(appname string) {
 // checkTMPFile returns true if the event was for TMP files.
 func checkTMPFile(name string) bool {
 	if strings.HasSuffix(strings.ToLower(name), ".tmp") {
+		return true
+	}
+	return false
+}
+
+// checkIsGoFile return true if the name is HasSuffix go
+func checkIsGoFile(name string) bool {
+	if strings.HasSuffix(name, ".go") {
 		return true
 	}
 	return false
