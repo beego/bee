@@ -30,6 +30,21 @@ when the file has changed bee will auto go build and restart the app
 `,
 }
 
+var defaultJson = `
+{
+	"go_install": false,
+	"dir_structure":{
+		"controllers": "",
+		"models": "",
+		"others": []
+	},
+	"main_files":{
+		"main.go": "",
+		"others": []
+	}
+}
+`
+
 func init() {
 	cmdRun.Run = runApp
 }
@@ -85,16 +100,18 @@ func loadConfig() error {
 	f, err := os.Open("bee.json")
 	if err != nil {
 		// Use default.
-		return nil
+		err = json.Unmarshal([]byte(defaultJson), &conf)
+		if err != nil {
+			return err
+		}
+	} else {
+		defer f.Close()
+		d := json.NewDecoder(f)
+		err = d.Decode(&conf)
+		if err != nil {
+			return err
+		}
 	}
-	defer f.Close()
-
-	d := json.NewDecoder(f)
-	err = d.Decode(&conf)
-	if err != nil {
-		return err
-	}
-
 	// Set variables.
 	if len(conf.DirStruct.Controllers) == 0 {
 		conf.DirStruct.Controllers = "controllers"
