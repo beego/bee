@@ -82,7 +82,9 @@ func runApp(cmd *Command, args []string) {
 	paths = append(paths,
 		path.Join(crupath, conf.DirStruct.Controllers),
 		path.Join(crupath, conf.DirStruct.Models),
-		path.Join(crupath, conf.MainFiles.Main))
+		path.Join(crupath, "./")) // Current path.
+	// Because monitor files has some issues, we watch current directory
+	// and ignore non-go files.
 	paths = append(paths, conf.DirStruct.Others...)
 	paths = append(paths, conf.MainFiles.Others...)
 
