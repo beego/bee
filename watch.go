@@ -139,7 +139,7 @@ func checkTMPFile(name string) bool {
 	return false
 }
 
-// checkIsGoFile return true if the name is HasSuffix go
+// checkIsGoFile returns true if the name HasSuffix ".go".
 func checkIsGoFile(name string) bool {
 	if strings.HasSuffix(name, ".go") {
 		return true
