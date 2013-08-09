@@ -67,6 +67,7 @@ var conf struct {
 }
 
 func runApp(cmd *Command, args []string) {
+	exit := make(chan bool)
 	if len(args) != 1 {
 		fmt.Println("[ERRO] Argument [appname] is missing")
 		os.Exit(2)
@@ -92,7 +93,10 @@ func runApp(cmd *Command, args []string) {
 	appname = args[0]
 	Autobuild()
 	for {
-		runtime.Gosched()
+		select {
+		case <-exit:
+			runtime.Goexit()
+		}
 	}
 }
 
