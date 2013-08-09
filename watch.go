@@ -41,14 +41,14 @@ func NewWatcher(paths []string) {
 					// if 500ms change many times, then ignore it.
 					// for liteide often gofmt code after save.
 					if t.Add(time.Millisecond * 500).After(time.Now()) {
-						fmt.Println("[SKIP]", e.String())
+						colorLog("[SKIP] %s\n", e.String())
 						isbuild = false
 					}
 				}
 				eventTime[e.Name] = time.Now()
 
 				if isbuild {
-					fmt.Println("[EVEN]", e)
+					colorLog("[EVEN] %s\n", e)
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
@@ -57,7 +57,7 @@ func NewWatcher(paths []string) {
 		}
 	}()
 
-	fmt.Println("[INFO] Initializing watcher...")
+	colorLog("[INFO] Initializing watcher...\n")
 	for _, path := range paths {
 		fmt.Println(path)
 		err = watcher.Watch(path)
@@ -72,7 +72,7 @@ func Autobuild() {
 	state.Lock()
 	defer state.Unlock()
 
-	fmt.Println("[INFO] Start building...")
+	colorLog("[INFO] Start building...\n")
 	path, _ := os.Getwd()
 	os.Chdir(path)
 
@@ -94,10 +94,10 @@ func Autobuild() {
 	}
 
 	if err != nil {
-		fmt.Println("[ERRO] ============== Build failed ===================")
+		colorLog("[ERRO] ============== Build failed ===================\n")
 		return
 	}
-	fmt.Println("[SUCC] Build was successful")
+	colorLog("[SUCC] Build was successful\n")
 	Restart(appname)
 }
 
@@ -119,7 +119,7 @@ func Restart(appname string) {
 }
 
 func Start(appname string) {
-	fmt.Println("[INFO] Restarting", appname)
+	colorLog("[INFO] Restarting %s ...\n", appname)
 	if strings.Index(appname, "./") == -1 {
 		appname = "./" + appname
 	}
