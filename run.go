@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -69,7 +68,7 @@ var conf struct {
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
 	if len(args) != 1 {
-		fmt.Println("[ERRO] Argument [appname] is missing")
+		colorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
 	crupath, _ := os.Getwd()
@@ -77,7 +76,7 @@ func runApp(cmd *Command, args []string) {
 
 	err := loadConfig()
 	if err != nil {
-		fmt.Println("[ERRO] Fail to parse bee.json:", err)
+		colorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
 	}
 	var paths []string
 	paths = append(paths,
@@ -111,7 +110,7 @@ func loadConfig() error {
 		}
 	} else {
 		defer f.Close()
-		fmt.Println("[INFO] Detected bee.json")
+		colorLog("[INFO] Detected bee.json\n")
 		d := json.NewDecoder(f)
 		err = d.Decode(&conf)
 		if err != nil {
