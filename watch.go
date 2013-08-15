@@ -43,15 +43,6 @@ func NewWatcher(paths []string) {
 					isbuild = false
 				}
 
-				// if t, ok := eventTime[e.Name]; ok {
-				// 	// if 500ms change many times, then ignore it.
-				// 	// for liteide often gofmt code after save.
-				// 	if t.Add(time.Millisecond * 500).After(time.Now()) {
-				// 		colorLog("[SKIP] %s\n", e.String())
-				// 		isbuild = false
-				// 	}
-				// }
-
 				eventTime[e.Name] = mt
 				fmt.Println(mt)
 
