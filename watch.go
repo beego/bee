@@ -44,7 +44,6 @@ func NewWatcher(paths []string) {
 				}
 
 				eventTime[e.Name] = mt
-				fmt.Println(mt)
 
 				if isbuild {
 					colorLog("[EVEN] %s\n", e)
