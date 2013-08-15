@@ -74,6 +74,7 @@ func getFileModTime(path string) int64 {
 		colorLog("[ERRO] Fail to open file[ %s ]", err)
 		return time.Now().Unix()
 	}
+	defer f.Close()
 
 	fi, err := f.Stat()
 	if err != nil {
