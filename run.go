@@ -68,7 +68,8 @@ var conf struct {
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
 	if len(args) != 1 {
-		colorLog("[ERRO] Argument [appname] is missing\n")
+		colorLog("[ERRO] Cannot start running[ %s ]\n",
+			"argument 'appname' is missing")
 		os.Exit(2)
 	}
 	crupath, _ := os.Getwd()

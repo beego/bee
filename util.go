@@ -62,12 +62,16 @@ func colorLog(format string, a ...interface{}) {
 		log = log[i+1:]
 
 		// Error.
-		log = strings.Replace(log, "[ ", fmt.Sprintf("[ \033[%dm", Red), -1)
-		log = strings.Replace(log, " ]", EndColor+" ]", -1)
+		log = strings.Replace(log, "[ ", fmt.Sprintf("[\033[%dm", Red), -1)
+		log = strings.Replace(log, " ]", EndColor+"]", -1)
 
 		// Path.
-		log = strings.Replace(log, "(", fmt.Sprintf("(\033[%dm", Yellow), -1)
-		log = strings.Replace(log, ")", EndColor+")", -1)
+		log = strings.Replace(log, "( ", fmt.Sprintf("(\033[%dm", Yellow), -1)
+		log = strings.Replace(log, " )", EndColor+")", -1)
+
+		// Highlights.
+		log = strings.Replace(log, "# ", fmt.Sprintf("\033[%dm", Gray), -1)
+		log = strings.Replace(log, " #", EndColor, -1)
 
 		log = clog + log
 	}
@@ -79,6 +83,8 @@ func colorLog(format string, a ...interface{}) {
 func getColorLevel(level string) string {
 	level = strings.ToUpper(level)
 	switch level {
+	case "TRAC":
+		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
 	case "ERRO":
 		return fmt.Sprintf("\033[%dm%s\033[0m", Red, level)
 	case "WARN":

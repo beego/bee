@@ -20,7 +20,8 @@ var (
 func NewWatcher(paths []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		colorLog("[ERRO] Fail to create new Watcher[ %s ]\n", err)
+		os.Exit(2)
 	}
 
 	go func() {
@@ -39,7 +40,7 @@ func NewWatcher(paths []string) {
 
 				mt := getFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
-					colorLog("[SKIP] %s\n", e.String())
+					colorLog("[SKIP] # %s #\n", e.String())
 					isbuild = false
 				}
 
@@ -57,10 +58,11 @@ func NewWatcher(paths []string) {
 
 	colorLog("[INFO] Initializing watcher...\n")
 	for _, path := range paths {
-		fmt.Println(path)
+		colorLog("[TRAC] Directory( %s )\n", path)
 		err = watcher.Watch(path)
 		if err != nil {
-			log.Fatal(err)
+			colorLog("[ERRO] Fail to watch directory[ %s ]\n", err)
+			os.Exit(2)
 		}
 	}
 
