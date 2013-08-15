@@ -14,7 +14,7 @@ import (
 var (
 	cmd       *exec.Cmd
 	state     sync.Mutex
-	eventTime = make(map[string]time.Time)
+	eventTime = make(map[string]int64)
 )
 
 func NewWatcher(paths []string) {
@@ -37,15 +37,23 @@ func NewWatcher(paths []string) {
 					continue
 				}
 
-				if t, ok := eventTime[e.Name]; ok {
-					// if 500ms change many times, then ignore it.
-					// for liteide often gofmt code after save.
-					if t.Add(time.Millisecond * 500).After(time.Now()) {
-						colorLog("[SKIP] %s\n", e.String())
-						isbuild = false
-					}
+				mt := getFileModTime(e.Name)
+				if t := eventTime[e.Name]; mt == t {
+					colorLog("[SKIP] %s\n", e.String())
+					isbuild = false
 				}
-				eventTime[e.Name] = time.Now()
+
+				// if t, ok := eventTime[e.Name]; ok {
+				// 	// if 500ms change many times, then ignore it.
+				// 	// for liteide often gofmt code after save.
+				// 	if t.Add(time.Millisecond * 500).After(time.Now()) {
+				// 		colorLog("[SKIP] %s\n", e.String())
+				// 		isbuild = false
+				// 	}
+				// }
+
+				eventTime[e.Name] = mt
+				fmt.Println(mt)
 
 				if isbuild {
 					colorLog("[EVEN] %s\n", e)
@@ -66,6 +74,23 @@ func NewWatcher(paths []string) {
 		}
 	}
 
+}
+
+// getFileModTime retuens unix timestamp of `os.File.ModTime` by given path.
+func getFileModTime(path string) int64 {
+	f, err := os.Open(path)
+	if err != nil {
+		colorLog("[ERRO] Fail to open file[ %s ]", err)
+		return time.Now().Unix()
+	}
+
+	fi, err := f.Stat()
+	if err != nil {
+		colorLog("[ERRO] Fail to get file information[ %s ]", err)
+		return time.Now().Unix()
+	}
+
+	return fi.ModTime().Unix()
 }
 
 func Autobuild() {
