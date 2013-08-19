@@ -19,9 +19,9 @@ In the current path, will create a folder named [appname]
 In the appname folder has the follow struct:
 
 	├── conf
-	│   └── app.conf
+	│   └── app.conf
 	├── controllers
-	│   └── default.go
+	│   └── default.go
 	├── main.go
 	└── models
 	    └── object.go             
@@ -130,7 +130,7 @@ func (this *ObejctController) Post() {
 	var ob models.Object
 	json.Unmarshal(this.Ctx.RequestBody, &ob)
 	objectid := models.AddOne(ob)
-	this.Data["json"] = "{\"ObjectId\":\"" + objectid + "\"}"
+	this.Data["json"] = map[string]string{"ObjectId": objectid}
 	this.ServeJson()
 }
 
