@@ -14,13 +14,14 @@ import (
 var (
 	cmd       *exec.Cmd
 	state     sync.Mutex
-	eventTime = make(map[string]time.Time)
+	eventTime = make(map[string]int64)
 )
 
 func NewWatcher(paths []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		colorLog("[ERRO] Fail to create new Watcher[ %s ]\n", err)
+		os.Exit(2)
 	}
 
 	go func() {
@@ -37,18 +38,16 @@ func NewWatcher(paths []string) {
 					continue
 				}
 
-				if t, ok := eventTime[e.Name]; ok {
-					// if 500ms change many times, then ignore it.
-					// for liteide often gofmt code after save.
-					if t.Add(time.Millisecond * 500).After(time.Now()) {
-						fmt.Println("[SKIP]", e.String())
-						isbuild = false
-					}
+				mt := getFileModTime(e.Name)
+				if t := eventTime[e.Name]; mt == t {
+					colorLog("[SKIP] # %s #\n", e.String())
+					isbuild = false
 				}
-				eventTime[e.Name] = time.Now()
+
+				eventTime[e.Name] = mt
 
 				if isbuild {
-					fmt.Println("[EVEN]", e)
+					colorLog("[EVEN] %s\n", e)
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
@@ -57,22 +56,41 @@ func NewWatcher(paths []string) {
 		}
 	}()
 
-	fmt.Println("[INFO] Initializing watcher...")
+	colorLog("[INFO] Initializing watcher...\n")
 	for _, path := range paths {
-		fmt.Println(path)
+		colorLog("[TRAC] Directory( %s )\n", path)
 		err = watcher.Watch(path)
 		if err != nil {
-			log.Fatal(err)
+			colorLog("[ERRO] Fail to watch directory[ %s ]\n", err)
+			os.Exit(2)
 		}
 	}
 
+}
+
+// getFileModTime retuens unix timestamp of `os.File.ModTime` by given path.
+func getFileModTime(path string) int64 {
+	f, err := os.Open(path)
+	if err != nil {
+		colorLog("[ERRO] Fail to open file[ %s ]", err)
+		return time.Now().Unix()
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		colorLog("[ERRO] Fail to get file information[ %s ]", err)
+		return time.Now().Unix()
+	}
+
+	return fi.ModTime().Unix()
 }
 
 func Autobuild() {
 	state.Lock()
 	defer state.Unlock()
 
-	fmt.Println("[INFO] Start building...")
+	colorLog("[INFO] Start building...\n")
 	path, _ := os.Getwd()
 	os.Chdir(path)
 
@@ -94,10 +112,10 @@ func Autobuild() {
 	}
 
 	if err != nil {
-		fmt.Println("[ERRO] ============== Build failed ===================")
+		colorLog("[ERRO] ============== Build failed ===================\n")
 		return
 	}
-	fmt.Println("[SUCC] Build was successful")
+	colorLog("[SUCC] Build was successful\n")
 	Restart(appname)
 }
 
@@ -119,7 +137,7 @@ func Restart(appname string) {
 }
 
 func Start(appname string) {
-	fmt.Println("[INFO] Restarting", appname)
+	colorLog("[INFO] Restarting %s ...\n", appname)
 	if strings.Index(appname, "./") == -1 {
 		appname = "./" + appname
 	}
