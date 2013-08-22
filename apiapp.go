@@ -194,6 +194,8 @@ func createapi(cmd *Command, args []string) {
 	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
 	fmt.Println("create models:", path.Join(apppath, "models"))
+	os.Mkdir(path.Join(apppath, "tests"), 0755)
+	fmt.Println("create tests:", path.Join(apppath, "tests"))
 
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
