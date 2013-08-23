@@ -54,6 +54,8 @@ func NewWatcher(paths []string) {
 				log.Fatal("error:", err)
 			}
 		}
+
+		time.Sleep(500 * time.Millisecond)
 	}()
 
 	colorLog("[INFO] Initializing watcher...\n")
@@ -70,16 +72,17 @@ func NewWatcher(paths []string) {
 
 // getFileModTime retuens unix timestamp of `os.File.ModTime` by given path.
 func getFileModTime(path string) int64 {
+	path = strings.Replace(path, "\\", "/", -1)
 	f, err := os.Open(path)
 	if err != nil {
-		colorLog("[ERRO] Fail to open file[ %s ]", err)
+		colorLog("[ERRO] Fail to open file[ %s ]\n", err)
 		return time.Now().Unix()
 	}
 	defer f.Close()
 
 	fi, err := f.Stat()
 	if err != nil {
-		colorLog("[ERRO] Fail to get file information[ %s ]", err)
+		colorLog("[ERRO] Fail to get file information[ %s ]\n", err)
 		return time.Now().Unix()
 	}
 
