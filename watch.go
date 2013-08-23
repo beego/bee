@@ -150,6 +150,7 @@ func Start(appname string) {
 	cmd.Stderr = os.Stderr
 
 	go cmd.Run()
+	started<-true
 }
 
 // checkTMPFile returns true if the event was for TMP files.

@@ -50,6 +50,10 @@ const (
 // Errors have to surrounded by "[ " and " ]"(space).
 func colorLog(format string, a ...interface{}) {
 	log := fmt.Sprintf(format, a...)
+	if len(log) == 0 {
+		return
+	}
+
 	if runtime.GOOS != "windows" {
 		var clog string
 
