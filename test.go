@@ -1,28 +1,30 @@
 package main
 
 import (
-	"os"
-	path "path/filepath"
-	"os/exec"
-	"time"
 	"bytes"
+	"os"
+	"os/exec"
+	path "path/filepath"
+	"time"
+
+	"github.com/Unknwon/com"
 )
 
 var cmdTest = &Command{
 	UsageLine: "test [appname]",
 	Short:     "test the app",
-	Long: ``,
+	Long:      ``,
 }
 
 func init() {
 	cmdTest.Run = testApp
 }
 
-var started= make(chan bool)
+var started = make(chan bool)
 
 func testApp(cmd *Command, args []string) {
 	if len(args) != 1 {
-		colorLog("[ERRO] Cannot start running[ %s ]\n",
+		com.ColorLog("[ERRO] Cannot start running[ %s ]\n",
 			"argument 'appname' is missing")
 		os.Exit(2)
 	}
@@ -31,7 +33,7 @@ func testApp(cmd *Command, args []string) {
 
 	err := loadConfig()
 	if err != nil {
-		colorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
+		com.ColorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
 	}
 	var paths []string
 	paths = append(paths,
@@ -56,27 +58,27 @@ func testApp(cmd *Command, args []string) {
 	}
 }
 
-func runTest(){
-	colorLog("[INFO] Start testing...\n")
-	time.Sleep(time.Second*5)
+func runTest() {
+	com.ColorLog("[INFO] Start testing...\n")
+	time.Sleep(time.Second * 5)
 	path, _ := os.Getwd()
-	os.Chdir(path+"/tests")
+	os.Chdir(path + "/tests")
 
 	var err error
 	icmd := exec.Command("go", "test")
-	var out,errbuffer bytes.Buffer
+	var out, errbuffer bytes.Buffer
 	icmd.Stdout = &out
 	icmd.Stderr = &errbuffer
-	colorLog("[INFO] ============== Test Begin ===================\n")
+	com.ColorLog("[INFO] ============== Test Begin ===================\n")
 	err = icmd.Run()
-	colorLog(out.String())
-	colorLog(errbuffer.String())
-	colorLog("[INFO] ============== Test End ===================\n")
+	com.ColorLog(out.String())
+	com.ColorLog(errbuffer.String())
+	com.ColorLog("[INFO] ============== Test End ===================\n")
 
 	if err != nil {
-		colorLog("[ERRO] ============== Test failed ===================\n")
-		colorLog("[ERRO] " ,err)
+		com.ColorLog("[ERRO] ============== Test failed ===================\n")
+		com.ColorLog("[ERRO] ", err)
 		return
 	}
-	colorLog("[SUCC] Test finish\n")
+	com.ColorLog("[SUCC] Test finish\n")
 }

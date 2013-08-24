@@ -5,6 +5,8 @@ import (
 	"os"
 	path "path/filepath"
 	"runtime"
+
+	"github.com/Unknwon/com"
 )
 
 var cmdRun = &Command{
@@ -68,7 +70,7 @@ var conf struct {
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
 	if len(args) != 1 {
-		colorLog("[ERRO] Cannot start running[ %s ]\n",
+		com.ColorLog("[ERRO] Cannot start running[ %s ]\n",
 			"argument 'appname' is missing")
 		os.Exit(2)
 	}
@@ -77,7 +79,7 @@ func runApp(cmd *Command, args []string) {
 
 	err := loadConfig()
 	if err != nil {
-		colorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
+		com.ColorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
 	}
 	var paths []string
 	paths = append(paths,
@@ -111,7 +113,7 @@ func loadConfig() error {
 		}
 	} else {
 		defer f.Close()
-		colorLog("[INFO] Detected bee.json\n")
+		com.ColorLog("[INFO] Detected bee.json\n")
 		d := json.NewDecoder(f)
 		err = d.Decode(&conf)
 		if err != nil {
