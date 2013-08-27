@@ -54,6 +54,7 @@ import (
 
 func main() {
 	beego.RESTRouter("/object", &controllers.ObejctController{})
+	beego.Router("/ping", &controllers.ObejctController{},"get:Ping")
 	beego.Run()
 }
 `
@@ -170,6 +171,31 @@ func (this *ObejctController) Delete() {
 	this.Data["json"] = "delete success!"
 	this.ServeJson()
 }
+
+func (this *ObejctController) Ping() {
+    this.Ctx.WriteString("pong")
+}
+
+`
+
+var apiTests = `package tests
+
+import (
+    "testing"
+	beetest "github.com/fanngyuan/beego/testing"
+	"io/ioutil"
+)
+
+func TestHelloWorld(t *testing.T) {
+	request:=beetest.Get("/ping")
+	response,_:=request.Response()
+	defer response.Body.Close()
+	contents, _ := ioutil.ReadAll(response.Body)
+	if string(contents)!="pong"{
+        t.Errorf("response sould be pong")
+    }
+}
+
 `
 
 func init() {
@@ -204,6 +230,10 @@ func createapi(cmd *Command, args []string) {
 	fmt.Println("create controllers default.go:", path.Join(apppath, "controllers", "default.go"))
 	writetofile(path.Join(apppath, "controllers", "default.go"),
 		strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
+
+	fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
+	writetofile(path.Join(apppath, "tests", "default_test.go"),
+		apiTests)
 
 	fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
 	writetofile(path.Join(apppath, "models", "object.go"), apiModels)
