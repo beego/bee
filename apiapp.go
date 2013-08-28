@@ -182,7 +182,7 @@ var apiTests = `package tests
 
 import (
     "testing"
-	beetest "github.com/fanngyuan/beego/testing"
+	beetest "github.com/astaxie/beego/testing"
 	"io/ioutil"
 )
 
