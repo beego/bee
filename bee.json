@@ -4,5 +4,14 @@
 		"controllers": "",
 		"models": "",
 		"others": []
+	},
+	"bale": {
+		"import": "github.com/astaxie/bee/bale",
+		"dirs": [
+			"views", "static", "conf"
+		],
+		"ignore_ext": [
+			".go"
+		]
 	}
 }

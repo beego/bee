@@ -1,4 +1,4 @@
-// Copyright 2013 Bee Authors
+// Copyright 2013 bee authors
 //
 // Licensed under the Apache License, Version 2.0 (the "License"): you may
 // not use this file except in compliance with the License. You may obtain
@@ -77,6 +77,7 @@ var commands = []*Command{
 	cmdApiapp,
 	cmdRouter,
 	cmdTest,
+	cmdBale,
 	//cmdReStart,
 }
 
