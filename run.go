@@ -67,8 +67,8 @@ func init() {
 var appname string
 var conf struct {
 	// Indicates whether execute "go install" before "go build".
-	GoInstall bool `json:"go_install"`
-
+	GoInstall bool     `json:"go_install"`
+	WatchExt  []string `json:"watch_ext"`
 	DirStruct struct {
 		Controllers string
 		Models      string
@@ -141,5 +141,8 @@ func loadConfig() error {
 	if len(conf.DirStruct.Models) == 0 {
 		conf.DirStruct.Models = "models"
 	}
+
+	// Append watch exts.
+	watchExts = append(watchExts, conf.WatchExt...)
 	return nil
 }

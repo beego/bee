@@ -50,7 +50,7 @@ func NewWatcher(paths []string) {
 				if checkTMPFile(e.Name) {
 					continue
 				}
-				if !checkIsGoFile(e.Name) {
+				if !chekcIfWatchExt(e.Name) {
 					continue
 				}
 
@@ -178,10 +178,14 @@ func checkTMPFile(name string) bool {
 	return false
 }
 
-// checkIsGoFile returns true if the name HasSuffix ".go".
-func checkIsGoFile(name string) bool {
-	if strings.HasSuffix(name, ".go") {
-		return true
+var watchExts = []string{".go"}
+
+// chekcIfWatchExt returns true if the name HasSuffix <watch_ext>.
+func chekcIfWatchExt(name string) bool {
+	for _, s := range watchExts {
+		if strings.HasSuffix(name, s) {
+			return true
+		}
 	}
 	return false
 }
