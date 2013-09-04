@@ -8,7 +8,7 @@
 	"bale": {
 		"import": "github.com/beego/beeweb/bale",
 		"dirs": [
-			"views", "static", "conf"
+			"views", "static"
 		],
 		"ignore_ext": [
 			".go", ".DS_Store"
