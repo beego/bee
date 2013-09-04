@@ -6,12 +6,12 @@
 		"others": []
 	},
 	"bale": {
-		"import": "github.com/astaxie/bee/bale",
+		"import": "github.com/beego/beeweb/bale",
 		"dirs": [
 			"views", "static", "conf"
 		],
 		"ignore_ext": [
-			".go"
+			".go", ".DS_Store"
 		]
 	}
 }
