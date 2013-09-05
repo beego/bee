@@ -56,6 +56,11 @@ func runBale(cmd *Command, args []string) {
 
 	// Pack and compress data.
 	for _, p := range conf.Bale.Dirs {
+		if !com.IsExist(p) {
+			com.ColorLog("[WARN] Skipped directory( %s )\n", p)
+			continue
+		}
+		com.ColorLog("[INFO] Packing directory( %s )\n", p)
 		filepath.Walk(p, walkFn)
 	}
 
