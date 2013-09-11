@@ -21,7 +21,6 @@ import (
 	"runtime"
 
 	"github.com/Unknwon/com"
-	"github.com/Unknwon/hv"
 )
 
 var cmdRun = &Command{
