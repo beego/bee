@@ -21,6 +21,7 @@ import (
 	"runtime"
 
 	"github.com/Unknwon/com"
+	"github.com/Unknwon/hv"
 )
 
 var cmdRun = &Command{
@@ -66,8 +67,6 @@ func init() {
 
 var appname string
 var conf struct {
-	// Indicates whether to watch imports changes.
-	WatchImports bool `json:"watch_imports"`
 	// Indicates whether execute "go install" before "go build".
 	GoInstall bool     `json:"go_install"`
 	WatchExt  []string `json:"watch_ext"`
