@@ -66,6 +66,8 @@ func init() {
 
 var appname string
 var conf struct {
+	// Indicates whether to watch imports changes.
+	WatchImports bool `json:"watch_imports"`
 	// Indicates whether execute "go install" before "go build".
 	GoInstall bool     `json:"go_install"`
 	WatchExt  []string `json:"watch_ext"`
@@ -84,12 +86,13 @@ var conf struct {
 
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
-	if len(args) != 1 {
-		com.ColorLog("[ERRO] Cannot start running[ %s ]\n",
-			"argument 'appname' is missing")
-		os.Exit(2)
-	}
 	crupath, _ := os.Getwd()
+	if len(args) != 1 {
+		appname = path.Base(crupath)
+		com.ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+	} else {
+		appname = args[0]
+	}
 	Debugf("current path:%s\n", crupath)
 
 	err := loadConfig()
@@ -106,7 +109,6 @@ func runApp(cmd *Command, args []string) {
 	paths = append(paths, conf.DirStruct.Others...)
 
 	NewWatcher(paths)
-	appname = args[0]
 	Autobuild()
 	for {
 		select {

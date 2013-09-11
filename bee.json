@@ -1,4 +1,5 @@
 {
+	"watch_imports": true,
 	"go_install": false,
 	"watch_ext": [],
 	"dir_structure":{
