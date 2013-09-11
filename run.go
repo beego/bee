@@ -19,6 +19,7 @@ import (
 	"os"
 	path "path/filepath"
 	"runtime"
+	"strings"
 
 	"github.com/Unknwon/com"
 )
@@ -104,7 +105,15 @@ func runApp(cmd *Command, args []string) {
 		path.Join(crupath, "./")) // Current path.
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
-	paths = append(paths, conf.DirStruct.Others...)
+	gps := com.GetGOPATHs()
+	if len(gps) == 0 {
+		com.ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
+		os.Exit(2)
+	}
+	gopath := gps[0]
+	for _, p := range conf.DirStruct.Others {
+		paths = append(paths, strings.Replace(p, "$GOPATH", gopath, -1))
+	}
 
 	NewWatcher(paths)
 	Autobuild()
