@@ -1,24 +1,24 @@
 package main
 
 import (
-	"os"
-	path "path/filepath"
-	"os/exec"
-	"time"
 	"bytes"
+	"os"
+	"os/exec"
+	path "path/filepath"
+	"time"
 )
 
 var cmdTest = &Command{
 	UsageLine: "test [appname]",
 	Short:     "test the app",
-	Long: ``,
+	Long:      ``,
 }
 
 func init() {
 	cmdTest.Run = testApp
 }
 
-var started= make(chan bool)
+var started = make(chan bool)
 
 func testApp(cmd *Command, args []string) {
 	if len(args) != 1 {
@@ -56,15 +56,15 @@ func testApp(cmd *Command, args []string) {
 	}
 }
 
-func runTest(){
+func runTest() {
 	colorLog("[INFO] Start testing...\n")
-	time.Sleep(time.Second*5)
+	time.Sleep(time.Second * 5)
 	path, _ := os.Getwd()
-	os.Chdir(path+"/tests")
+	os.Chdir(path + "/tests")
 
 	var err error
 	icmd := exec.Command("go", "test")
-	var out,errbuffer bytes.Buffer
+	var out, errbuffer bytes.Buffer
 	icmd.Stdout = &out
 	icmd.Stderr = &errbuffer
 	colorLog("[INFO] ============== Test Begin ===================\n")
@@ -75,7 +75,7 @@ func runTest(){
 
 	if err != nil {
 		colorLog("[ERRO] ============== Test failed ===================\n")
-		colorLog("[ERRO] " ,err)
+		colorLog("[ERRO] ", err)
 		return
 	}
 	colorLog("[SUCC] Test finish\n")
