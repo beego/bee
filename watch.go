@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"sync"
 	"time"
 )
@@ -13,13 +14,14 @@ import (
 var (
 	cmd       *exec.Cmd
 	state     sync.Mutex
-	eventTime = make(map[string]time.Time)
+	eventTime = make(map[string]int64)
 )
 
 func NewWatcher(paths []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
-		log.Fatal(err)
+		colorLog("[ERRO] Fail to create new Watcher[ %s ]\n", err)
+		os.Exit(2)
 	}
 
 	go func() {
@@ -27,17 +29,25 @@ func NewWatcher(paths []string) {
 			select {
 			case e := <-watcher.Event:
 				isbuild := true
-				if t, ok := eventTime[e.String()]; ok {
-					// if 500ms change many times, then ignore it.
-					// for liteide often gofmt code after save.
-					if t.Add(time.Millisecond * 500).After(time.Now()) {
-						isbuild = false
-					}
+
+				// Skip TMP files for Sublime Text.
+				if checkTMPFile(e.Name) {
+					continue
 				}
-				eventTime[e.String()] = time.Now()
+				if !checkIsGoFile(e.Name) {
+					continue
+				}
+
+				mt := getFileModTime(e.Name)
+				if t := eventTime[e.Name]; mt == t {
+					colorLog("[SKIP] # %s #\n", e.String())
+					isbuild = false
+				}
+
+				eventTime[e.Name] = mt
 
 				if isbuild {
-					fmt.Println(e)
+					colorLog("[EVEN] %s\n", e)
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
@@ -45,33 +55,67 @@ func NewWatcher(paths []string) {
 			}
 		}
 	}()
+
+	colorLog("[INFO] Initializing watcher...\n")
 	for _, path := range paths {
-		fmt.Println(path)
+		colorLog("[TRAC] Directory( %s )\n", path)
 		err = watcher.Watch(path)
 		if err != nil {
-			log.Fatal(err)
+			colorLog("[ERRO] Fail to watch directory[ %s ]\n", err)
+			os.Exit(2)
 		}
 	}
 
+}
+
+// getFileModTime retuens unix timestamp of `os.File.ModTime` by given path.
+func getFileModTime(path string) int64 {
+	f, err := os.Open(path)
+	if err != nil {
+		colorLog("[ERRO] Fail to open file[ %s ]", err)
+		return time.Now().Unix()
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		colorLog("[ERRO] Fail to get file information[ %s ]", err)
+		return time.Now().Unix()
+	}
+
+	return fi.ModTime().Unix()
 }
 
 func Autobuild() {
 	state.Lock()
 	defer state.Unlock()
 
-	fmt.Println("start autobuild")
+	colorLog("[INFO] Start building...\n")
 	path, _ := os.Getwd()
 	os.Chdir(path)
-	bcmd := exec.Command("go", "build")
-	bcmd.Stdout = os.Stdout
-	bcmd.Stderr = os.Stderr
-	err := bcmd.Run()
+
+	var err error
+	// For applications use full import path like "github.com/.../.."
+	// are able to use "go install" to reduce build time.
+	if conf.GoInstall {
+		icmd := exec.Command("go", "install")
+		icmd.Stdout = os.Stdout
+		icmd.Stderr = os.Stderr
+		err = icmd.Run()
+	}
+
+	if err == nil {
+		bcmd := exec.Command("go", "build")
+		bcmd.Stdout = os.Stdout
+		bcmd.Stderr = os.Stderr
+		err = bcmd.Run()
+	}
 
 	if err != nil {
-		fmt.Println("============== build failed ===================")
+		colorLog("[ERRO] ============== Build failed ===================\n")
 		return
 	}
-	fmt.Println("build success")
+	colorLog("[SUCC] Build was successful\n")
 	Restart(appname)
 }
 
@@ -93,11 +137,31 @@ func Restart(appname string) {
 }
 
 func Start(appname string) {
-	fmt.Println("start", appname)
+	colorLog("[INFO] Restarting %s ...\n", appname)
+	if strings.Index(appname, "./") == -1 {
+		appname = "./" + appname
+	}
 
 	cmd = exec.Command(appname)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 
 	go cmd.Run()
+	started<-true
+}
+
+// checkTMPFile returns true if the event was for TMP files.
+func checkTMPFile(name string) bool {
+	if strings.HasSuffix(strings.ToLower(name), ".tmp") {
+		return true
+	}
+	return false
+}
+
+// checkIsGoFile returns true if the name HasSuffix ".go".
+func checkIsGoFile(name string) bool {
+	if strings.HasSuffix(name, ".go") {
+		return true
+	}
+	return false
 }
