@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"github.com/howeyc/fsnotify"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -51,7 +50,7 @@ func NewWatcher(paths []string) {
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
-				log.Fatal("error:", err)
+				colorLog("[WARN] %s\n", err.Error()) // No need to exit here
 			}
 		}
 	}()
@@ -125,7 +124,7 @@ func Kill() {
 			fmt.Println("Kill -> ", e)
 		}
 	}()
-	if cmd != nil {
+	if cmd != nil && cmd.Process != nil {
 		cmd.Process.Kill()
 	}
 }
@@ -147,7 +146,7 @@ func Start(appname string) {
 	cmd.Stderr = os.Stderr
 
 	go cmd.Run()
-	started<-true
+	started <- true
 }
 
 // checkTMPFile returns true if the event was for TMP files.
