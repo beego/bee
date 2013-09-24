@@ -5,8 +5,6 @@ import (
 	"os/exec"
 	path "path/filepath"
 	"time"
-
-//	"bytes"
 )
 
 var cmdTest = &Command{
@@ -82,15 +80,10 @@ func runTest() {
 
 	var err error
 	icmd := exec.Command("go", "test")
-	//var out,errbuffer bytes.Buffer
-	//icmd.Stdout = &out
-	//icmd.Stderr = &errbuffer
 	icmd.Stdout = os.Stdout
 	icmd.Stderr = os.Stderr
 	colorLog("[TRAC] ============== Test Begin ===================\n")
 	err = icmd.Run()
-	//colorLog(out.String())
-	//colorLog(errbuffer.String())
 	colorLog("[TRAC] ============== Test End ===================\n")
 
 	if err != nil {

@@ -108,7 +108,7 @@ func createApp(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
 	fmt.Println(path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), string(path.Separator)), -1))
+	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
 
 	colorLog("[SUCC] New application successfully created!\n")
 }
