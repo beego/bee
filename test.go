@@ -2,23 +2,36 @@ package main
 
 import (
 	"os"
-	path "path/filepath"
 	"os/exec"
+	path "path/filepath"
 	"time"
-	"bytes"
 )
 
 var cmdTest = &Command{
 	UsageLine: "test [appname]",
 	Short:     "test the app",
-	Long: ``,
+	Long:      ``,
 }
 
 func init() {
 	cmdTest.Run = testApp
 }
 
-var started= make(chan bool)
+func safePathAppend(arr []string, paths ...string) []string {
+	for _, path := range paths {
+		if pathExists(path) {
+			arr = append(arr, path)
+		}
+	}
+	return arr
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
+}
+
+var started = make(chan bool)
 
 func testApp(cmd *Command, args []string) {
 	if len(args) != 1 {
@@ -34,7 +47,7 @@ func testApp(cmd *Command, args []string) {
 		colorLog("[ERRO] Fail to parse bee.json[ %s ]", err)
 	}
 	var paths []string
-	paths = append(paths,
+	paths = safePathAppend(paths,
 		path.Join(crupath, conf.DirStruct.Controllers),
 		path.Join(crupath, conf.DirStruct.Models),
 		path.Join(crupath, "./")) // Current path.
@@ -50,32 +63,32 @@ func testApp(cmd *Command, args []string) {
 		select {
 		case <-started:
 			runTest()
-			Kill()
-			os.Exit(0)
+			//Kill()
+			//os.Exit(0)
 		}
 	}
 }
 
-func runTest(){
+func runTest() {
 	colorLog("[INFO] Start testing...\n")
-	time.Sleep(time.Second*5)
-	path, _ := os.Getwd()
-	os.Chdir(path+"/tests")
+	time.Sleep(time.Second * 1)
+	crupwd, _ := os.Getwd()
+	testDir := path.Join(crupwd, "tests")
+	if pathExists(testDir) {
+		os.Chdir(testDir)
+	}
 
 	var err error
 	icmd := exec.Command("go", "test")
-	var out,errbuffer bytes.Buffer
-	icmd.Stdout = &out
-	icmd.Stderr = &errbuffer
-	colorLog("[INFO] ============== Test Begin ===================\n")
+	icmd.Stdout = os.Stdout
+	icmd.Stderr = os.Stderr
+	colorLog("[TRAC] ============== Test Begin ===================\n")
 	err = icmd.Run()
-	colorLog(out.String())
-	colorLog(errbuffer.String())
-	colorLog("[INFO] ============== Test End ===================\n")
+	colorLog("[TRAC] ============== Test End ===================\n")
 
 	if err != nil {
 		colorLog("[ERRO] ============== Test failed ===================\n")
-		colorLog("[ERRO] " ,err)
+		colorLog("[ERRO] ", err)
 		return
 	}
 	colorLog("[SUCC] Test finish\n")
