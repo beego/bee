@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 )
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -41,6 +42,11 @@ const (
 	Magenta
 	//NRed      = uint8(31) // Normal
 	EndColor = "\033[0m"
+
+	TRAC = "TRAC"
+	ERRO = "ERRO"
+	WARN = "WARN"
+	SUCC = "SUCC"
 )
 
 // colorLog colors log and print to stdout.
@@ -80,20 +86,22 @@ func colorLog(format string, a ...interface{}) {
 		log = clog + log
 	}
 
-	fmt.Print(log)
+	var currentTime = time.Now()
+
+	fmt.Print(currentTime.Format("2006-01-02 03:04:05 "+log))
 }
 
 // getColorLevel returns colored level string by given level.
 func getColorLevel(level string) string {
 	level = strings.ToUpper(level)
 	switch level {
-	case "TRAC":
+	case TRAC:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
-	case "ERRO":
+	case ERRO:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Red, level)
-	case "WARN":
+	case WARN:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Magenta, level)
-	case "SUCC":
+	case SUCC:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Green, level)
 	default:
 		return level
