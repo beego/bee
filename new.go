@@ -222,7 +222,7 @@ var indextpl = `<!DOCTYPE html>
 			    <br />
 			    	Official website: <a href="http://{{.Website}}">{{.Website}}</a>
 			    <br />
-			    	Contact me: {{.Email}}</a>
+			    	Contact me: {{.Email}}
 			    </p>
 			  </div>
 			</div>
