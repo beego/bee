@@ -20,8 +20,6 @@ import (
 	path "path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/Unknwon/com"
 )
 
 var cmdRun = &Command{
@@ -88,7 +86,7 @@ func runApp(cmd *Command, args []string) {
 	crupath, _ := os.Getwd()
 	if len(args) != 1 {
 		appname = path.Base(crupath)
-		com.ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	} else {
 		appname = args[0]
 	}
@@ -96,7 +94,7 @@ func runApp(cmd *Command, args []string) {
 
 	err := loadConfig()
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
 	var paths []string
 	paths = append(paths,
@@ -105,9 +103,9 @@ func runApp(cmd *Command, args []string) {
 		path.Join(crupath, "./")) // Current path.
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
-	gps := com.GetGOPATHs()
+	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		com.ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
 		os.Exit(2)
 	}
 	gopath := gps[0]
@@ -136,7 +134,7 @@ func loadConfig() error {
 		}
 	} else {
 		defer f.Close()
-		com.ColorLog("[INFO] Detected bee.json\n")
+		ColorLog("[INFO] Detected bee.json\n")
 		d := json.NewDecoder(f)
 		err = d.Decode(&conf)
 		if err != nil {

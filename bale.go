@@ -24,8 +24,6 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
-
-	"github.com/Unknwon/com"
 )
 
 var cmdBale = &Command{
@@ -48,7 +46,7 @@ func init() {
 func runBale(cmd *Command, args []string) {
 	err := loadConfig()
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
 
 	os.RemoveAll("bale")
@@ -56,11 +54,11 @@ func runBale(cmd *Command, args []string) {
 
 	// Pack and compress data.
 	for _, p := range conf.Bale.Dirs {
-		if !com.IsExist(p) {
-			com.ColorLog("[WARN] Skipped directory( %s )\n", p)
+		if !IsExist(p) {
+			ColorLog("[WARN] Skipped directory( %s )\n", p)
 			continue
 		}
-		com.ColorLog("[INFO] Packing directory( %s )\n", p)
+		ColorLog("[INFO] Packing directory( %s )\n", p)
 		filepath.Walk(p, walkFn)
 	}
 
@@ -72,18 +70,18 @@ func runBale(cmd *Command, args []string) {
 
 	fw, err := os.Create("bale.go")
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
 		os.Exit(2)
 	}
 	defer fw.Close()
 
 	_, err = fw.Write(buf.Bytes())
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to write data[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to write data[ %s ]\n", err)
 		os.Exit(2)
 	}
 
-	com.ColorLog("[SUCC] Baled resources successfully!\n")
+	ColorLog("[SUCC] Baled resources successfully!\n")
 }
 
 const (
@@ -150,7 +148,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	// Open resource files.
 	fr, err := os.Open(resPath)
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to read file[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to read file[ %s ]\n", err)
 		os.Exit(2)
 	}
 
@@ -169,7 +167,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	os.MkdirAll(path.Dir(resPath), os.ModePerm)
 	fw, err := os.Create("bale/" + resPath + ".go")
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
 		os.Exit(2)
 	}
 	defer fw.Close()

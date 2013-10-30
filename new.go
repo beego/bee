@@ -19,8 +19,6 @@ import (
 	"os"
 	path "path/filepath"
 	"strings"
-
-	"github.com/Unknwon/com"
 )
 
 var cmdNew = &Command{
@@ -56,15 +54,15 @@ func init() {
 func createApp(cmd *Command, args []string) {
 	curpath, _ := os.Getwd()
 	if len(args) != 1 {
-		com.ColorLog("[ERRO] Argument [appname] is missing\n")
+		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
 
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
-		com.ColorLog("[ERRO] $GOPATH not found\n")
-		com.ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+		ColorLog("[ERRO] $GOPATH not found\n")
+		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
 		os.Exit(2)
 	}
 	haspath := false
@@ -82,8 +80,8 @@ func createApp(cmd *Command, args []string) {
 	}
 
 	if !haspath {
-		com.ColorLog("[ERRO] Unable to create an application outside of $GOPATH(%s)\n", gopath)
-		com.ColorLog("[HINT] Change your work directory by `cd ($GOPATH%ssrc)`\n", string(path.Separator))
+		ColorLog("[ERRO] Unable to create an application outside of $GOPATH(%s)\n", gopath)
+		ColorLog("[HINT] Change your work directory by `cd ($GOPATH%ssrc)`\n", string(path.Separator))
 		os.Exit(2)
 	}
 
@@ -126,7 +124,7 @@ func createApp(cmd *Command, args []string) {
 	fmt.Println(path.Join(apppath, "main.go"))
 	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), string(path.Separator)), -1))
 
-	com.ColorLog("[SUCC] New application successfully created!\n")
+	ColorLog("[SUCC] New application successfully created!\n")
 }
 
 var appconf = `appname = {{.Appname}}

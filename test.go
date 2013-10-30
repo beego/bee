@@ -20,8 +20,6 @@ import (
 	"os/exec"
 	path "path/filepath"
 	"time"
-
-	"github.com/Unknwon/com"
 )
 
 var cmdTest = &Command{
@@ -38,7 +36,7 @@ var started = make(chan bool)
 
 func testApp(cmd *Command, args []string) {
 	if len(args) != 1 {
-		com.ColorLog("[ERRO] Cannot start running[ %s ]\n",
+		ColorLog("[ERRO] Cannot start running[ %s ]\n",
 			"argument 'appname' is missing")
 		os.Exit(2)
 	}
@@ -47,7 +45,7 @@ func testApp(cmd *Command, args []string) {
 
 	err := loadConfig()
 	if err != nil {
-		com.ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
 	var paths []string
 	paths = append(paths,
@@ -72,7 +70,7 @@ func testApp(cmd *Command, args []string) {
 }
 
 func runTest() {
-	com.ColorLog("[INFO] Start testing...\n")
+	ColorLog("[INFO] Start testing...\n")
 	time.Sleep(time.Second * 5)
 	path, _ := os.Getwd()
 	os.Chdir(path + "/tests")
@@ -82,16 +80,16 @@ func runTest() {
 	var out, errbuffer bytes.Buffer
 	icmd.Stdout = &out
 	icmd.Stderr = &errbuffer
-	com.ColorLog("[INFO] ============== Test Begin ===================\n")
+	ColorLog("[INFO] ============== Test Begin ===================\n")
 	err = icmd.Run()
-	com.ColorLog(out.String())
-	com.ColorLog(errbuffer.String())
-	com.ColorLog("[INFO] ============== Test End ===================\n")
+	ColorLog(out.String())
+	ColorLog(errbuffer.String())
+	ColorLog("[INFO] ============== Test End ===================\n")
 
 	if err != nil {
-		com.ColorLog("[ERRO] ============== Test failed ===================\n")
-		com.ColorLog("[ERRO] ", err)
+		ColorLog("[ERRO] ============== Test failed ===================\n")
+		ColorLog("[ERRO] ", err)
 		return
 	}
-	com.ColorLog("[SUCC] Test finish\n")
+	ColorLog("[SUCC] Test finish\n")
 }
