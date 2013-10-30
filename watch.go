@@ -16,7 +16,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -66,7 +65,7 @@ func NewWatcher(paths []string) {
 					go Autobuild()
 				}
 			case err := <-watcher.Error:
-				log.Fatal("error:", err)
+				ColorLog("[WARN] %s\n", err.Error()) // No need to exit here
 			}
 		}
 
@@ -143,7 +142,7 @@ func Kill() {
 			fmt.Println("Kill -> ", e)
 		}
 	}()
-	if cmd != nil {
+	if cmd != nil && cmd.Process != nil {
 		cmd.Process.Kill()
 	}
 }

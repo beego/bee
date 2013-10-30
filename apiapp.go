@@ -67,7 +67,8 @@ import (
 //	/object/<objectId>	DELETE					Deleting Objects
 
 func main() {
-	beego.RESTRouter("/object", &controllers.ObejctController{})
+	beego.RESTRouter("/object", &controllers.ObjectController{})
+	beego.Router("/ping", &controllers.ObjectController{},"get:Ping")
 	beego.Run()
 }
 `
@@ -136,20 +137,20 @@ import (
 type ResponseInfo struct {
 }
 
-type ObejctController struct {
+type ObjectController struct {
 	beego.Controller
 }
 
-func (this *ObejctController) Post() {
+func (this *ObjectController) Post() {
 	var ob models.Object
-	json.Unmarshal(this.Ctx.RequestBody, &ob)
+	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
 	objectid := models.AddOne(ob)
 	this.Data["json"] = map[string]string{"ObjectId": objectid}
 	this.ServeJson()
 }
 
-func (this *ObejctController) Get() {
-	objectId := this.Ctx.Params[":objectId"]
+func (this *ObjectController) Get() {
+	objectId := this.Ctx.Input.Param[":objectId"]
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
@@ -164,10 +165,10 @@ func (this *ObejctController) Get() {
 	this.ServeJson()
 }
 
-func (this *ObejctController) Put() {
-	objectId := this.Ctx.Params[":objectId"]
+func (this *ObjectController) Put() {
+	objectId := this.Ctx.Input.Param[":objectId"]
 	var ob models.Object
-	json.Unmarshal(this.Ctx.RequestBody, &ob)
+	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
 
 	err := models.Update(objectId, ob.Score)
 	if err != nil {
@@ -178,12 +179,37 @@ func (this *ObejctController) Put() {
 	this.ServeJson()
 }
 
-func (this *ObejctController) Delete() {
-	objectId := this.Ctx.Params[":objectId"]
+func (this *ObjectController) Delete() {
+	objectId := this.Ctx.Input.Param[":objectId"]
 	models.Delete(objectId)
 	this.Data["json"] = "delete success!"
 	this.ServeJson()
 }
+
+func (this *ObjectController) Ping() {
+    this.Ctx.WriteString("pong")
+}
+
+`
+
+var apiTests = `package tests
+
+import (
+    "testing"
+	beetest "github.com/astaxie/beego/testing"
+	"io/ioutil"
+)
+
+func TestHelloWorld(t *testing.T) {
+	request:=beetest.Get("/ping")
+	response,_:=request.Response()
+	defer response.Body.Close()
+	contents, _ := ioutil.ReadAll(response.Body)
+	if string(contents)!="pong"{
+        t.Errorf("response sould be pong")
+    }
+}
+
 `
 
 func init() {
@@ -218,6 +244,10 @@ func createapi(cmd *Command, args []string) {
 	fmt.Println("create controllers default.go:", path.Join(apppath, "controllers", "default.go"))
 	writetofile(path.Join(apppath, "controllers", "default.go"),
 		strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
+
+	fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
+	writetofile(path.Join(apppath, "tests", "default_test.go"),
+		apiTests)
 
 	fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
 	writetofile(path.Join(apppath, "models", "object.go"), apiModels)

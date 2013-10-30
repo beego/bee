@@ -15,7 +15,6 @@
 package main
 
 import (
-	"bytes"
 	"os"
 	"os/exec"
 	path "path/filepath"
@@ -30,6 +29,20 @@ var cmdTest = &Command{
 
 func init() {
 	cmdTest.Run = testApp
+}
+
+func safePathAppend(arr []string, paths ...string) []string {
+	for _, path := range paths {
+		if pathExists(path) {
+			arr = append(arr, path)
+		}
+	}
+	return arr
+}
+
+func pathExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || os.IsExist(err)
 }
 
 var started = make(chan bool)
@@ -48,7 +61,7 @@ func testApp(cmd *Command, args []string) {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
 	var paths []string
-	paths = append(paths,
+	paths = safePathAppend(paths,
 		path.Join(crupath, conf.DirStruct.Controllers),
 		path.Join(crupath, conf.DirStruct.Models),
 		path.Join(crupath, "./")) // Current path.
@@ -63,28 +76,28 @@ func testApp(cmd *Command, args []string) {
 		select {
 		case <-started:
 			runTest()
-			Kill()
-			os.Exit(0)
+			//Kill()
+			//os.Exit(0)
 		}
 	}
 }
 
 func runTest() {
 	ColorLog("[INFO] Start testing...\n")
-	time.Sleep(time.Second * 5)
-	path, _ := os.Getwd()
-	os.Chdir(path + "/tests")
+	time.Sleep(time.Second * 1)
+	crupwd, _ := os.Getwd()
+	testDir := path.Join(crupwd, "tests")
+	if pathExists(testDir) {
+		os.Chdir(testDir)
+	}
 
 	var err error
 	icmd := exec.Command("go", "test")
-	var out, errbuffer bytes.Buffer
-	icmd.Stdout = &out
-	icmd.Stderr = &errbuffer
-	ColorLog("[INFO] ============== Test Begin ===================\n")
+	icmd.Stdout = os.Stdout
+	icmd.Stderr = os.Stderr
+	ColorLog("[TRAC] ============== Test Begin ===================\n")
 	err = icmd.Run()
-	ColorLog(out.String())
-	ColorLog(errbuffer.String())
-	ColorLog("[INFO] ============== Test End ===================\n")
+	ColorLog("[TRAC] ============== Test End ===================\n")
 
 	if err != nil {
 		ColorLog("[ERRO] ============== Test failed ===================\n")
