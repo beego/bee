@@ -111,18 +111,23 @@ func Autobuild() {
 	path, _ := os.Getwd()
 	os.Chdir(path)
 
+	cmdName := "go"
+	if conf.Gopm.Enable {
+		cmdName = "gopm"
+	}
+
 	var err error
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
 	if conf.GoInstall {
-		icmd := exec.Command("go", "install")
+		icmd := exec.Command(cmdName, "install")
 		icmd.Stdout = os.Stdout
 		icmd.Stderr = os.Stderr
 		err = icmd.Run()
 	}
 
 	if err == nil {
-		bcmd := exec.Command("go", "build")
+		bcmd := exec.Command(cmdName, "build")
 		bcmd.Stdout = os.Stdout
 		bcmd.Stderr = os.Stderr
 		err = bcmd.Run()

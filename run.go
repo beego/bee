@@ -15,7 +15,6 @@
 package main
 
 import (
-	"encoding/json"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -44,42 +43,11 @@ when the file has changed bee will auto go build and restart the app
 `,
 }
 
-var defaultJson = `
-{
-	"go_install": false,
-	"dir_structure":{
-		"controllers": "",
-		"models": "",
-		"others": []
-	},
-	"main_files":{
-		"main.go": "",
-		"others": []
-	}
-}
-`
-
 func init() {
 	cmdRun.Run = runApp
 }
 
 var appname string
-var conf struct {
-	// Indicates whether execute "go install" before "go build".
-	GoInstall bool     `json:"go_install"`
-	WatchExt  []string `json:"watch_ext"`
-	DirStruct struct {
-		Controllers string
-		Models      string
-		Others      []string // Other directories.
-	} `json:"dir_structure"`
-
-	Bale struct {
-		Import string
-		Dirs   []string
-		IngExt []string `json:"ignore_ext"`
-	}
-}
 
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
@@ -96,6 +64,7 @@ func runApp(cmd *Command, args []string) {
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
+
 	var paths []string
 	paths = append(paths,
 		path.Join(crupath, conf.DirStruct.Controllers),
@@ -121,35 +90,4 @@ func runApp(cmd *Command, args []string) {
 			runtime.Goexit()
 		}
 	}
-}
-
-// loadConfig loads customized configuration.
-func loadConfig() error {
-	f, err := os.Open("bee.json")
-	if err != nil {
-		// Use default.
-		err = json.Unmarshal([]byte(defaultJson), &conf)
-		if err != nil {
-			return err
-		}
-	} else {
-		defer f.Close()
-		ColorLog("[INFO] Detected bee.json\n")
-		d := json.NewDecoder(f)
-		err = d.Decode(&conf)
-		if err != nil {
-			return err
-		}
-	}
-	// Set variables.
-	if len(conf.DirStruct.Controllers) == 0 {
-		conf.DirStruct.Controllers = "controllers"
-	}
-	if len(conf.DirStruct.Models) == 0 {
-		conf.DirStruct.Models = "models"
-	}
-
-	// Append watch exts.
-	watchExts = append(watchExts, conf.WatchExt...)
-	return nil
 }

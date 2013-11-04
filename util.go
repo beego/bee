@@ -153,7 +153,7 @@ func getColorLevel(level string) string {
 }
 
 // IsExist returns whether a file or directory exists.
-func IsExist(path string) bool {
+func isExist(path string) bool {
 	_, err := os.Stat(path)
 	return err == nil || os.IsExist(err)
 }

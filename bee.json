@@ -1,7 +1,11 @@
 {
+	"version": 0,
+	"gopm": {
+		"enable": false
+	},
 	"go_install": false,
 	"watch_ext": [],
-	"dir_structure":{
+	"dir_structure": {
 		"controllers": "",
 		"models": "",
 		"others": []
