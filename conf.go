@@ -25,6 +25,7 @@ var defaultConf = `{
 	"version": 0,
 	"gopm": {
 		"enable": false,
+		"install": false
 	},
 	"go_install": false,
 	"watch_ext": [],
