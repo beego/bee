@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -127,10 +128,21 @@ func Autobuild() {
 	}
 
 	if err == nil {
-		bcmd := exec.Command(cmdName, "build")
-		bcmd.Stdout = os.Stdout
-		bcmd.Stderr = os.Stderr
-		err = bcmd.Run()
+		appName := appname
+		if runtime.GOOS == "windows" {
+			appName += ".exe"
+		}
+		binPath := GetGOPATHs()[0] + "/bin/" + appName
+
+		if conf.GoInstall && isExist(binPath) {
+			os.Rename(binPath, appName)
+			ColorLog("[INFO] Build command reduced\n")
+		} else {
+			bcmd := exec.Command(cmdName, "build")
+			bcmd.Stdout = os.Stdout
+			bcmd.Stderr = os.Stderr
+			err = bcmd.Run()
+		}
 	}
 
 	if err != nil {
