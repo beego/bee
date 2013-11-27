@@ -50,8 +50,9 @@ var conf struct {
 		Models      string
 		Others      []string // Other directories.
 	} `json:"dir_structure"`
-
-	Bale struct {
+	CmdArgs []string `json:"cmd_args"`
+	Envs    []string
+	Bale    struct {
 		Import string
 		Dirs   []string
 		IngExt []string `json:"ignore_ext"`

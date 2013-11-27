@@ -179,6 +179,8 @@ func Start(appname string) {
 	cmd = exec.Command(appname)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	cmd.Args = conf.CmdArgs
+	cmd.Env = conf.Envs
 
 	go cmd.Run()
 	ColorLog("[INFO] %s is running...\n", appname)

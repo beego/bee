@@ -11,6 +11,8 @@
 		"models": "",
 		"others": []
 	},
+	"cmd_args": [],
+	"envs": [],
 	"bale": {
 		"import": "github.com/beego/beeweb/bale",
 		"dirs": [
