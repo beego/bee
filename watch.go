@@ -152,6 +152,9 @@ func Autobuild() {
 
 	if err != nil {
 		ColorLog("[ERRO] ============== Build failed ===================\n")
+		fmt.Print("Press 'enter' to rebuild...")
+		fmt.Scanln()
+		go Autobuild()
 		return
 	}
 	ColorLog("[SUCC] Build was successful\n")
