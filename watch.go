@@ -27,9 +27,10 @@ import (
 )
 
 var (
-	cmd       *exec.Cmd
-	state     sync.Mutex
-	eventTime = make(map[string]int64)
+	cmd         *exec.Cmd
+	state       sync.Mutex
+	eventTime   = make(map[string]int64)
+	buildPeriod time.Time
 )
 
 func NewWatcher(paths []string) {
@@ -53,6 +54,12 @@ func NewWatcher(paths []string) {
 					continue
 				}
 
+				// Prevent duplicated builds.
+				if buildPeriod.Add(1 * time.Second).After(time.Now()) {
+					continue
+				}
+				buildPeriod = time.Now()
+
 				mt := getFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
 					ColorLog("[SKIP] # %s #\n", e.String())
@@ -69,8 +76,6 @@ func NewWatcher(paths []string) {
 				ColorLog("[WARN] %s\n", err.Error()) // No need to exit here
 			}
 		}
-
-		time.Sleep(500 * time.Millisecond)
 	}()
 
 	ColorLog("[INFO] Initializing watcher...\n")
