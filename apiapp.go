@@ -150,7 +150,7 @@ func (this *ObjectController) Post() {
 }
 
 func (this *ObjectController) Get() {
-	objectId := this.Ctx.Input.Param[":objectId"]
+	objectId := this.Ctx.Input.Params[":objectId"]
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
@@ -166,7 +166,7 @@ func (this *ObjectController) Get() {
 }
 
 func (this *ObjectController) Put() {
-	objectId := this.Ctx.Input.Param[":objectId"]
+	objectId := this.Ctx.Input.Params[":objectId"]
 	var ob models.Object
 	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
 
@@ -180,7 +180,7 @@ func (this *ObjectController) Put() {
 }
 
 func (this *ObjectController) Delete() {
-	objectId := this.Ctx.Input.Param[":objectId"]
+	objectId := this.Ctx.Input.Params[":objectId"]
 	models.Delete(objectId)
 	this.Data["json"] = "delete success!"
 	this.ServeJson()
