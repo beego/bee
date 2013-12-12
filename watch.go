@@ -125,7 +125,7 @@ func Autobuild() {
 	var err error
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
-	if conf.GoInstall {
+	if conf.GoInstall || conf.Gopm.Install {
 		icmd := exec.Command(cmdName, "install")
 		icmd.Stdout = os.Stdout
 		icmd.Stderr = os.Stderr
@@ -152,9 +152,6 @@ func Autobuild() {
 
 	if err != nil {
 		ColorLog("[ERRO] ============== Build failed ===================\n")
-		fmt.Print("Press 'enter' to rebuild...")
-		fmt.Scanln()
-		go Autobuild()
 		return
 	}
 	ColorLog("[SUCC] Build was successful\n")
