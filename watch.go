@@ -137,6 +137,9 @@ func Autobuild() {
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
+		if isExist(appName) {
+			os.Remove(appName)
+		}
 		binPath := GetGOPATHs()[0] + "/bin/" + appName
 
 		if conf.GoInstall && isExist(binPath) {
