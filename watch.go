@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -126,10 +127,24 @@ func Autobuild() {
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
 	if conf.GoInstall || conf.Gopm.Install {
-		icmd := exec.Command(cmdName, "install")
-		icmd.Stdout = os.Stdout
-		icmd.Stderr = os.Stderr
+		icmd := exec.Command("go", "list", "./...")
+		buf := bytes.NewBuffer([]byte(""))
+		icmd.Stdout = buf
 		err = icmd.Run()
+		if err == nil {
+			list := strings.Split(buf.String(), "\n")[1:]
+			for _, pkg := range list {
+				if len(pkg) == 0 {
+					continue
+				}
+				fmt.Println(pkg)
+				icmd = exec.Command(cmdName, "install", pkg)
+				err = icmd.Run()
+				if err != nil {
+					break
+				}
+			}
+		}
 	}
 
 	if err == nil {
@@ -137,20 +152,11 @@ func Autobuild() {
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
-		if isExist(appName) {
-			os.Remove(appName)
-		}
-		binPath := GetGOPATHs()[0] + "/bin/" + appName
 
-		if conf.GoInstall && isExist(binPath) {
-			os.Rename(binPath, appName)
-			ColorLog("[INFO] Build command reduced\n")
-		} else {
-			bcmd := exec.Command(cmdName, "build")
-			bcmd.Stdout = os.Stdout
-			bcmd.Stderr = os.Stderr
-			err = bcmd.Run()
-		}
+		bcmd := exec.Command(cmdName, "build")
+		bcmd.Stdout = os.Stdout
+		bcmd.Stderr = os.Stderr
+		err = bcmd.Run()
 	}
 
 	if err != nil {
@@ -164,11 +170,14 @@ func Autobuild() {
 func Kill() {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println("Kill -> ", e)
+			fmt.Println("Kill.recover -> ", e)
 		}
 	}()
 	if cmd != nil && cmd.Process != nil {
-		cmd.Process.Kill()
+		err := cmd.Process.Kill()
+		if err != nil {
+			fmt.Println("Kill -> ", err)
+		}
 	}
 }
 
