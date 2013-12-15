@@ -45,7 +45,7 @@ compress an beego project
 -b        build specify platform app. default true
 -o        compressed file output dir. default use current path
 -f        format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
--exp      path exclude prefix
+-exp      path exclude prefix. default: .
 -exs      path exclude suffix. default: .go:.DS_Store:.tmp
           all path use : as separator
 -fs       follow symlink. default false
@@ -70,7 +70,7 @@ var (
 func init() {
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
 	fs.StringVar(&appPath, "p", "", "")
-	fs.StringVar(&excludeP, "exp", "", "")
+	fs.StringVar(&excludeP, "exp", ".", "")
 	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "")
 	fs.StringVar(&outputP, "o", "", "")
 	fs.BoolVar(&build, "b", true, "")
