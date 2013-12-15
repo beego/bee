@@ -138,6 +138,8 @@ func Autobuild() {
 					continue
 				}
 				icmd = exec.Command(cmdName, "install", pkg)
+				icmd.Stdout = os.Stdout
+				icmd.Stderr = os.Stderr
 				err = icmd.Run()
 				if err != nil {
 					break
