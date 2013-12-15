@@ -137,7 +137,6 @@ func Autobuild() {
 				if len(pkg) == 0 {
 					continue
 				}
-				fmt.Println(pkg)
 				icmd = exec.Command(cmdName, "install", pkg)
 				err = icmd.Run()
 				if err != nil {
