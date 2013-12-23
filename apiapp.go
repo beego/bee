@@ -216,7 +216,7 @@ import (
 
 // TestGet is a sample to run an endpoint test
 func TestGet(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/", nil)
+	r, _ := http.NewRequest("GET", "/object", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 	

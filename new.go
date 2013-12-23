@@ -184,7 +184,7 @@ import (
 
 // TestMain is a sample to run an endpoint test
 func TestMain(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/object", nil)
+	r, _ := http.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 	
