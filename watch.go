@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,9 +28,10 @@ import (
 )
 
 var (
-	cmd       *exec.Cmd
-	state     sync.Mutex
-	eventTime = make(map[string]int64)
+	cmd         *exec.Cmd
+	state       sync.Mutex
+	eventTime   = make(map[string]int64)
+	buildPeriod time.Time
 )
 
 func NewWatcher(paths []string) {
@@ -53,6 +55,12 @@ func NewWatcher(paths []string) {
 					continue
 				}
 
+				// Prevent duplicated builds.
+				if buildPeriod.Add(1 * time.Second).After(time.Now()) {
+					continue
+				}
+				buildPeriod = time.Now()
+
 				mt := getFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
 					ColorLog("[SKIP] # %s #\n", e.String())
@@ -69,8 +77,6 @@ func NewWatcher(paths []string) {
 				ColorLog("[WARN] %s\n", err.Error()) // No need to exit here
 			}
 		}
-
-		time.Sleep(500 * time.Millisecond)
 	}()
 
 	ColorLog("[INFO] Initializing watcher...\n")
@@ -120,11 +126,26 @@ func Autobuild() {
 	var err error
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
-	if conf.GoInstall {
-		icmd := exec.Command(cmdName, "install")
-		icmd.Stdout = os.Stdout
-		icmd.Stderr = os.Stderr
+	if conf.GoInstall || conf.Gopm.Install {
+		icmd := exec.Command("go", "list", "./...")
+		buf := bytes.NewBuffer([]byte(""))
+		icmd.Stdout = buf
 		err = icmd.Run()
+		if err == nil {
+			list := strings.Split(buf.String(), "\n")[1:]
+			for _, pkg := range list {
+				if len(pkg) == 0 {
+					continue
+				}
+				icmd = exec.Command(cmdName, "install", pkg)
+				icmd.Stdout = os.Stdout
+				icmd.Stderr = os.Stderr
+				err = icmd.Run()
+				if err != nil {
+					break
+				}
+			}
+		}
 	}
 
 	if err == nil {
@@ -132,17 +153,11 @@ func Autobuild() {
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
-		binPath := GetGOPATHs()[0] + "/bin/" + appName
 
-		if conf.GoInstall && isExist(binPath) {
-			os.Rename(binPath, appName)
-			ColorLog("[INFO] Build command reduced\n")
-		} else {
-			bcmd := exec.Command(cmdName, "build")
-			bcmd.Stdout = os.Stdout
-			bcmd.Stderr = os.Stderr
-			err = bcmd.Run()
-		}
+		bcmd := exec.Command(cmdName, "build")
+		bcmd.Stdout = os.Stdout
+		bcmd.Stderr = os.Stderr
+		err = bcmd.Run()
 	}
 
 	if err != nil {
@@ -156,11 +171,14 @@ func Autobuild() {
 func Kill() {
 	defer func() {
 		if e := recover(); e != nil {
-			fmt.Println("Kill -> ", e)
+			fmt.Println("Kill.recover -> ", e)
 		}
 	}()
 	if cmd != nil && cmd.Process != nil {
-		cmd.Process.Kill()
+		err := cmd.Process.Kill()
+		if err != nil {
+			fmt.Println("Kill -> ", err)
+		}
 	}
 }
 

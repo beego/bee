@@ -40,7 +40,8 @@ var conf struct {
 	Version int
 	// gopm support
 	Gopm struct {
-		Enable bool
+		Enable  bool
+		Install bool
 	}
 	// Indicates whether execute "go install" before "go build".
 	GoInstall bool     `json:"go_install"`
