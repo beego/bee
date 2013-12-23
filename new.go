@@ -37,7 +37,7 @@ The [appname] folder has following structure:
     |- controllers
          |- default.go
     |- models
-    |- routes
+    |- routers
          |- router.go	
     |- tests
          |- default_test.go
@@ -106,8 +106,8 @@ func createApp(cmd *Command, args []string) {
 	fmt.Println(path.Join(apppath, "controllers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
 	fmt.Println(path.Join(apppath, "models") + string(path.Separator))
-	os.Mkdir(path.Join(apppath, "routes"), 0755)
-	fmt.Println(path.Join(apppath, "routes") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "routers"), 0755)
+	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println(path.Join(apppath, "tests") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static"), 0755)
