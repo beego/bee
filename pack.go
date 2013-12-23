@@ -43,6 +43,7 @@ compress an beego project
 
 -p        app path. default is current path
 -b        build specify platform app. default true
+-ba       additional args of go build
 -o        compressed file output dir. default use current path
 -f        format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
 -exp      path exclude prefix
@@ -56,15 +57,16 @@ compress an beego project
 }
 
 var (
-	appPath  string
-	excludeP string
-	excludeS string
-	outputP  string
-	fsym     bool
-	ssym     bool
-	build    bool
-	verbose  bool
-	format   string
+	appPath   string
+	excludeP  string
+	excludeS  string
+	outputP   string
+	fsym      bool
+	ssym      bool
+	build     bool
+	buildArgs string
+	verbose   bool
+	format    string
 )
 
 func init() {
@@ -74,6 +76,7 @@ func init() {
 	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "")
 	fs.StringVar(&outputP, "o", "", "")
 	fs.BoolVar(&build, "b", true, "")
+	fs.StringVar(&buildArgs, "ba", "", "")
 	fs.BoolVar(&fsym, "fs", false, "")
 	fs.BoolVar(&ssym, "ss", false, "")
 	fs.BoolVar(&verbose, "v", false, "")
@@ -477,7 +480,16 @@ func packApp(cmd *Command, args []string) {
 			binPath += ".exe"
 		}
 
-		execmd := exec.Command(gobin, "build", "-o", binPath)
+		args := []string{"build", "-o", binPath}
+		if len(buildArgs) > 0 {
+			args = append(args, strings.Fields(buildArgs)...)
+		}
+
+		if verbose {
+			fmt.Println(gobin, " ", strings.Join(args, " "))
+		}
+
+		execmd := exec.Command(gobin, args...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
 		execmd.Dir = thePath
