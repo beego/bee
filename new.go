@@ -149,7 +149,7 @@ runmode = dev
 var maingo = `package main
 
 import (
-	_ "{{.Appname}}/routes"
+	_ "{{.Appname}}/routers"
 	"github.com/astaxie/beego"
 )
 
@@ -158,7 +158,7 @@ func main() {
 }
 
 `
-var router = `package routes
+var router = `package routers
 
 import (
 	"{{.Appname}}/controllers"
@@ -176,7 +176,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	_ "{{.Appname}}/routes"
+	_ "{{.Appname}}/routers"
 		
 	"github.com/astaxie/beego"
 	. "github.com/smartystreets/goconvey/convey"

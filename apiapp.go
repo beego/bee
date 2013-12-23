@@ -57,7 +57,7 @@ copyrequestbody = true
 var apiMaingo = `package main
 
 import (
-	_ "{{.Appname}}/routes"
+	_ "{{.Appname}}/routers"
 	"github.com/astaxie/beego"	
 )
 
@@ -74,7 +74,7 @@ func main() {
 	beego.Run()
 }
 `
-var apirouter = `package routes
+var apirouter = `package routers
 
 import (
 	"{{.Appname}}/controllers"
@@ -200,10 +200,6 @@ func (this *ObjectController) Delete() {
 	this.ServeJson()
 }
 
-func (this *ObjectController) Ping() {
-    this.Ctx.WriteString("pong")
-}
-
 `
 
 var apiTests = `package test
@@ -212,7 +208,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
-	_ "{{.Appname}}/routes"
+	_ "{{.Appname}}/routers"
 		
 	"github.com/astaxie/beego"
 	. "github.com/smartystreets/goconvey/convey"
