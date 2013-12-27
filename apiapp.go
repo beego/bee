@@ -36,9 +36,13 @@ In the appname folder has the follow struct:
 	│   └── app.conf
 	├── controllers
 	│   └── default.go
+	├── routers
+	│   └── router.go
+	├── tests
+	│   └── default_test.go		
 	├── main.go
 	└── models
-	    └── object.go             
+	    └── object.go            
 
 `,
 }
@@ -53,8 +57,8 @@ copyrequestbody = true
 var apiMaingo = `package main
 
 import (
-	"github.com/astaxie/beego"
-	"{{.Appname}}/controllers"
+	_ "{{.Appname}}/routers"
+	"github.com/astaxie/beego"	
 )
 
 //		Objects
@@ -67,11 +71,21 @@ import (
 //	/object/<objectId>	DELETE					Deleting Objects
 
 func main() {
-	beego.RESTRouter("/object", &controllers.ObjectController{})
-	beego.Router("/ping", &controllers.ObjectController{},"get:Ping")
 	beego.Run()
 }
 `
+var apirouter = `package routers
+
+import (
+	"{{.Appname}}/controllers"
+	"github.com/astaxie/beego"
+)
+
+func init() {
+    beego.RESTRouter("/object", &controllers.ObjectController{})
+}
+`
+
 var apiModels = `package models
 
 import (
@@ -186,28 +200,36 @@ func (this *ObjectController) Delete() {
 	this.ServeJson()
 }
 
-func (this *ObjectController) Ping() {
-    this.Ctx.WriteString("pong")
-}
-
 `
 
-var apiTests = `package tests
+var apiTests = `package test
 
 import (
-    "testing"
-	beetest "github.com/astaxie/beego/testing"
-	"io/ioutil"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	_ "{{.Appname}}/routers"
+		
+	"github.com/astaxie/beego"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestHelloWorld(t *testing.T) {
-	request:=beetest.Get("/ping")
-	response,_:=request.Response()
-	defer response.Body.Close()
-	contents, _ := ioutil.ReadAll(response.Body)
-	if string(contents)!="pong"{
-        t.Errorf("response sould be pong")
-    }
+// TestGet is a sample to run an endpoint test
+func TestGet(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/object", nil)
+	w := httptest.NewRecorder()
+	beego.BeeApp.Handlers.ServeHTTP(w, r)
+	
+	beego.Trace("testing", "TestGet", "Code[%d]\n%s", w.Code, w.Body.String())
+	
+	Convey("Subject: Test Station Endpoint\n", t, func() {
+	        Convey("Status Code Should Be 200", func() {
+	                So(w.Code, ShouldEqual, 200)
+	        })
+	        Convey("The Result Should Not Be Empty", func() {
+	                So(w.Body.Len(), ShouldBeGreaterThan, 0)
+	        })
+	})
 }
 
 `
@@ -233,6 +255,8 @@ func createapi(cmd *Command, args []string) {
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
 	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
+	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "routers"), 0755)
 	fmt.Println("create models:", path.Join(apppath, "models"))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
@@ -247,7 +271,11 @@ func createapi(cmd *Command, args []string) {
 
 	fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
 	writetofile(path.Join(apppath, "tests", "default_test.go"),
-		apiTests)
+		strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
+
+	fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
+	writetofile(path.Join(apppath, "routers", "router.go"),
+		strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
 	fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
 	writetofile(path.Join(apppath, "models", "object.go"), apiModels)

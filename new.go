@@ -37,7 +37,11 @@ The [appname] folder has following structure:
     |- controllers
          |- default.go
     |- models
-    |- static
+    |- routers
+         |- router.go	
+    |- tests
+         |- default_test.go
+	|- static
          |- js
          |- css
          |- img             
@@ -102,6 +106,10 @@ func createApp(cmd *Command, args []string) {
 	fmt.Println(path.Join(apppath, "controllers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
 	fmt.Println(path.Join(apppath, "models") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "routers"), 0755)
+	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "tests"), 0755)
+	fmt.Println(path.Join(apppath, "tests") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static"), 0755)
 	fmt.Println(path.Join(apppath, "static") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
@@ -121,6 +129,12 @@ func createApp(cmd *Command, args []string) {
 	fmt.Println(path.Join(apppath, "views", "index.tpl"))
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
+	fmt.Println(path.Join(apppath, "routers", "router.go"))
+	writetofile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+
+	fmt.Println(path.Join(apppath, "tests", "default_test.go"))
+	writetofile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+
 	fmt.Println(path.Join(apppath, "main.go"))
 	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
 
@@ -135,16 +149,59 @@ runmode = dev
 var maingo = `package main
 
 import (
-	"{{.Appname}}/controllers"
+	_ "{{.Appname}}/routers"
 	"github.com/astaxie/beego"
 )
 
 func main() {
-	beego.Router("/", &controllers.MainController{})
 	beego.Run()
 }
 
 `
+var router = `package routers
+
+import (
+	"{{.Appname}}/controllers"
+	"github.com/astaxie/beego"
+)
+
+func init() {
+    beego.Router("/", &controllers.MainController{})
+}
+`
+
+var test = `package test
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+	_ "{{.Appname}}/routers"
+		
+	"github.com/astaxie/beego"
+	. "github.com/smartystreets/goconvey/convey"
+)
+
+// TestMain is a sample to run an endpoint test
+func TestMain(t *testing.T) {
+	r, _ := http.NewRequest("GET", "/", nil)
+	w := httptest.NewRecorder()
+	beego.BeeApp.Handlers.ServeHTTP(w, r)
+	
+	beego.Trace("testing", "TestMain", "Code[%d]\n%s", w.Code, w.Body.String())
+	
+	Convey("Subject: Test Station Endpoint\n", t, func() {
+	        Convey("Status Code Should Be 200", func() {
+	                So(w.Code, ShouldEqual, 200)
+	        })
+	        Convey("The Result Should Not Be Empty", func() {
+	                So(w.Body.Len(), ShouldBeGreaterThan, 0)
+	        })
+	})
+}
+
+`
+
 var controllers = `package controllers
 
 import (

@@ -19,6 +19,8 @@ import (
 	"os/exec"
 	path "path/filepath"
 	"time"
+
+	_ "github.com/smartystreets/goconvey/convey"
 )
 
 var cmdTest = &Command{
