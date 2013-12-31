@@ -41,18 +41,20 @@ var cmdPack = &Command{
 	Long: `
 compress an beego project
 
--p        app path. default is current path
--b        build specify platform app. default true
--ba       additional args of go build
--o        compressed file output dir. default use current path
--f        format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
--exp      path exclude prefix. default: .
--exs      path exclude suffix. default: .go:.DS_Store:.tmp
-          all path use : as separator
--fs       follow symlink. default false
--ss       skip symlink. default false
-          default embed symlink into compressed file
--v        verbose
+-p            app path. default is current path
+-b            build specify platform app. default true
+-ba           additional args of go build
+-be=[]        additional ENV Variables of go build. eg: GOARCH=arm
+-o            compressed file output dir. default use current path
+-f=""         format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
+-exp=""       relpath exclude prefix. default: .
+-exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
+              all path use : as separator
+-exr=[]       file/directory name exclude by Regexp. default: ^.
+-fs=false     follow symlink. default false
+-ss=false     skip symlink. default false
+              default embed symlink into compressed file
+-v=false      verbose
 `,
 }
 
@@ -61,26 +63,41 @@ var (
 	excludeP  string
 	excludeS  string
 	outputP   string
+	excludeR  ListOpts
 	fsym      bool
 	ssym      bool
 	build     bool
 	buildArgs string
+	buildEnvs ListOpts
 	verbose   bool
 	format    string
 )
 
+type ListOpts []string
+
+func (opts *ListOpts) String() string {
+	return fmt.Sprint(*opts)
+}
+
+func (opts *ListOpts) Set(value string) error {
+	*opts = append(*opts, value)
+	return nil
+}
+
 func init() {
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
-	fs.StringVar(&appPath, "p", "", "")
-	fs.StringVar(&excludeP, "exp", ".", "")
-	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "")
-	fs.StringVar(&outputP, "o", "", "")
-	fs.BoolVar(&build, "b", true, "")
-	fs.StringVar(&buildArgs, "ba", "", "")
-	fs.BoolVar(&fsym, "fs", false, "")
-	fs.BoolVar(&ssym, "ss", false, "")
-	fs.BoolVar(&verbose, "v", false, "")
-	fs.StringVar(&format, "f", "tar.gz", "")
+	fs.StringVar(&appPath, "p", "", "app path. default is current path")
+	fs.BoolVar(&build, "b", true, "build specify platform app")
+	fs.StringVar(&buildArgs, "ba", "", "additional args of go build")
+	fs.Var(&buildEnvs, "be", "additional ENV Variables of go build. eg: GOARCH=arm")
+	fs.StringVar(&outputP, "o", "", "compressed file output dir. default use current path")
+	fs.StringVar(&format, "f", "tar.gz", "format. [ tar.gz / zip ] note: zip doesn't support embed symlink, skip it")
+	fs.StringVar(&excludeP, "exp", ".", "path exclude prefix. use : as separator")
+	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "path exclude suffix. use : as separator")
+	fs.Var(&excludeR, "exr", "filename exclude by Regexp")
+	fs.BoolVar(&fsym, "fs", false, "follow symlink")
+	fs.BoolVar(&ssym, "ss", false, "skip symlink")
+	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
 }
@@ -109,6 +126,7 @@ type walkFileTree struct {
 	wak           walker
 	prefix        string
 	excludePrefix []string
+	excludeRegexp []*regexp.Regexp
 	excludeSuffix []string
 	allfiles      map[string]bool
 }
@@ -117,20 +135,31 @@ func (wft *walkFileTree) setPrefix(prefix string) {
 	wft.prefix = prefix
 }
 
-func (wft *walkFileTree) isExclude(name string) bool {
-	if name == "" {
+func (wft *walkFileTree) isExclude(fPath string) bool {
+	if fPath == "" {
 		return true
 	}
+
 	for _, prefix := range wft.excludePrefix {
-		if strings.HasPrefix(name, prefix) {
+		if strings.HasPrefix(fPath, prefix) {
 			return true
 		}
 	}
 	for _, suffix := range wft.excludeSuffix {
-		if strings.HasSuffix(name, suffix) {
+		if strings.HasSuffix(fPath, suffix) {
 			return true
 		}
 	}
+	return false
+}
+
+func (wft *walkFileTree) isExcludeName(name string) bool {
+	for _, r := range wft.excludeRegexp {
+		if r.MatchString(name) {
+			return true
+		}
+	}
+
 	return false
 }
 
@@ -139,8 +168,12 @@ func (wft *walkFileTree) isEmpty(fpath string) bool {
 	defer fh.Close()
 	infos, _ := fh.Readdir(-1)
 	for _, fi := range infos {
-		fp := path.Join(fpath, fi.Name())
+		fn := fi.Name()
+		fp := path.Join(fpath, fn)
 		if wft.isExclude(wft.virPath(fp)) {
+			continue
+		}
+		if wft.isExcludeName(fn) {
 			continue
 		}
 		if fi.Mode()&os.ModeSymlink > 0 {
@@ -195,14 +228,11 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 		return nil
 	}
 
-	name := wft.virPath(fpath)
-	if wft.isExclude(name) {
-		return nil
-	}
-
 	if ssym && fi.Mode()&os.ModeSymlink > 0 {
 		return nil
 	}
+
+	name := wft.virPath(fpath)
 
 	if wft.allfiles[name] {
 		return nil
@@ -227,6 +257,18 @@ func (wft *walkFileTree) iterDirectory(fpath string, fi os.FileInfo) error {
 			return nil
 		}
 		fi = nfi
+	}
+
+	relPath := wft.virPath(fpath)
+
+	if len(relPath) > 0 {
+		if wft.isExcludeName(fi.Name()) {
+			return nil
+		}
+
+		if wft.isExclude(relPath) {
+			return nil
+		}
 	}
 
 	err := wft.walkLeaf(fpath, fi, nil)
@@ -314,7 +356,7 @@ type zipWalk struct {
 func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	isSym := fi.Mode()&os.ModeSymlink > 0
 	if isSym {
-		// golang1.1 doesn't support embed symlink
+		// golang1.2 still not support embed symlink
 		// what i miss something?
 		return false, nil
 	}
@@ -346,9 +388,14 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	return true, nil
 }
 
-func packDirectory(excludePrefix []string, excludeSuffix []string, includePath ...string) (err error) {
-	fmt.Printf("exclude prefix: %s\n", strings.Join(excludePrefix, ":"))
-	fmt.Printf("exclude suffix: %s\n", strings.Join(excludeSuffix, ":"))
+func packDirectory(excludePrefix []string, excludeSuffix []string,
+	excludeRegexp []*regexp.Regexp, includePath ...string) (err error) {
+
+	fmt.Printf("exclude relpath prefix: %s\n", strings.Join(excludePrefix, ":"))
+	fmt.Printf("exclude relpath suffix: %s\n", strings.Join(excludeSuffix, ":"))
+	if len(excludeRegexp) > 0 {
+		fmt.Printf("exclude filename regex: `%s`\n", strings.Join(excludeR, "`, `"))
+	}
 
 	w, err := os.OpenFile(outputP, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
@@ -368,6 +415,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string, includePath .
 		walk.wak = walk
 		walk.excludePrefix = excludePrefix
 		walk.excludeSuffix = excludeSuffix
+		walk.excludeRegexp = excludeRegexp
 		wft = walk
 	} else {
 		walk := new(tarWalk)
@@ -385,6 +433,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string, includePath .
 		walk.wak = walk
 		walk.excludePrefix = excludePrefix
 		walk.excludeSuffix = excludeSuffix
+		walk.excludeRegexp = excludeRegexp
 		wft = walk
 	}
 
@@ -469,11 +518,30 @@ func packApp(cmd *Command, args []string) {
 	os.Mkdir(tmpdir, 0700)
 
 	if build {
-		fmt.Println("GOOS", goos, "GOARCH", goarch)
 		fmt.Println("build", appName)
+
+		var envs []string
+		for _, env := range buildEnvs {
+			parts := strings.SplitN(env, "=", 2)
+			if len(parts) == 2 {
+				k, v := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+				if len(k) > 0 && len(v) > 0 {
+					switch k {
+					case "GOOS":
+						goos = v
+					case "GOARCH":
+						goarch = v
+					default:
+						envs = append(envs, fmt.Sprintf("%s=%s", k, v))
+					}
+				}
+			}
+		}
 
 		os.Setenv("GOOS", goos)
 		os.Setenv("GOARCH", goarch)
+
+		fmt.Println("GOOS", goos, "GOARCH", goarch)
 
 		binPath := path.Join(tmpdir, appName)
 		if goos == "windows" {
@@ -490,6 +558,7 @@ func packApp(cmd *Command, args []string) {
 		}
 
 		execmd := exec.Command(gobin, args...)
+		execmd.Env = append(os.Environ(), envs...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
 		execmd.Dir = thePath
@@ -534,7 +603,18 @@ func packApp(cmd *Command, args []string) {
 		}
 	}
 
-	err = packDirectory(exp, exs, tmpdir, thePath)
+	var exr []*regexp.Regexp
+	for _, r := range excludeR {
+		if len(r) > 0 {
+			if re, err := regexp.Compile(r); err != nil {
+				exitPrint(err.Error())
+			} else {
+				exr = append(exr, re)
+			}
+		}
+	}
+
+	err = packDirectory(exp, exs, exr, tmpdir, thePath)
 	if err != nil {
 		exitPrint(err.Error())
 	}
