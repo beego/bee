@@ -15,6 +15,7 @@
 package main
 
 import (
+	"io/ioutil"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -22,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname]",
+	UsageLine: "run [appname] [watchall]",
 	Short:     "run the app which can hot compile",
 	Long: `
 start the appname throw exec.Command
@@ -52,7 +53,8 @@ var appname string
 func runApp(cmd *Command, args []string) {
 	exit := make(chan bool)
 	crupath, _ := os.Getwd()
-	if len(args) != 1 {
+
+	if len(args) == 0 || args[0] == "watchall" {
 		appname = path.Base(crupath)
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	} else {
@@ -66,10 +68,15 @@ func runApp(cmd *Command, args []string) {
 	}
 
 	var paths []string
-	paths = append(paths,
-		path.Join(crupath, conf.DirStruct.Controllers),
-		path.Join(crupath, conf.DirStruct.Models),
-		path.Join(crupath, "./")) // Current path.
+
+	if len(args) > 0 && args[len(args)-1] == "watchall" {
+		readAppDirectories(crupath, &paths)
+	} else {
+		paths = append(paths,
+			path.Join(crupath, conf.DirStruct.Controllers),
+			path.Join(crupath, conf.DirStruct.Models),
+			path.Join(crupath, "./")) // Current path.
+	}
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
 	gps := GetGOPATHs()
@@ -90,4 +97,30 @@ func runApp(cmd *Command, args []string) {
 			runtime.Goexit()
 		}
 	}
+}
+
+func readAppDirectories(directory string, paths *[]string) {
+	fileInfos, err := ioutil.ReadDir(directory)
+	if err != nil {
+		return
+	}
+
+	useDiectory := false
+	for _, fileInfo := range fileInfos {
+		if fileInfo.IsDir() == true && fileInfo.Name()[0] != '.' {
+			readAppDirectories(directory+"/"+fileInfo.Name(), paths)
+			continue
+		}
+
+		if useDiectory == true {
+			continue
+		}
+
+		if path.Ext(fileInfo.Name()) == ".go" {
+			*paths = append(*paths, directory)
+			useDiectory = true
+		}
+	}
+
+	return
 }
