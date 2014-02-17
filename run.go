@@ -69,7 +69,7 @@ func runApp(cmd *Command, args []string) {
 
 	var paths []string
 
-	if len(args) > 0 && args[len(args)-1] == "watchall" {
+	if conf.DirStruct.WatchAll || (len(args) > 0 && args[len(args)-1] == "watchall") {
 		readAppDirectories(crupath, &paths)
 	} else {
 		paths = append(paths,

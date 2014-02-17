@@ -29,11 +29,14 @@ var defaultConf = `{
 	},
 	"go_install": false,
 	"watch_ext": [],
-	"dir_structure":{
+	"dir_structure": {
+		"watch_all": false,
 		"controllers": "",
 		"models": "",
 		"others": []
-	}
+	},
+	"cmd_args": [],
+	"envs": []
 }
 `
 var conf struct {
@@ -47,6 +50,7 @@ var conf struct {
 	GoInstall bool     `json:"go_install"`
 	WatchExt  []string `json:"watch_ext"`
 	DirStruct struct {
+		WatchAll    bool `json:"watch_all"`
 		Controllers string
 		Models      string
 		Others      []string // Other directories.
