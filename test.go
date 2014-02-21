@@ -71,9 +71,9 @@ func testApp(cmd *Command, args []string) {
 	// and ignore non-go files.
 	paths = append(paths, conf.DirStruct.Others...)
 
-	NewWatcher(paths)
+	NewWatcher(paths, nil)
 	appname = args[0]
-	Autobuild()
+	Autobuild(nil)
 	for {
 		select {
 		case <-started:

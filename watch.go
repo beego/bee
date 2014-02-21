@@ -34,7 +34,7 @@ var (
 	buildPeriod time.Time
 )
 
-func NewWatcher(paths []string) {
+func NewWatcher(paths []string, files []string) {
 	watcher, err := fsnotify.NewWatcher()
 	if err != nil {
 		ColorLog("[ERRO] Fail to create new Watcher[ %s ]\n", err)
@@ -71,7 +71,7 @@ func NewWatcher(paths []string) {
 
 				if isbuild {
 					ColorLog("[EVEN] %s\n", e)
-					go Autobuild()
+					go Autobuild(files)
 				}
 			case err := <-watcher.Error:
 				ColorLog("[WARN] %s\n", err.Error()) // No need to exit here
@@ -110,7 +110,7 @@ func getFileModTime(path string) int64 {
 	return fi.ModTime().Unix()
 }
 
-func Autobuild() {
+func Autobuild(files []string) {
 	state.Lock()
 	defer state.Unlock()
 
@@ -154,7 +154,11 @@ func Autobuild() {
 			appName += ".exe"
 		}
 
-		bcmd := exec.Command(cmdName, "build")
+		args := []string{"build"}
+		args = append(args, "-o", appName)
+		args = append(args, files...)
+
+		bcmd := exec.Command(cmdName, args...)
 		bcmd.Stdout = os.Stdout
 		bcmd.Stderr = os.Stderr
 		err = bcmd.Run()

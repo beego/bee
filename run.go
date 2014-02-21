@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall]",
+	UsageLine: "run [appname] [watchall] [-main=*.go]",
 	Short:     "run the app which can hot compile",
 	Long: `
 start the appname throw exec.Command
@@ -44,8 +44,11 @@ when the file has changed bee will auto go build and restart the app
 `,
 }
 
+var mainFiles ListOpts
+
 func init() {
 	cmdRun.Run = runApp
+	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
 }
 
 var appname string
@@ -89,8 +92,15 @@ func runApp(cmd *Command, args []string) {
 		paths = append(paths, strings.Replace(p, "$GOPATH", gopath, -1))
 	}
 
-	NewWatcher(paths)
-	Autobuild()
+	files := []string{}
+	for _, arg := range mainFiles {
+		if len(arg) > 0 {
+			files = append(files, arg)
+		}
+	}
+
+	NewWatcher(paths, files)
+	Autobuild(files)
 	for {
 		select {
 		case <-exit:
