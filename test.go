@@ -63,23 +63,14 @@ func testApp(cmd *Command, args []string) {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}
 	var paths []string
-	paths = safePathAppend(paths,
-		path.Join(crupath, conf.DirStruct.Controllers),
-		path.Join(crupath, conf.DirStruct.Models),
-		path.Join(crupath, "./")) // Current path.
-	// Because monitor files has some issues, we watch current directory
-	// and ignore non-go files.
-	paths = append(paths, conf.DirStruct.Others...)
+	readAppDirectories(crupath, &paths)
 
 	NewWatcher(paths, nil)
 	appname = args[0]
-	Autobuild(nil)
 	for {
 		select {
 		case <-started:
 			runTest()
-			//Kill()
-			//os.Exit(0)
 		}
 	}
 }

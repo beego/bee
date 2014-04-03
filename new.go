@@ -182,6 +182,13 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func init() {
+	_, file, _, _ := runtime.Caller(1)
+	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, "../")))
+	beego.TestBeegoInit(apppath)
+}
+
+
 // TestMain is a sample to run an endpoint test
 func TestMain(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/", nil)
