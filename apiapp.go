@@ -208,6 +208,8 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"runtime"
+	"path/filepath"
 	_ "{{.Appname}}/routers"
 		
 	"github.com/astaxie/beego"
