@@ -25,6 +25,8 @@ import (
 	"strings"
 )
 
+const version = "1.0.1"
+
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
@@ -78,6 +80,7 @@ var commands = []*Command{
 	cmdRouter,
 	cmdTest,
 	cmdBale,
+	cmdVersion,
 	//cmdReStart,
 }
 
