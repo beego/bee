@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"log"
+	"os/exec"
 
 	"github.com/astaxie/beego"
 )
@@ -23,6 +25,11 @@ func init() {
 }
 
 func versionCmd(cmd *Command, args []string) {
-	fmt.Println("bee:" + version)
-	fmt.Println("beego:" + beego.VERSION)
+	fmt.Println("bee   :" + version)
+	fmt.Println("beego :" + beego.VERSION)
+	goversion, err := exec.Command("go", "version").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Go    :" + string(goversion))
 }
