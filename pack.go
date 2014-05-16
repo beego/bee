@@ -46,7 +46,7 @@ compress an beego project
 -ba           additional args of go build
 -be=[]        additional ENV Variables of go build. eg: GOARCH=arm
 -o            compressed file output dir. default use current path
--f=""         format. [ tar.gz / zip ]. default tar.gz. note: zip doesn't support embed symlink, skip it
+-f=""         format. [ tar.gz / zip ]. default tar.gz
 -exp=""       relpath exclude prefix. default: .
 -exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
               all path use : as separator
@@ -91,7 +91,7 @@ func init() {
 	fs.StringVar(&buildArgs, "ba", "", "additional args of go build")
 	fs.Var(&buildEnvs, "be", "additional ENV Variables of go build. eg: GOARCH=arm")
 	fs.StringVar(&outputP, "o", "", "compressed file output dir. default use current path")
-	fs.StringVar(&format, "f", "tar.gz", "format. [ tar.gz / zip ] note: zip doesn't support embed symlink, skip it")
+	fs.StringVar(&format, "f", "tar.gz", "format. [ tar.gz / zip ]")
 	fs.StringVar(&excludeP, "exp", ".", "path exclude prefix. use : as separator")
 	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "path exclude suffix. use : as separator")
 	fs.Var(&excludeR, "exr", "filename exclude by Regexp")
@@ -355,11 +355,6 @@ type zipWalk struct {
 
 func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	isSym := fi.Mode()&os.ModeSymlink > 0
-	if isSym {
-		// golang1.2 still not support embed symlink
-		// what i miss something?
-		return false, nil
-	}
 
 	hdr, err := zip.FileInfoHeader(fi)
 	if err != nil {
@@ -380,6 +375,15 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		}
 		defer fr.Close()
 		_, err = io.Copy(w, fr)
+		if err != nil {
+			return false, err
+		}
+	} else {
+		var link string
+		if link, err = os.Readlink(fpath); err != nil {
+			return false, err
+		}
+		_, err = w.Write([]byte(link))
 		if err != nil {
 			return false, err
 		}
