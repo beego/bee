@@ -37,10 +37,10 @@ type Command struct {
 	UsageLine string
 
 	// Short is the short description shown in the 'go help' output.
-	Short string
+	Short template.HTML
 
 	// Long is the long message shown in the 'go help <this-command>' output.
-	Long string
+	Long template.HTML
 
 	// Flag is a set of flags specific to this command.
 	Flag flag.FlagSet
@@ -62,7 +62,7 @@ func (c *Command) Name() string {
 
 func (c *Command) Usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
-	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(c.Long))
+	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(string(c.Long)))
 	os.Exit(2)
 }
 
@@ -150,7 +150,9 @@ func usage() {
 
 func tmpl(w io.Writer, text string, data interface{}) {
 	t := template.New("top")
-	t.Funcs(template.FuncMap{"trim": strings.TrimSpace})
+	t.Funcs(template.FuncMap{"trim": func(s template.HTML) template.HTML {
+		return template.HTML(strings.TrimSpace(string(s)))
+	}})
 	template.Must(t.Parse(text))
 	if err := t.Execute(w, data); err != nil {
 		panic(err)
