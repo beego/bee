@@ -81,7 +81,7 @@ var commands = []*Command{
 	cmdTest,
 	cmdBale,
 	cmdVersion,
-	//cmdReStart,
+	cmdGenerate,
 }
 
 func main() {
