@@ -65,7 +65,7 @@ func testApp(cmd *Command, args []string) {
 	var paths []string
 	readAppDirectories(crupath, &paths)
 
-	NewWatcher(paths, nil)
+	NewWatcher(paths, nil, false)
 	appname = args[0]
 	for {
 		select {

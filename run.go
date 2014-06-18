@@ -72,14 +72,8 @@ func runApp(cmd *Command, args []string) {
 
 	var paths []string
 
-	if conf.DirStruct.WatchAll || (len(args) > 0 && args[len(args)-1] == "watchall") {
-		readAppDirectories(crupath, &paths)
-	} else {
-		paths = append(paths,
-			path.Join(crupath, conf.DirStruct.Controllers),
-			path.Join(crupath, conf.DirStruct.Models),
-			path.Join(crupath, "./")) // Current path.
-	}
+	readAppDirectories(crupath, &paths)
+
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
 	gps := GetGOPATHs()
@@ -99,8 +93,13 @@ func runApp(cmd *Command, args []string) {
 		}
 	}
 
-	NewWatcher(paths, files)
-	Autobuild(files)
+	if len(args) >= 2 && args[1] == "true" {
+		NewWatcher(paths, files, true)
+		Autobuild(files, true)
+	} else {
+		NewWatcher(paths, files, false)
+		Autobuild(files, false)
+	}
 	for {
 		select {
 		case <-exit:
@@ -117,6 +116,9 @@ func readAppDirectories(directory string, paths *[]string) {
 
 	useDiectory := false
 	for _, fileInfo := range fileInfos {
+		if strings.HasSuffix(fileInfo.Name(), "docs") {
+			continue
+		}
 		if fileInfo.IsDir() == true && fileInfo.Name()[0] != '.' {
 			readAppDirectories(directory+"/"+fileInfo.Name(), paths)
 			continue
