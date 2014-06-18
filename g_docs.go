@@ -106,19 +106,19 @@ func generateDocs(curpath string) {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
 				if strings.HasPrefix(s, "@APIVersion") {
-					rootapi.ApiVersion = strings.TrimLeft(s, "@APIVersion ")
+					rootapi.ApiVersion = s[len("@APIVersion "):]
 				} else if strings.HasPrefix(s, "@Title") {
-					rootapi.Infos.Title = strings.TrimLeft(s, "@Title ")
+					rootapi.Infos.Title = s[len("@Title "):]
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Infos.Description = strings.TrimLeft(s, "@Description ")
+					rootapi.Infos.Description = s[len("@Description "):]
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Infos.TermsOfServiceUrl = strings.TrimLeft(s, "@TermsOfServiceUrl ")
+					rootapi.Infos.TermsOfServiceUrl = s[len("@TermsOfServiceUrl "):]
 				} else if strings.HasPrefix(s, "@Contact") {
-					rootapi.Infos.Contact = strings.TrimLeft(s, "@Contact ")
+					rootapi.Infos.Contact = s[len("@Contact "):]
 				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Infos.License = strings.TrimLeft(s, "@License ")
+					rootapi.Infos.License = s[len("@License "):]
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.LicenseUrl = strings.TrimLeft(s, "@LicenseUrl ")
+					rootapi.Infos.LicenseUrl = s[len("@LicenseUrl "):]
 				}
 			}
 		}
@@ -294,7 +294,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
 			if strings.HasPrefix(t, "@router") {
-				elements := strings.TrimLeft(t, "@router ")
+				elements := t[len("@router "):]
 				e1 := strings.SplitN(elements, " ", 2)
 				if len(e1) < 1 {
 					return errors.New("you should has router infomation")
@@ -307,19 +307,19 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					opts.HttpMethod = "GET"
 				}
 			} else if strings.HasPrefix(t, "@Title") {
-				opts.Nickname = strings.TrimLeft(t, "@Title ")
+				opts.Nickname = t[len("@Title "):]
 			} else if strings.HasPrefix(t, "@Description") {
-				opts.Summary = strings.TrimLeft(t, "@Description ")
+				opts.Summary = t[len("@Description "):]
 			} else if strings.HasPrefix(t, "@Success") {
 				rs := swagger.ResponseMessage{}
-				st := strings.Split(strings.TrimLeft(t, "@Success "), " ")
+				st := strings.Split(t[len("@Success "):], " ")
 				rs.Message = st[1]
 				rs.ResponseModel = st[2]
 				rs.Code, _ = strconv.Atoi(st[0])
 				opts.ResponseMessages = append(opts.ResponseMessages, rs)
 			} else if strings.HasPrefix(t, "@Param") {
 				para := swagger.Parameter{}
-				p := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Param ")))
+				p := getparams(strings.TrimSpace(t[len("@Param "):]))
 				para.Name = p[0]
 				para.ParamType = p[1]
 				para.DataType = p[2]
@@ -332,7 +332,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
 				rs := swagger.ResponseMessage{}
-				st := strings.TrimLeft(t, "@Failure ")
+				st := t[len("@Failure "):]
 				var cd []rune
 				for i, s := range st {
 					if s == ' ' {
@@ -344,7 +344,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				rs.Code, _ = strconv.Atoi(string(cd))
 				opts.ResponseMessages = append(opts.ResponseMessages, rs)
 			} else if strings.HasPrefix(t, "@Type") {
-				opts.Type = strings.TrimLeft(t, "@Type ")
+				opts.Type = t[len("@Type "):]
 			}
 		}
 	}
