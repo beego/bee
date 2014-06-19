@@ -78,6 +78,7 @@ var controllerComments map[string]string
 var importlist map[string]string
 var apilist map[string]*swagger.ApiDeclaration
 var controllerList map[string][]swagger.Api
+var modelsList map[string][]swagger.Model
 var rootapi swagger.ResourceListing
 
 func init() {
@@ -87,6 +88,7 @@ func init() {
 	importlist = make(map[string]string)
 	apilist = make(map[string]*swagger.ApiDeclaration)
 	controllerList = make(map[string][]swagger.Api)
+	modelsList = make(map[string][]swagger.Model)
 }
 
 func generateDocs(curpath string) {
@@ -204,6 +206,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	a.ResourcePath = baseurl
 	a.Produces = []string{"application/json", "application/xml", "text/plain", "text/html"}
 	a.Apis = make([]swagger.Api, 0)
+	a.Models = make(map[string]swagger.Model)
 	for _, p := range ce.Args {
 		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
 		if v, ok := importlist[fmt.Sprint(x.X)]; ok {
@@ -214,6 +217,11 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 				a.Apis = append(a.Apis, apis...)
 			} else {
 				a.Apis = apis
+			}
+		}
+		if models, ok := modelsList[cname]; ok {
+			for _, m := range models {
+				a.Models[m.Id] = m
 			}
 		}
 	}
@@ -313,8 +321,18 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			} else if strings.HasPrefix(t, "@Success") {
 				rs := swagger.ResponseMessage{}
 				st := strings.Split(t[len("@Success "):], " ")
-				rs.Message = st[1]
-				rs.ResponseModel = st[2]
+				rs.Message = st[2]
+				if st[1] == "{object}" {
+					m, mod := getModel(st[2])
+					rs.ResponseModel = m
+					if _, ok := modelsList[pkgpath+controllerName]; ok {
+						modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
+					} else {
+						modelsList[pkgpath+controllerName] = make([]swagger.Model, 1)
+						modelsList[pkgpath+controllerName][0] = mod
+					}
+				}
+
 				rs.Code, _ = strconv.Atoi(st[0])
 				opts.ResponseMessages = append(opts.ResponseMessages, rs)
 			} else if strings.HasPrefix(t, "@Param") {
@@ -389,4 +407,59 @@ func getparams(str string) []string {
 		s = append(s, c)
 	}
 	return r
+}
+
+func getModel(str string) (objectname string, m swagger.Model) {
+	strs := strings.Split(str, ".")
+	objectname = strs[len(strs)-1]
+	pkgpath := strings.Join(strs[:len(strs)-1], "/")
+	curpath, _ := os.Getwd()
+	pkgRealpath := path.Join(curpath, pkgpath)
+	fileSet := token.NewFileSet()
+	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	}, parser.ParseComments)
+
+	if err != nil {
+		ColorLog("[ERRO] the model %s parser.ParseDir error\n", str)
+		os.Exit(1)
+	}
+
+	for _, pkg := range astPkgs {
+		for _, fl := range pkg.Files {
+			for k, d := range fl.Scope.Objects {
+				if d.Kind == ast.Typ {
+					if k != objectname {
+						continue
+					}
+					ts, ok := d.Decl.(*ast.TypeSpec)
+					if !ok {
+						ColorLog("Unknown type without TypeSec: %v", d)
+						os.Exit(1)
+					}
+					st, ok := ts.Type.(*ast.StructType)
+					if !ok {
+						continue
+					}
+					m.Id = k
+					if st.Fields.List != nil {
+						m.Properties = make(map[string]swagger.ModelProperty)
+						for _, field := range st.Fields.List {
+							mp := swagger.ModelProperty{}
+							mp.Type = fmt.Sprint(field.Type)
+							mp.Description = strings.Trim(field.Tag.Value, "`")
+							m.Properties[field.Names[0].Name] = mp
+						}
+					}
+					return
+				}
+			}
+		}
+	}
+	if m.Id == "" {
+		ColorLog("can't find the object: %v", str)
+		os.Exit(1)
+	}
+	return
 }
