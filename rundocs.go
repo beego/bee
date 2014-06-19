@@ -68,6 +68,10 @@ func runDocs(cmd *Command, args []string) {
 	if docport == "" {
 		docport = "8089"
 	}
+	if _, err := os.Stat("swagger"); err != nil && os.IsNotExist(err) {
+		fmt.Println("there's no swagger, please use bee rundocs -isDownload=true downlaod first")
+		os.Exit(2)
+	}
 	fmt.Println("start the docs server on: http://127.0.0.1:" + docport)
 	log.Fatal(http.ListenAndServe(":"+string(docport), http.FileServer(http.Dir("swagger"))))
 }
