@@ -49,7 +49,7 @@ var rootapi swagger.ResourceListing
 var apilist map[string]*swagger.ApiDeclaration
 
 func init() {
-	basepath := "/v1"
+	basepath := "{{.version}}"
 	err := json.Unmarshal([]byte(rootinfo), &rootapi)
 	if err != nil {
 		beego.Error(err)
@@ -150,6 +150,7 @@ func generateDocs(curpath string) {
 				case *ast.AssignStmt:
 					for _, l := range smtp.Rhs {
 						f, params := analisysNewNamespace(l.(*ast.CallExpr))
+						globalDocsTemplate = strings.Replace(globalDocsTemplate, "{{.version}}", f, -1)
 						for _, p := range params {
 							switch pp := p.(type) {
 							case *ast.CallExpr:
