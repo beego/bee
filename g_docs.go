@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
@@ -82,6 +83,13 @@ func urlReplace(src string) string {
 
 `
 
+const (
+	ajson  = "application/json"
+	axml   = "application/xml"
+	aplain = "text/plain"
+	ahtml  = "text/html"
+)
+
 var pkgCache map[string]bool //pkg:controller:function:comments comments: key:value
 var controllerComments map[string]string
 var importlist map[string]string
@@ -117,19 +125,19 @@ func generateDocs(curpath string) {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
 				if strings.HasPrefix(s, "@APIVersion") {
-					rootapi.ApiVersion = s[len("@APIVersion "):]
+					rootapi.ApiVersion = strings.TrimSpace(s[len("@APIVersion"):])
 				} else if strings.HasPrefix(s, "@Title") {
-					rootapi.Infos.Title = s[len("@Title "):]
+					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Infos.Description = s[len("@Description "):]
+					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Infos.TermsOfServiceUrl = s[len("@TermsOfServiceUrl "):]
+					rootapi.Infos.TermsOfServiceUrl = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
-					rootapi.Infos.Contact = s[len("@Contact "):]
+					rootapi.Infos.Contact = strings.TrimSpace(s[len("@Contact"):])
 				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Infos.License = s[len("@License "):]
+					rootapi.Infos.License = strings.TrimSpace(s[len("@License"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.LicenseUrl = s[len("@LicenseUrl "):]
+					rootapi.Infos.LicenseUrl = strings.TrimSpace(s[len("@LicenseUrl"):])
 				}
 			}
 		}
@@ -325,14 +333,45 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					opts.HttpMethod = "GET"
 				}
 			} else if strings.HasPrefix(t, "@Title") {
-				opts.Nickname = t[len("@Title "):]
+				opts.Nickname = strings.TrimSpace(t[len("@Title"):])
 			} else if strings.HasPrefix(t, "@Description") {
-				opts.Summary = t[len("@Description "):]
+				opts.Summary = strings.TrimSpace(t[len("@Description"):])
 			} else if strings.HasPrefix(t, "@Success") {
+				ss := strings.TrimSpace(t[len("@Success"):])
 				rs := swagger.ResponseMessage{}
-				st := strings.Split(t[len("@Success "):], " ")
+				st := make([]string, 3)
+				j := 0
+				var tmp []rune
+				start := false
+
+				for i, c := range ss {
+					if unicode.IsSpace(c) {
+						if !start && j < 2 {
+							continue
+						}
+						if j == 0 || j == 1 {
+							st[j] = string(tmp)
+							tmp = make([]rune, 0)
+							j += 1
+							start = false
+							continue
+						} else {
+							st[j] = strings.TrimSpace(ss[i+1:])
+							break
+						}
+					} else {
+						start = true
+						tmp = append(tmp, c)
+					}
+				}
+				if len(tmp) > 0 && st[2] == "" {
+					st[2] = strings.TrimSpace(string(tmp))
+				}
 				rs.Message = st[2]
 				if st[1] == "{object}" {
+					if st[2] == "" {
+						panic(controllerName + " " + funcName + " has no object")
+					}
 					m, mod := getModel(st[2])
 					rs.ResponseModel = m
 					if _, ok := modelsList[pkgpath+controllerName]; ok {
@@ -348,6 +387,9 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			} else if strings.HasPrefix(t, "@Param") {
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
+				if len(p) < 4 {
+					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
+				}
 				para.Name = p[0]
 				para.ParamType = p[1]
 				para.DataType = p[2]
@@ -360,19 +402,43 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
 				rs := swagger.ResponseMessage{}
-				st := t[len("@Failure "):]
+				st := strings.TrimSpace(t[len("@Failure"):])
 				var cd []rune
+				var start bool
 				for i, s := range st {
-					if s == ' ' {
-						rs.Message = st[i+1:]
-						break
+					if unicode.IsSpace(s) {
+						if start {
+							rs.Message = strings.TrimSpace(st[i+1:])
+							break
+						} else {
+							continue
+						}
 					}
+					start = true
 					cd = append(cd, s)
 				}
 				rs.Code, _ = strconv.Atoi(string(cd))
 				opts.ResponseMessages = append(opts.ResponseMessages, rs)
 			} else if strings.HasPrefix(t, "@Type") {
-				opts.Type = t[len("@Type "):]
+				opts.Type = strings.TrimSpace(t[len("@Type"):])
+			} else if strings.HasPrefix(t, "@Accept") {
+				accepts := strings.Split(strings.TrimSpace(strings.TrimSpace(t[len("@Accept"):])), ",")
+				for _, a := range accepts {
+					switch a {
+					case "json":
+						opts.Consumes = append(opts.Consumes, ajson)
+						opts.Produces = append(opts.Produces, ajson)
+					case "xml":
+						opts.Consumes = append(opts.Consumes, axml)
+						opts.Produces = append(opts.Produces, axml)
+					case "plain":
+						opts.Consumes = append(opts.Consumes, aplain)
+						opts.Produces = append(opts.Produces, aplain)
+					case "html":
+						opts.Consumes = append(opts.Consumes, ahtml)
+						opts.Produces = append(opts.Produces, ahtml)
+					}
+				}
 			}
 		}
 	}
@@ -392,24 +458,24 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 // @Param	query		form	 string	true		"The email for login"
 // [query form string true "The email for login"]
 func getparams(str string) []string {
-	var s []byte
+	var s []rune
 	var j int
 	var start bool
 	var r []string
-	for i, c := range []byte(str) {
-		if c == ' ' || c == '\t' || c == '\n' {
+	for i, c := range []rune(str) {
+		if unicode.IsSpace(c) {
 			if !start {
 				continue
 			} else {
 				if j == 3 {
 					r = append(r, string(s))
-					r = append(r, strings.Trim((str[i+1:]), " \"\t\n"))
+					r = append(r, strings.TrimSpace((str[i+1:])))
 					break
 				}
 				start = false
 				j++
 				r = append(r, string(s))
-				s = make([]byte, 0)
+				s = make([]rune, 0)
 				continue
 			}
 		}
