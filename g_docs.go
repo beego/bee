@@ -463,7 +463,9 @@ func getModel(str string) (objectname string, m swagger.Model) {
 						for _, field := range st.Fields.List {
 							mp := swagger.ModelProperty{}
 							mp.Type = fmt.Sprint(field.Type)
-							mp.Description = strings.Trim(field.Tag.Value, "`")
+							if field.Tag != nil {
+								mp.Description = strings.Trim(field.Tag.Value, "`")
+							}
 							m.Properties[field.Names[0].Name] = mp
 						}
 					}
