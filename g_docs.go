@@ -35,7 +35,6 @@ var globalDocsTemplate = `package docs
 
 import (
 	"encoding/json"
-	"strconv"
 	"strings"
 
 	"github.com/astaxie/beego"
