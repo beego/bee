@@ -320,7 +320,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
 			if strings.HasPrefix(t, "@router") {
-				elements := t[len("@router "):]
+				elements := strings.TrimSpace(t[len("@router"):])
 				e1 := strings.SplitN(elements, " ", 2)
 				if len(e1) < 1 {
 					return errors.New("you should has router infomation")
