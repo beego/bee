@@ -64,11 +64,7 @@ func init() {
 			a.Path = urlReplace(k + a.Path)
 			v.Apis[i] = a
 		}
-		if beego.HttpAddr != "" {
-			v.BasePath = beego.HttpAddr + ":" + strconv.Itoa(beego.HttpPort) + basepath
-		} else {
-			v.BasePath = "http://127.0.0.1:" + strconv.Itoa(beego.HttpPort) + basepath
-		}
+		v.BasePath = basepath
 		beego.GlobalDocApi[strings.Trim(k, "/")] = v
 	}
 }
