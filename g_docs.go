@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"unicode"
@@ -372,14 +373,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					if st[2] == "" {
 						panic(controllerName + " " + funcName + " has no object")
 					}
-					m, mod := getModel(st[2])
+					m, mod, realTypes := getModel(st[2])
 					rs.ResponseModel = m
-					if _, ok := modelsList[pkgpath+controllerName]; ok {
-						modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
-					} else {
-						modelsList[pkgpath+controllerName] = make([]swagger.Model, 1)
-						modelsList[pkgpath+controllerName][0] = mod
+					if _, ok := modelsList[pkgpath+controllerName]; !ok {
+						modelsList[pkgpath+controllerName] = make([]swagger.Model, 0)
 					}
+					modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
+					appendModels(pkgpath, controllerName, realTypes)
 				}
 
 				rs.Code, _ = strconv.Atoi(st[0])
@@ -485,7 +485,7 @@ func getparams(str string) []string {
 	return r
 }
 
-func getModel(str string) (objectname string, m swagger.Model) {
+func getModel(str string) (objectname string, m swagger.Model, realTypes []string) {
 	strs := strings.Split(str, ".")
 	objectname = strs[len(strs)-1]
 	pkgpath := strings.Join(strs[:len(strs)-1], "/")
@@ -522,12 +522,24 @@ func getModel(str string) (objectname string, m swagger.Model) {
 					if st.Fields.List != nil {
 						m.Properties = make(map[string]swagger.ModelProperty)
 						for _, field := range st.Fields.List {
+							isSlice, realType := typeAnalyser(fmt.Sprintf("%+v", field.Type))
+							realTypes = append(realTypes, realType)
 							mp := swagger.ModelProperty{}
-							mp.Type = fmt.Sprint(field.Type)
+							// add type slice
+							if isSlice {
+								mp.Type = "[]" + realType
+							} else {
+								mp.Type = realType
+							}
+							// if the tag contains json tag, set the name to the left most json tag
+							var name = field.Names[0].Name
 							if field.Tag != nil {
 								mp.Description = strings.Trim(field.Tag.Value, "`")
+								if tag := grepJsonTag(strings.TrimLeft(field.Tag.Value, `json:"`)); tag != "" {
+									name = tag
+								}
 							}
-							m.Properties[field.Names[0].Name] = mp
+							m.Properties[name] = mp
 						}
 					}
 					return
@@ -540,4 +552,54 @@ func getModel(str string) (objectname string, m swagger.Model) {
 		os.Exit(1)
 	}
 	return
+}
+
+func typeAnalyser(Type string) (isSlice bool, realType string) {
+	realType = Type
+	isSlice = strings.Index(Type, "&{Lbrack:") == 0
+	if !isSlice {
+		return
+	}
+	return isSlice, realType[strings.Index(realType, "Elt:")+4 : len(realType)-1]
+}
+
+func isBasicType(Type string) bool {
+	for _, v := range basicTypes {
+		if v == Type {
+			return true
+		}
+	}
+	return false
+}
+
+// refer to builtin.go
+var basicTypes = []string{
+	"bool",
+	"uint", "uint8", "uint16", "uint32", "uint64",
+	"int", "int8", "int16", "int32", "int64",
+	"float32", "float64",
+	"string",
+	// "complex64", "complex128",
+	// "byte", "rune", "uintptr",
+}
+
+// regexp get json tag
+func grepJsonTag(tag string) string {
+	r, _ := regexp.Compile(`json:"([^"]*)"`)
+	matches := r.FindAllStringSubmatch(tag, -1)
+	if len(matches) > 0 {
+		return matches[0][1]
+	}
+	return ""
+}
+
+// append models
+func appendModels(pkgpath, controllerName string, realTypes []string) {
+	for _, realType := range realTypes {
+		if realType != "" && !isBasicType(realType) {
+			_, mod, newRealTypes := getModel(realType)
+			modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
+			appendModels(pkgpath, controllerName, newRealTypes)
+		}
+	}
 }
