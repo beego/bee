@@ -373,13 +373,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					if st[2] == "" {
 						panic(controllerName + " " + funcName + " has no object")
 					}
-					m, mod, realTypes := getModel(st[2])
+					cmpath, m, mod, realTypes := getModel(st[2])
 					rs.ResponseModel = m
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
 						modelsList[pkgpath+controllerName] = make([]swagger.Model, 0)
 					}
 					modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
-					appendModels(pkgpath, controllerName, realTypes)
+					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				}
 
 				rs.Code, _ = strconv.Atoi(st[0])
@@ -485,10 +485,10 @@ func getparams(str string) []string {
 	return r
 }
 
-func getModel(str string) (objectname string, m swagger.Model, realTypes []string) {
+func getModel(str string) (pkgpath, objectname string, m swagger.Model, realTypes []string) {
 	strs := strings.Split(str, ".")
 	objectname = strs[len(strs)-1]
-	pkgpath := strings.Join(strs[:len(strs)-1], "/")
+	pkgpath = strings.Join(strs[:len(strs)-1], "/")
 	curpath, _ := os.Getwd()
 	pkgRealpath := path.Join(curpath, pkgpath)
 	fileSet := token.NewFileSet()
@@ -522,7 +522,7 @@ func getModel(str string) (objectname string, m swagger.Model, realTypes []strin
 					if st.Fields.List != nil {
 						m.Properties = make(map[string]swagger.ModelProperty)
 						for _, field := range st.Fields.List {
-							isSlice, realType := typeAnalyser(fmt.Sprintf("%+v", field.Type))
+							isSlice, realType := typeAnalyser(field)
 							realTypes = append(realTypes, realType)
 							mp := swagger.ModelProperty{}
 							// add type slice
@@ -547,6 +547,7 @@ func getModel(str string) (objectname string, m swagger.Model, realTypes []strin
 			}
 		}
 	}
+	fmt.Println(str)
 	if m.Id == "" {
 		ColorLog("can't find the object: %v", str)
 		os.Exit(1)
@@ -554,11 +555,21 @@ func getModel(str string) (objectname string, m swagger.Model, realTypes []strin
 	return
 }
 
-func typeAnalyser(Type string) (isSlice bool, realType string) {
-	realType = Type
-	isSlice = strings.Index(Type, "&{Lbrack:") == 0
-	if !isSlice {
-		return
+func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
+	if arr, ok := f.Type.(*ast.ArrayType); ok {
+		if fmt.Sprint(arr.Elt) == "byte" {
+			return false, ""
+		}
+		if _, ok := arr.Elt.(*ast.MapType); ok {
+			return false, ""
+		}
+		if star, ok := arr.Elt.(*ast.StarExpr); ok {
+			return true, fmt.Sprint(star.X)
+		} else {
+			return true, fmt.Sprint(arr.Elt)
+		}
+	} else {
+		return false, ""
 	}
 	return isSlice, realType[strings.Index(realType, "Elt:")+4 : len(realType)-1]
 }
@@ -594,12 +605,15 @@ func grepJsonTag(tag string) string {
 }
 
 // append models
-func appendModels(pkgpath, controllerName string, realTypes []string) {
+func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
 		if realType != "" && !isBasicType(realType) {
-			_, mod, newRealTypes := getModel(realType)
+			if cmpath != "" {
+				cmpath = strings.Join(strings.Split(cmpath, "/"), ".") + "."
+			}
+			_, _, mod, newRealTypes := getModel(cmpath + realType)
 			modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
-			appendModels(pkgpath, controllerName, newRealTypes)
+			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
 		}
 	}
 }
