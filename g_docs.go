@@ -77,12 +77,13 @@ func urlReplace(src string) string {
 		if len(p) > 0 {
 			if p[0] == ':' {
 				pt[i] = "{" + p[1:] + "}"
+			} else if p[0] == "?" && p[1] == ":" {
+				pt[i] = "{" + p[2:] + "}"
 			}
 		}
 	}
 	return strings.Join(pt, "/")
 }
-
 `
 
 const (
