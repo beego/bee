@@ -109,7 +109,7 @@ func runApp(cmd *Command, args []string) {
 		if _, err := os.Stat(path.Join(crupath, "swagger")); err != nil {
 			if os.IsNotExist(err) {
 				downloadFromUrl(swaggerlink, "swagger.zip")
-				err := unzipAndDelete("swagger.zip", "swagger")
+				unzipAndDelete("swagger.zip", "swagger")
 			}
 		}
 	}
