@@ -557,7 +557,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 
 func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
-		if fmt.Sprint(arr.Elt) == "byte" {
+		if isBasicType(fmt.Sprint(arr.Elt)) {
 			return false, ""
 		}
 		if _, ok := arr.Elt.(*ast.MapType); ok {
@@ -569,9 +569,8 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 			return true, fmt.Sprint(arr.Elt)
 		}
 	} else {
-		return false, ""
+		return false, fmt.Sprint(f.Type)
 	}
-	return isSlice, realType[strings.Index(realType, "Elt:")+4 : len(realType)-1]
 }
 
 func isBasicType(Type string) bool {
@@ -585,7 +584,7 @@ func isBasicType(Type string) bool {
 
 // refer to builtin.go
 var basicTypes = []string{
-	"bool",
+	"bool", "byte",
 	"uint", "uint8", "uint16", "uint32", "uint64",
 	"int", "int8", "int16", "int32", "int64",
 	"float32", "float64",
@@ -607,7 +606,7 @@ func grepJsonTag(tag string) string {
 // append models
 func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
-		if realType != "" && !isBasicType(realType) {
+		if realType != "" && strings.HasPrefix(realType, "[]") {
 			if cmpath != "" {
 				cmpath = strings.Join(strings.Split(cmpath, "/"), ".") + "."
 			}
