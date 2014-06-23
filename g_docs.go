@@ -71,13 +71,14 @@ func init() {
 	}
 }
 
+
 func urlReplace(src string) string {
 	pt := strings.Split(src, "/")
 	for i, p := range pt {
 		if len(p) > 0 {
 			if p[0] == ':' {
 				pt[i] = "{" + p[1:] + "}"
-			} else if p[0] == "?" && p[1] == ":" {
+			} else if p[0] == '?' && p[1] == ':' {
 				pt[i] = "{" + p[2:] + "}"
 			}
 		}
