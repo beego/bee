@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-docgen=true]",
 	Short:     "run the app which can hot compile",
 	Long: `
 start the appname throw exec.Command
@@ -46,9 +46,14 @@ when the file has changed bee will auto go build and restart the app
 
 var mainFiles ListOpts
 
+var downdoc docValue
+var docgen docValue
+
 func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
+	cmdRun.Flag.Var(&docgen, "docgen", "auto generate the docs")
+	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
 }
 
 var appname string
@@ -93,12 +98,20 @@ func runApp(cmd *Command, args []string) {
 		}
 	}
 
-	if len(args) >= 2 && args[1] == "true" {
+	if docgen == "true" {
 		NewWatcher(paths, files, true)
 		Autobuild(files, true)
 	} else {
 		NewWatcher(paths, files, false)
 		Autobuild(files, false)
+	}
+	if downdoc == "true" {
+		if _, err := os.Stat(path.Join(crupath, "swagger")); err != nil {
+			if os.IsNotExist(err) {
+				downloadFromUrl(swaggerlink, "swagger.zip")
+				err := unzipAndDelete("swagger.zip", "swagger")
+			}
+		}
 	}
 	for {
 		select {
