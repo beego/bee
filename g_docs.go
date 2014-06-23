@@ -535,13 +535,21 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 							// if the tag contains json tag, set the name to the left most json tag
 							var name = field.Names[0].Name
 							if field.Tag != nil {
-								mp.Description = strings.Trim(field.Tag.Value, "`")
-								stag := reflect.StructTag(mp.Description)
+								stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
 								if tag := stag.Get("json"); tag != "" {
 									name = tag
 								}
-								if beedoc := stag.Get("beedoc"); beedoc == "required" {
+								if thrifttag := stag.Get("thrift"); thrifttag != "" {
+									ts := strings.Split(thrifttag, ",")
+									if ts[0] != "" {
+										name = ts[0]
+									}
+								}
+								if required := stag.Get("required"); required != "" {
 									m.Required = append(m.Required, name)
+								}
+								if desc := stag.Get("description"); desc != "" {
+									mp.Description = desc
 								}
 							}
 							m.Properties[name] = mp
