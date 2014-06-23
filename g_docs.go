@@ -24,6 +24,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"reflect"
 	"regexp"
 	"strconv"
 	"strings"
@@ -535,8 +536,12 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 							var name = field.Names[0].Name
 							if field.Tag != nil {
 								mp.Description = strings.Trim(field.Tag.Value, "`")
-								if tag := grepJsonTag(strings.TrimLeft(field.Tag.Value, `json:"`)); tag != "" {
+								stag := reflect.StructTag(mp.Description)
+								if tag := stag.Get("json"); tag != "" {
 									name = tag
+								}
+								if beedoc := stag.Get("beedoc"); beedoc == "required" {
+									m.Required = append(m.Required, name)
 								}
 							}
 							m.Properties[name] = mp
@@ -558,10 +563,10 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, ""
+			return false, fmt.Sprintf("[]%v", arr.Elt)
 		}
-		if _, ok := arr.Elt.(*ast.MapType); ok {
-			return false, ""
+		if mp, ok := arr.Elt.(*ast.MapType); ok {
+			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value)
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
 			return true, fmt.Sprint(star.X)
@@ -606,7 +611,7 @@ func grepJsonTag(tag string) string {
 // append models
 func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
-		if realType != "" && strings.HasPrefix(realType, "[]") {
+		if realType != "" && strings.HasPrefix(realType, "[]") && !isBasicType(strings.TrimLeft(realType, "[]")) {
 			if cmpath != "" {
 				cmpath = strings.Join(strings.Split(cmpath, "/"), ".") + "."
 			}
