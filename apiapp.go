@@ -40,11 +40,11 @@ In the appname folder has the follow struct:
 	├── routers
 	│   └── router.go
 	├── tests
-	│   └── default_test.go		
+	│   └── default_test.go
 	├── main.go
 	└── models
-	    └── object.go            
-	    └── user.go            
+	    └── object.go
+	    └── user.go
 
 `,
 }
@@ -471,14 +471,14 @@ import (
 	"runtime"
 	"path/filepath"
 	_ "{{.Appname}}/routers"
-		
+
 	"github.com/astaxie/beego"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func init() {
 	_, file, _, _ := runtime.Caller(1)
-	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + filepath.Separator)))
+	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
 	beego.TestBeegoInit(apppath)
 }
 
@@ -487,9 +487,9 @@ func TestGet(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/object", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
-	
+
 	beego.Trace("testing", "TestGet", "Code[%d]\n%s", w.Code, w.Body.String())
-	
+
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
 	                So(w.Code, ShouldEqual, 200)

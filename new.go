@@ -38,15 +38,15 @@ The [appname] folder has following structure:
          |- default.go
     |- models
     |- routers
-         |- router.go	
+         |- router.go
     |- tests
          |- default_test.go
 	|- static
          |- js
          |- css
-         |- img             
+         |- img
     |- views
-        index.tpl                   
+        index.tpl
 
 `,
 }
@@ -179,14 +179,14 @@ import (
 	"runtime"
 	"path/filepath"
 	_ "{{.Appname}}/routers"
-		
+
 	"github.com/astaxie/beego"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func init() {
 	_, file, _, _ := runtime.Caller(1)
-	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + filepath.Separator)))
+	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
 	beego.TestBeegoInit(apppath)
 }
 
@@ -196,9 +196,9 @@ func TestMain(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
-	
+
 	beego.Trace("testing", "TestMain", "Code[%d]\n%s", w.Code, w.Body.String())
-	
+
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
 	                So(w.Code, ShouldEqual, 200)
@@ -234,7 +234,7 @@ var indextpl = `<!DOCTYPE html>
   	<head>
     	<title>Beego</title>
     	<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-	
+
 		<style type="text/css">
 			body {
 				margin: 0px;
@@ -290,7 +290,7 @@ var indextpl = `<!DOCTYPE html>
 			}
 		</style>
 	</head>
-  	
+
   	<body>
   		<header class="hero-unit" style="background-color:#A9F16C">
 			<div class="container">
