@@ -377,6 +377,8 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						panic(controllerName + " " + funcName + " has no object")
 					}
 					cmpath, m, mod, realTypes := getModel(st[2])
+					//ll := strings.Split(st[2], ".")
+					//opts.Type = ll[len(ll)-1]
 					rs.ResponseModel = m
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
 						modelsList[pkgpath+controllerName] = make([]swagger.Model, 0)
@@ -395,7 +397,8 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				}
 				para.Name = p[0]
 				para.ParamType = p[1]
-				para.DataType = p[2]
+				pp := strings.Split(p[2], ".")
+				para.DataType = pp[len(pp)-1]
 				if len(p) > 4 {
 					para.Required, _ = strconv.ParseBool(p[3])
 					para.Description = p[4]
@@ -562,7 +565,6 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 			}
 		}
 	}
-	fmt.Println(str)
 	if m.Id == "" {
 		ColorLog("can't find the object: %v", str)
 		os.Exit(1)
@@ -584,6 +586,10 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 			return true, fmt.Sprint(arr.Elt)
 		}
 	} else {
+		switch t := f.Type.(type) {
+		case *ast.StarExpr:
+			return false, fmt.Sprint(t.X)
+		}
 		return false, fmt.Sprint(f.Type)
 	}
 }
@@ -599,13 +605,13 @@ func isBasicType(Type string) bool {
 
 // refer to builtin.go
 var basicTypes = []string{
-	"bool", "byte",
+	"bool",
 	"uint", "uint8", "uint16", "uint32", "uint64",
 	"int", "int8", "int16", "int32", "int64",
 	"float32", "float64",
 	"string",
-	// "complex64", "complex128",
-	// "byte", "rune", "uintptr",
+	"complex64", "complex128",
+	"byte", "rune", "uintptr",
 }
 
 // regexp get json tag
@@ -621,7 +627,8 @@ func grepJsonTag(tag string) string {
 // append models
 func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
-		if realType != "" && strings.HasPrefix(realType, "[]") && !isBasicType(strings.TrimLeft(realType, "[]")) {
+		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
+			!strings.HasPrefix(realType, "map") && !strings.HasPrefix(realType, "&") {
 			if cmpath != "" {
 				cmpath = strings.Join(strings.Split(cmpath, "/"), ".") + "."
 			}
