@@ -89,7 +89,8 @@ func createApp(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 
-	apppath := path.Join(curpath, args[0])
+	appname = args[0]
+	apppath := path.Join(curpath, appname)
 
 	if _, err := os.Stat(apppath); os.IsNotExist(err) == false {
 		fmt.Printf("[ERRO] Path(%s) has alreay existed\n", apppath)
@@ -123,20 +124,20 @@ func createApp(cmd *Command, args []string) {
 	fmt.Println(path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", args[0], -1))
 
-	fmt.Println(path.Join(apppath, "controllers", "default.go"))
-	writetofile(path.Join(apppath, "controllers", "default.go"), controllers)
+	fmt.Println(path.Join(appname, "controllers", "default.go"))
+	writetofile(path.Join(appname, "controllers", "default.go"), controllers)
 
-	fmt.Println(path.Join(apppath, "views", "index.tpl"))
-	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
+	fmt.Println(path.Join(appname, "views", "index.tpl"))
+	writetofile(path.Join(appname, "views", "index.tpl"), indextpl)
 
-	fmt.Println(path.Join(apppath, "routers", "router.go"))
-	writetofile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Println(path.Join(appname, "routers", "router.go"))
+	writetofile(path.Join(appname, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(appname[len(appsrcpath):], string(path.Separator)), "/"), -1))
 
-	fmt.Println(path.Join(apppath, "tests", "default_test.go"))
-	writetofile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Println(path.Join(appname, "tests", "default_test.go"))
+	writetofile(path.Join(appname, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(appname[len(appsrcpath):], string(path.Separator)), "/"), -1))
 
-	fmt.Println(path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Println(path.Join(appname, "main.go"))
+	writetofile(path.Join(appname, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(appname[len(appsrcpath):], string(path.Separator)), "/"), -1))
 
 	ColorLog("[SUCC] New application successfully created!\n")
 }
