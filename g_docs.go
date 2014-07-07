@@ -99,7 +99,7 @@ var controllerComments map[string]string
 var importlist map[string]string
 var apilist map[string]*swagger.ApiDeclaration
 var controllerList map[string][]swagger.Api
-var modelsList map[string][]swagger.Model
+var modelsList map[string]map[string]swagger.Model
 var rootapi swagger.ResourceListing
 
 func init() {
@@ -109,7 +109,7 @@ func init() {
 	importlist = make(map[string]string)
 	apilist = make(map[string]*swagger.ApiDeclaration)
 	controllerList = make(map[string][]swagger.Api)
-	modelsList = make(map[string][]swagger.Model)
+	modelsList = make(map[string]map[string]swagger.Model)
 }
 
 func generateDocs(curpath string) {
@@ -381,9 +381,9 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					//opts.Type = ll[len(ll)-1]
 					rs.ResponseModel = m
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
-						modelsList[pkgpath+controllerName] = make([]swagger.Model, 0)
+						modelsList[pkgpath+controllerName] = make(map[string]swagger.Model, 0)
 					}
-					modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
+					modelsList[pkgpath+controllerName][st[2]] =  mod
 					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				}
 
@@ -626,14 +626,21 @@ func grepJsonTag(tag string) string {
 
 // append models
 func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
+    var p string
+    if cmpath != "" {
+        p = strings.Join(strings.Split(cmpath, "/"), ".") + "."
+    } else {
+        p = ""
+    }
 	for _, realType := range realTypes {
 		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
 			!strings.HasPrefix(realType, "map") && !strings.HasPrefix(realType, "&") {
-			if cmpath != "" {
-				cmpath = strings.Join(strings.Split(cmpath, "/"), ".") + "."
-			}
-			_, _, mod, newRealTypes := getModel(cmpath + realType)
-			modelsList[pkgpath+controllerName] = append(modelsList[pkgpath+controllerName], mod)
+            if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
+                continue
+            }
+            fmt.Printf(pkgpath+":"+controllerName+":"+cmpath+":"+realType+"\n")
+			_, _, mod, newRealTypes := getModel(p+realType)
+			modelsList[pkgpath+controllerName][p+realType] = mod
 			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
 		}
 	}
