@@ -94,7 +94,7 @@ func runTest() {
 
 	if err != nil {
 		ColorLog("[ERRO] ============== Test failed ===================\n")
-		ColorLog("[ERRO] ", err)
+		ColorLog("[ERRO] %s", err)
 		return
 	}
 	ColorLog("[SUCC] Test finish\n")
