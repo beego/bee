@@ -52,6 +52,12 @@ func generateCode(cmd *Command, args []string) {
 	switch gcmd {
 	case "docs":
 		generateDocs(curpath)
+	case "model":
+		generateModel(curpath)
+	case "controller":
+		generateController(curpath)
+	case "router":
+		generateRouter(curpath)
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}
