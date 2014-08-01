@@ -427,7 +427,7 @@ func writeModelFiles(tables []*Table, mPath string) {
 	for _, tb := range tables {
 		filename := getFileName(tb.Name)
 		fpath := path.Join(mPath, filename+".go")
-		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
+		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		defer f.Close()
 		template := ""
 		if tb.Pk == "" {
@@ -454,7 +454,7 @@ func writeControllerFiles(tables []*Table, cPath string) {
 		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(cPath, filename+".go")
-		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
+		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
@@ -481,7 +481,7 @@ func writeRouterFile(tables []*Table, rPath string) {
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
-	f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
