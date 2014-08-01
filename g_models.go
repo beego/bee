@@ -202,6 +202,7 @@ func gen(dbms string, connStr string, mode byte, currpath string) {
 		os.Exit(2)
 	}
 	defer db.Close()
+	ColorLog("[INFO] Analyzing database tables...\n")
 	tableNames := getTableNames(db)
 	tables := getTableObjects(tableNames, db)
 	mvcPath := new(MvcPath)
@@ -408,12 +409,15 @@ func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath) {
 	if (O_MODEL & mode) == O_MODEL {
+		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath)
 	}
 	if (O_CONTROLLER & mode) == O_CONTROLLER {
+		ColorLog("[INFO] Creating controller files...\n")
 		writeControllerFiles(tables, paths.ControllerPath)
 	}
 	if (O_ROUTER & mode) == O_ROUTER {
+		ColorLog("[INFO] Creating router files...\n")
 		writeRouterFile(tables, paths.RouterPath)
 	}
 }
@@ -437,6 +441,7 @@ func writeModelFiles(tables []*Table, mPath string) {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
+		ColorLog("[INFO] model => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
 }
@@ -456,6 +461,7 @@ func writeControllerFiles(tables []*Table, cPath string) {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
+		ColorLog("[INFO] controller => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
 }
@@ -481,6 +487,7 @@ func writeRouterFile(tables []*Table, rPath string) {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
 		os.Exit(2)
 	}
+	ColorLog("[INFO] router => %s\n", fpath)
 	formatAndFixImports(fpath)
 }
 
