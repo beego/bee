@@ -223,7 +223,7 @@ func gen(dbms string, connStr string, mode byte, currpath string) {
 	mvcPath.ModelPath = path.Join(currpath, "models")
 	mvcPath.ControllerPath = path.Join(currpath, "controllers")
 	mvcPath.RouterPath = path.Join(currpath, "routers")
-	deleteAndRecreatePaths(mode, mvcPath)
+	createPaths(mode, mvcPath)
 	writeSourceFiles(tables, mode, mvcPath)
 }
 
@@ -403,17 +403,14 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 }
 
 // deleteAndRecreatePaths removes several directories completely
-func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
+func createPaths(mode byte, paths *MvcPath) {
 	if (mode & O_MODEL) == O_MODEL {
-		//os.RemoveAll(paths.ModelPath)
 		os.Mkdir(paths.ModelPath, 0777)
 	}
 	if (mode & O_CONTROLLER) == O_CONTROLLER {
-		//os.RemoveAll(paths.ControllerPath)
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
 	if (mode & O_ROUTER) == O_ROUTER {
-		//os.RemoveAll(paths.RouterPath)
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
