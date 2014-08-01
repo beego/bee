@@ -198,7 +198,8 @@ func generateModel(driver string, connStr string, level string, currpath string)
 func gen(dbms string, connStr string, mode byte, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		fmt.Printf("error opening database: %v\n", err)
+		ColorLog("[ERRO] Could not connect to %s: %s\n", dbms, connStr)
+		os.Exit(2)
 	}
 	defer db.Close()
 	tableNames := getTableNames(db)
@@ -213,12 +214,18 @@ func gen(dbms string, connStr string, mode byte, currpath string) {
 
 // getTables gets a list table names in current database
 func getTableNames(db *sql.DB) (tables []string) {
-	rows, _ := db.Query("SHOW TABLES")
+	rows, err := db.Query("SHOW TABLES")
+	if err != nil {
+		ColorLog("[ERRO] Could not show tables\n")
+		ColorLog("[HINT] Check your connection string\n")
+		os.Exit(2)
+	}
 	defer rows.Close()
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			fmt.Printf("error showing tables: %v\n", err)
+			ColorLog("[ERRO] Could not show tables\n")
+			os.Exit(2)
 		}
 		tables = append(tables, name)
 	}
@@ -261,12 +268,14 @@ func getConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 			c.table_schema = database() AND c.table_name = ? AND u.table_schema = database() AND u.table_name = ?`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
-		fmt.Printf("constraint query error: %v\n", err)
+		ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for PK/UK/FK information\n")
+		os.Exit(2)
 	}
 	for rows.Next() {
 		var constraintTypeBytes, columnNameBytes, refTableSchemaBytes, refTableNameBytes, refColumnNameBytes, refOrdinalPosBytes []byte
 		if err := rows.Scan(&constraintTypeBytes, &columnNameBytes, &refTableSchemaBytes, &refTableNameBytes, &refColumnNameBytes, &refOrdinalPosBytes); err != nil {
-			fmt.Println("constraint error: %v\n", err)
+			ColorLog("[ERRO] Could not read INFORMATION_SCHEMA for PK/UK/FK information\n")
+			os.Exit(2)
 		}
 		constraintType, columnName, refTableSchema, refTableName, refColumnName, refOrdinalPos :=
 			string(constraintTypeBytes), string(columnNameBytes), string(refTableSchemaBytes),
@@ -310,7 +319,8 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 		// datatype as bytes so that SQL <null> values can be retrieved
 		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes []byte
 		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes); err != nil {
-			fmt.Printf("column error: %v\n", err)
+			ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for column information\n")
+			os.Exit(2)
 		}
 		colName, dataType, columnType, isNullable, columnDefault, extra :=
 			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes)
@@ -380,15 +390,15 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 // deleteAndRecreatePaths removes several directories completely
 func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
 	if (mode & O_MODEL) == O_MODEL {
-		os.RemoveAll(paths.ModelPath)
+		//os.RemoveAll(paths.ModelPath)
 		os.Mkdir(paths.ModelPath, 0777)
 	}
 	if (mode & O_CONTROLLER) == O_CONTROLLER {
-		os.RemoveAll(paths.ControllerPath)
+		//os.RemoveAll(paths.ControllerPath)
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
 	if (mode & O_ROUTER) == O_ROUTER {
-		os.RemoveAll(paths.RouterPath)
+		//os.RemoveAll(paths.RouterPath)
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
@@ -424,7 +434,8 @@ func writeModelFiles(tables []*Table, mPath string) {
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			fmt.Printf("error writing file(%s): %v", fpath, err)
+			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
+			os.Exit(2)
 		}
 		formatAndFixImports(fpath)
 	}
@@ -442,7 +453,8 @@ func writeControllerFiles(tables []*Table, cPath string) {
 		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			fmt.Printf("error writing file(%s): %v", fpath, err)
+			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
+			os.Exit(2)
 		}
 		formatAndFixImports(fpath)
 	}
@@ -466,7 +478,8 @@ func writeRouterFile(tables []*Table, rPath string) {
 	f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
 	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
-		fmt.Println("error writing file(%s): %v", fpath, err)
+		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
+		os.Exit(2)
 	}
 	formatAndFixImports(fpath)
 }

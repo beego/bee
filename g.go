@@ -52,7 +52,6 @@ func init() {
 }
 
 func generateCode(cmd *Command, args []string) {
-	cmd.Flag.Parse(args[1:])
 	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
@@ -72,6 +71,19 @@ func generateCode(cmd *Command, args []string) {
 	case "docs":
 		generateDocs(curpath)
 	case "model":
+		cmd.Flag.Parse(args[1:])
+		if driver == "" {
+			driver = "mysql"
+		}
+		if conn == "" {
+			conn = "root:@tcp(127.0.0.1:3306)/test"
+		}
+		if level == "" {
+			level = "1"
+		}
+		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
+		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
+		ColorLog("[INFO] Using '%s' as 'level'\n", level)
 		generateModel(string(driver), string(conn), string(level), curpath)
 	default:
 		ColorLog("[ERRO] command is missing\n")
