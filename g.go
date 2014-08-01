@@ -20,7 +20,7 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee generate model [modelfile] [dbconfig]
+bee generate model driver [dbconfig]
     generate model base on struct
 bee generate controller [modelfile]
     generate RESTFul controllers based on modelfile             
@@ -33,7 +33,19 @@ bee generate test [routerfile]
 `,
 }
 
+var driver docValue
+var conn docValue
+var level docValue
+
+func init() {
+	cmdGenerate.Run = generateCode
+	cmdGenerate.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
+	cmdGenerate.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
+	cmdGenerate.Flag.Var(&level, "level", "1 = models only; 2 = models and controllers; 3 = models, controllers and routers")
+}
+
 func generateCode(cmd *Command, args []string) {
+	cmd.Flag.Parse(args[1:])
 	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
@@ -53,11 +65,7 @@ func generateCode(cmd *Command, args []string) {
 	case "docs":
 		generateDocs(curpath)
 	case "model":
-		generateModel("mysql", "root@tcp(127.0.0.1:3306)/sgfas?charset=utf8", curpath)
-	case "controller":
-		generateController("mysql", "", curpath)
-	case "router":
-		generateRouter("mysql", "", curpath)
+		generateModel(string(driver), string(conn), string(level), curpath)
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}

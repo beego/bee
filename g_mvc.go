@@ -177,18 +177,19 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateModel(driver string, connStr string, currpath string) {
-	mode := O_MODEL
-	gen(driver, connStr, mode, currpath)
-}
-
-func generateController(driver string, connStr string, currpath string) {
-	mode := O_MODEL | O_CONTROLLER
-	gen(driver, connStr, mode, currpath)
-}
-
-func generateRouter(driver string, connStr string, currpath string) {
-	mode := O_MODEL | O_CONTROLLER | O_ROUTER
+func generateModel(driver string, connStr string, level string, currpath string) {
+	var mode byte
+	if level == "1" {
+		mode = O_MODEL
+	} else if level == "2" {
+		mode = O_MODEL | O_CONTROLLER
+	} else if level == "3" {
+		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+	} else {
+		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
+		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
+		os.Exit(2)
+	}
 	gen(driver, connStr, mode, currpath)
 }
 
