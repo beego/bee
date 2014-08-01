@@ -103,7 +103,6 @@ var modelsList map[string]map[string]swagger.Model
 var rootapi swagger.ResourceListing
 
 func init() {
-	cmdGenerate.Run = generateCode
 	pkgCache = make(map[string]bool)
 	controllerComments = make(map[string]string)
 	importlist = make(map[string]string)
@@ -383,7 +382,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
 						modelsList[pkgpath+controllerName] = make(map[string]swagger.Model, 0)
 					}
-					modelsList[pkgpath+controllerName][st[2]] =  mod
+					modelsList[pkgpath+controllerName][st[2]] = mod
 					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				}
 
@@ -626,20 +625,20 @@ func grepJsonTag(tag string) string {
 
 // append models
 func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
-    var p string
-    if cmpath != "" {
-        p = strings.Join(strings.Split(cmpath, "/"), ".") + "."
-    } else {
-        p = ""
-    }
+	var p string
+	if cmpath != "" {
+		p = strings.Join(strings.Split(cmpath, "/"), ".") + "."
+	} else {
+		p = ""
+	}
 	for _, realType := range realTypes {
 		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
 			!strings.HasPrefix(realType, "map") && !strings.HasPrefix(realType, "&") {
-            if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
-                continue
-            }
-            fmt.Printf(pkgpath+":"+controllerName+":"+cmpath+":"+realType+"\n")
-			_, _, mod, newRealTypes := getModel(p+realType)
+			if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
+				continue
+			}
+			fmt.Printf(pkgpath + ":" + controllerName + ":" + cmpath + ":" + realType + "\n")
+			_, _, mod, newRealTypes := getModel(p + realType)
 			modelsList[pkgpath+controllerName][p+realType] = mod
 			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
 		}
