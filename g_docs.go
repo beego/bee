@@ -156,32 +156,35 @@ func generateDocs(curpath string) {
 				switch smtp := l.(type) {
 				case *ast.AssignStmt:
 					for _, l := range smtp.Rhs {
-						f, params := analisysNewNamespace(l.(*ast.CallExpr))
-						globalDocsTemplate = strings.Replace(globalDocsTemplate, "{{.version}}", f, -1)
-						for _, p := range params {
-							switch pp := p.(type) {
-							case *ast.CallExpr:
-								if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
-									s, params := analisysNewNamespace(pp)
-									subapi := swagger.ApiRef{Path: s}
-									controllerName := ""
-									for _, sp := range params {
-										switch pp := sp.(type) {
-										case *ast.CallExpr:
-											if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-												controllerName = analisysNSInclude(s, pp)
+						if v, ok := l.(*ast.CallExpr); ok {
+							f, params := analisysNewNamespace(v)
+							globalDocsTemplate = strings.Replace(globalDocsTemplate, "{{.version}}", f, -1)
+							for _, p := range params {
+								switch pp := p.(type) {
+								case *ast.CallExpr:
+									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
+										s, params := analisysNewNamespace(pp)
+										subapi := swagger.ApiRef{Path: s}
+										controllerName := ""
+										for _, sp := range params {
+											switch pp := sp.(type) {
+											case *ast.CallExpr:
+												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
+													controllerName = analisysNSInclude(s, pp)
+												}
 											}
 										}
+										if v, ok := controllerComments[controllerName]; ok {
+											subapi.Description = v
+										}
+										rootapi.Apis = append(rootapi.Apis, subapi)
+									} else if selname == "NSInclude" {
+										analisysNSInclude(f, pp)
 									}
-									if v, ok := controllerComments[controllerName]; ok {
-										subapi.Description = v
-									}
-									rootapi.Apis = append(rootapi.Apis, subapi)
-								} else if selname == "NSInclude" {
-									analisysNSInclude(f, pp)
 								}
 							}
 						}
+
 					}
 				}
 			}
