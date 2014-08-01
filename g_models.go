@@ -749,7 +749,6 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
-		/*
 		beego.NSNamespace("/object",
 			beego.NSInclude(
 				&controllers.ObjectController{},
@@ -760,7 +759,6 @@ func init() {
 				&controllers.UserController{},
 			),
 		),
-*/
 		{{nameSpaces}}
 	)
 	beego.AddNamespace(ns)
