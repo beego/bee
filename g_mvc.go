@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"regexp"
 	"strings"
 
@@ -12,16 +13,16 @@ import (
 )
 
 const (
-	O_MODEL = 1 << iota
+	O_MODEL byte = 1 << iota
 	O_CONTROLLER
 	O_ROUTER
 )
 
-const (
-	MODEL_PATH      = "models"
-	CONTROLLER_PATH = "controllers"
-	ROUTER_PATH     = "routers"
-)
+type MvcPath struct {
+	ModelPath      string
+	ControllerPath string
+	RouterPath     string
+}
 
 // typeMapping maps a SQL data type to its corresponding Go data type
 var typeMapping = map[string]string{
@@ -176,21 +177,24 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateModel() {
-
+func generateModel(driver string, connStr string, currpath string) {
+	mode := O_MODEL
+	gen(driver, connStr, mode, currpath)
 }
 
-func generateController() {
-
+func generateController(driver string, connStr string, currpath string) {
+	mode := O_MODEL | O_CONTROLLER
+	gen(driver, connStr, mode, currpath)
 }
 
-func generateRouter() {
-
+func generateRouter(driver string, connStr string, currpath string) {
+	mode := O_MODEL | O_CONTROLLER | O_ROUTER
+	gen(driver, connStr, mode, currpath)
 }
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func Gen(dbms string, connStr string, mode byte) {
+func gen(dbms string, connStr string, mode byte, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		fmt.Printf("error opening database: %v\n", err)
@@ -198,8 +202,12 @@ func Gen(dbms string, connStr string, mode byte) {
 	defer db.Close()
 	tableNames := getTableNames(db)
 	tables := getTableObjects(tableNames, db)
-	deleteAndRecreatePaths(mode)
-	writeSourceFiles(tables, mode)
+	mvcPath := new(MvcPath)
+	mvcPath.ModelPath = path.Join(currpath, "models")
+	mvcPath.ControllerPath = path.Join(currpath, "controllers")
+	mvcPath.RouterPath = path.Join(currpath, "routers")
+	deleteAndRecreatePaths(mode, mvcPath)
+	writeSourceFiles(tables, mode, mvcPath)
 }
 
 // getTables gets a list table names in current database
@@ -369,42 +377,42 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 }
 
 // deleteAndRecreatePaths removes several directories completely
-func deleteAndRecreatePaths(mode byte) {
+func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
 	if (mode & O_MODEL) == O_MODEL {
-		os.RemoveAll(MODEL_PATH)
-		os.Mkdir(MODEL_PATH, 0777)
+		os.RemoveAll(paths.ModelPath)
+		os.Mkdir(paths.ModelPath, 0777)
 	}
 	if (mode & O_CONTROLLER) == O_CONTROLLER {
-		os.RemoveAll(CONTROLLER_PATH)
-		os.Mkdir(CONTROLLER_PATH, 0777)
+		os.RemoveAll(paths.ControllerPath)
+		os.Mkdir(paths.ControllerPath, 0777)
 	}
 	if (mode & O_ROUTER) == O_ROUTER {
-		os.RemoveAll(ROUTER_PATH)
-		os.Mkdir(ROUTER_PATH, 0777)
+		os.RemoveAll(paths.RouterPath)
+		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
 
 // writeSourceFiles generates source files for model/controller/router
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
-func writeSourceFiles(tables []*Table, mode byte) {
+func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath) {
 	if (O_MODEL & mode) == O_MODEL {
-		writeModelFiles(tables)
+		writeModelFiles(tables, paths.ModelPath)
 	}
 	if (O_CONTROLLER & mode) == O_CONTROLLER {
-		writeControllerFiles(tables)
+		writeControllerFiles(tables, paths.ControllerPath)
 	}
 	if (O_ROUTER & mode) == O_ROUTER {
-		writeRouterFile(tables)
+		writeRouterFile(tables, paths.RouterPath)
 	}
 }
 
 // writeModelFiles generates model files
-func writeModelFiles(tables []*Table) {
+func writeModelFiles(tables []*Table, mPath string) {
 	for _, tb := range tables {
 		filename := getFileName(tb.Name)
-		path := fmt.Sprintf("%s/%s.go", MODEL_PATH, filename)
-		f, _ := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
+		fpath := path.Join(mPath, filename+".go")
+		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 		defer f.Close()
 		template := ""
 		if tb.Pk == "" {
@@ -415,32 +423,32 @@ func writeModelFiles(tables []*Table) {
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			fmt.Printf("error writing file(%s): %v", path, err)
+			fmt.Printf("error writing file(%s): %v", fpath, err)
 		}
-		formatAndFixImports(path)
+		formatAndFixImports(fpath)
 	}
 }
 
 // writeControllerFiles generates controller files
-func writeControllerFiles(tables []*Table) {
+func writeControllerFiles(tables []*Table, cPath string) {
 	for _, tb := range tables {
 		if tb.Pk == "" {
 			continue
 		}
 		filename := getFileName(tb.Name)
-		path := fmt.Sprintf("%s/%s.go", CONTROLLER_PATH, filename)
-		f, _ := os.OpenFile(path, os.O_CREATE|os.O_RDWR, 0666)
+		fpath := path.Join(cPath, filename+".go")
+		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			fmt.Printf("error writing file(%s): %v", path, err)
+			fmt.Printf("error writing file(%s): %v", fpath, err)
 		}
-		formatAndFixImports(path)
+		formatAndFixImports(fpath)
 	}
 }
 
 // writeRouterFile generates router file
-func writeRouterFile(tables []*Table) {
+func writeRouterFile(tables []*Table, rPath string) {
 	var nameSpaces []string
 	for _, tb := range tables {
 		if tb.Pk == "" {
@@ -452,14 +460,14 @@ func writeRouterFile(tables []*Table) {
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
 	// add export controller
-	path := ROUTER_PATH + "/router.go"
+	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
-	f, _ := os.OpenFile(path, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
 	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
-		fmt.Println("error writing file(%s): %v", path, err)
+		fmt.Println("error writing file(%s): %v", fpath, err)
 	}
-	formatAndFixImports(path)
+	formatAndFixImports(fpath)
 }
 
 // formatAndFixImports formats source files (add imports, too)

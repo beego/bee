@@ -20,15 +20,15 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee g model [modelfile] [dbconfig]
+bee generate model [modelfile] [dbconfig]
     generate model base on struct
-bee g controller [modelfile]
+bee generate controller [modelfile]
     generate RESTFul controllers based on modelfile             
-bee g router [controllerfile]
+bee generate router [controllerfile]
     generate router based on controllerfile
-bee g docs
+bee generate docs
     generate swagger doc file
-bee g test [routerfile]
+bee generate test [routerfile]
     generate testcase
 `,
 }
@@ -53,11 +53,11 @@ func generateCode(cmd *Command, args []string) {
 	case "docs":
 		generateDocs(curpath)
 	case "model":
-		generateModel(curpath)
+		generateModel("mysql", "root@tcp(127.0.0.1:3306)/sgfas?charset=utf8", curpath)
 	case "controller":
-		generateController(curpath)
+		generateController("mysql", "", curpath)
 	case "router":
-		generateRouter(curpath)
+		generateRouter("mysql", "", curpath)
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}
