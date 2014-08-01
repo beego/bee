@@ -20,16 +20,16 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-	bee g model [modelfile] [dbconfig]
-        generate model base on struct
-    bee g controller [modelfile]
-        generate RESTFul controllers based on modelfile             
-    bee g router [controllerfile]
-	    generate router based on controllerfile
-    bee g docs	
-        generate swagger doc file
-    bee g test [routerfile]
-	    	generate testcase
+bee g model [modelfile] [dbconfig]
+    generate model base on struct
+bee g controller [modelfile]
+    generate RESTFul controllers based on modelfile             
+bee g router [controllerfile]
+    generate router based on controllerfile
+bee g docs
+    generate swagger doc file
+bee g test [routerfile]
+    generate testcase
 `,
 }
 
