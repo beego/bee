@@ -20,14 +20,21 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee generate model driver [dbconfig]
-    generate model base on struct
+bee generate model [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
+    generate model based on an existing database
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+    -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router
+
 bee generate controller [modelfile]
     generate RESTFul controllers based on modelfile             
+
 bee generate router [controllerfile]
     generate router based on controllerfile
+
 bee generate docs
     generate swagger doc file
+
 bee generate test [routerfile]
     generate testcase
 `,
