@@ -1,3 +1,17 @@
+// Copyright 2013 bee authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
@@ -202,13 +216,14 @@ func gen(dbms string, connStr string, mode byte, currpath string) {
 		os.Exit(2)
 	}
 	defer db.Close()
+	ColorLog("[INFO] Analyzing database tables...\n")
 	tableNames := getTableNames(db)
 	tables := getTableObjects(tableNames, db)
 	mvcPath := new(MvcPath)
 	mvcPath.ModelPath = path.Join(currpath, "models")
 	mvcPath.ControllerPath = path.Join(currpath, "controllers")
 	mvcPath.RouterPath = path.Join(currpath, "routers")
-	deleteAndRecreatePaths(mode, mvcPath)
+	createPaths(mode, mvcPath)
 	writeSourceFiles(tables, mode, mvcPath)
 }
 
@@ -388,17 +403,14 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 }
 
 // deleteAndRecreatePaths removes several directories completely
-func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
+func createPaths(mode byte, paths *MvcPath) {
 	if (mode & O_MODEL) == O_MODEL {
-		//os.RemoveAll(paths.ModelPath)
 		os.Mkdir(paths.ModelPath, 0777)
 	}
 	if (mode & O_CONTROLLER) == O_CONTROLLER {
-		//os.RemoveAll(paths.ControllerPath)
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
 	if (mode & O_ROUTER) == O_ROUTER {
-		//os.RemoveAll(paths.RouterPath)
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
@@ -408,12 +420,15 @@ func deleteAndRecreatePaths(mode byte, paths *MvcPath) {
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath) {
 	if (O_MODEL & mode) == O_MODEL {
+		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath)
 	}
 	if (O_CONTROLLER & mode) == O_CONTROLLER {
+		ColorLog("[INFO] Creating controller files...\n")
 		writeControllerFiles(tables, paths.ControllerPath)
 	}
 	if (O_ROUTER & mode) == O_ROUTER {
+		ColorLog("[INFO] Creating router files...\n")
 		writeRouterFile(tables, paths.RouterPath)
 	}
 }
@@ -423,7 +438,11 @@ func writeModelFiles(tables []*Table, mPath string) {
 	for _, tb := range tables {
 		filename := getFileName(tb.Name)
 		fpath := path.Join(mPath, filename+".go")
-		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
+		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
+		if err != nil {
+			ColorLog("[ERRO] %v\n", err)
+			os.Exit(2)
+		}
 		defer f.Close()
 		template := ""
 		if tb.Pk == "" {
@@ -437,6 +456,7 @@ func writeModelFiles(tables []*Table, mPath string) {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
+		ColorLog("[INFO] model => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
 }
@@ -449,13 +469,18 @@ func writeControllerFiles(tables []*Table, cPath string) {
 		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(cPath, filename+".go")
-		f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
+		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
+		if err != nil {
+			ColorLog("[ERRO] %v\n", err)
+			os.Exit(2)
+		}
 		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
+		ColorLog("[INFO] controller => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
 }
@@ -475,12 +500,17 @@ func writeRouterFile(tables []*Table, rPath string) {
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
-	f, _ := os.OpenFile(fpath, os.O_CREATE|os.O_TRUNC|os.O_RDWR, 0666)
+	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
+	if err != nil {
+		ColorLog("[ERRO] %v\n", err)
+		os.Exit(2)
+	}
 	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
 		os.Exit(2)
 	}
+	ColorLog("[INFO] router => %s\n", fpath)
 	formatAndFixImports(fpath)
 }
 
@@ -719,7 +749,6 @@ import (
 
 func init() {
 	ns := beego.NewNamespace("/v1",
-		/*
 		beego.NSNamespace("/object",
 			beego.NSInclude(
 				&controllers.ObjectController{},
@@ -730,7 +759,6 @@ func init() {
 				&controllers.UserController{},
 			),
 		),
-*/
 		{{nameSpaces}}
 	)
 	beego.AddNamespace(ns)
