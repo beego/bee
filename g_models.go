@@ -440,8 +440,8 @@ func writeModelFiles(tables []*Table, mPath string) {
 		fpath := path.Join(mPath, filename+".go")
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		if err != nil {
-			ColorLog("[ERRO] %v\n", err)
-			os.Exit(2)
+			ColorLog("[WARN] %v\n", err)
+			continue
 		}
 		template := ""
 		if tb.Pk == "" {
@@ -471,8 +471,8 @@ func writeControllerFiles(tables []*Table, cPath string) {
 		fpath := path.Join(cPath, filename+".go")
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		if err != nil {
-			ColorLog("[ERRO] %v\n", err)
-			os.Exit(2)
+			ColorLog("[WARN] %v\n", err)
+			continue
 		}
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
@@ -504,8 +504,8 @@ func writeRouterFile(tables []*Table, rPath string) {
 	routerStr = strings.Replace(routerStr, "{{projectName}}", projectName, 1)
 	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 	if err != nil {
-		ColorLog("[ERRO] %v\n", err)
-		os.Exit(2)
+		ColorLog("[WARN] %v\n", err)
+		return
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
