@@ -624,6 +624,18 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 	return nil, err
 }
 
+// GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
+// no records exist
+func GetAll{{modelName}}() (l []{{modelName}}, err error) {
+	o := orm.NewOrm()
+	t := new({{modelName}})
+	qs := o.QueryTable(t)
+	if _, err := qs.All(&l); err == nil {
+		return l, nil
+	}
+	return nil, err
+}
+
 // Update{{modelName}} updates {{modelName}} by Id and returns error if
 // the record to be updated doesn't exist
 func Update{{modelName}}ById(m *{{modelName}}) (err error) {
@@ -696,7 +708,23 @@ func (this *{{ctrlName}}Controller) GetOne() {
 	this.ServeJson()
 }
 
-// @Title update
+// @Title Get All
+// @Description get {{ctrlName}}
+// @Param	id		path 	string	true		"get all records matches certain condition"
+// @Success 200 {object} models.{{ctrlName}}
+// @Failure 403 
+// @router / [get]
+func (this *{{ctrlName}}Controller) GetAll() {
+	l, err := models.GetAll{{ctrlName}}()
+	if err != nil {
+		this.Data["json"] = err.Error()
+	} else {
+		this.Data["json"] = l
+	}
+	this.ServeJson()
+}
+
+// @Title Update
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -716,7 +744,7 @@ func (this *{{ctrlName}}Controller) Put() {
 	this.ServeJson()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
