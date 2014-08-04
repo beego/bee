@@ -500,6 +500,8 @@ func writeRouterFile(tables []*Table, rPath string) {
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
+	_, projectName := path.Split(path.Dir(rPath))
+	routerStr = strings.Replace(routerStr, "{{projectName}}", projectName, 1)
 	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 	if err != nil {
 		ColorLog("[ERRO] %v\n", err)
@@ -742,8 +744,7 @@ func (this *{{ctrlName}}Controller) Delete() {
 package routers
 
 import (
-	"api/controllers"
-
+	"{{projectName}}/controllers"
 	"github.com/astaxie/beego"
 )
 
