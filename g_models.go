@@ -440,10 +440,9 @@ func writeModelFiles(tables []*Table, mPath string) {
 		fpath := path.Join(mPath, filename+".go")
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		if err != nil {
-			ColorLog("[ERRO] %v\n", err)
-			os.Exit(2)
+			ColorLog("[WARN] %v\n", err)
+			continue
 		}
-		defer f.Close()
 		template := ""
 		if tb.Pk == "" {
 			template = STRUCT_MODEL_TPL
@@ -456,6 +455,7 @@ func writeModelFiles(tables []*Table, mPath string) {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
+		f.Close()
 		ColorLog("[INFO] model => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
@@ -471,15 +471,15 @@ func writeControllerFiles(tables []*Table, cPath string) {
 		fpath := path.Join(cPath, filename+".go")
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 		if err != nil {
-			ColorLog("[ERRO] %v\n", err)
-			os.Exit(2)
+			ColorLog("[WARN] %v\n", err)
+			continue
 		}
-		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
+		f.Close()
 		ColorLog("[INFO] controller => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
@@ -504,14 +504,14 @@ func writeRouterFile(tables []*Table, rPath string) {
 	routerStr = strings.Replace(routerStr, "{{projectName}}", projectName, 1)
 	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
 	if err != nil {
-		ColorLog("[ERRO] %v\n", err)
-		os.Exit(2)
+		ColorLog("[WARN] %v\n", err)
+		return
 	}
-	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
 		os.Exit(2)
 	}
+	f.Close()
 	ColorLog("[INFO] router => %s\n", fpath)
 	formatAndFixImports(fpath)
 }
@@ -624,6 +624,18 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 	return nil, err
 }
 
+// GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
+// no records exist
+func GetAll{{modelName}}() (l []{{modelName}}, err error) {
+	o := orm.NewOrm()
+	t := new({{modelName}})
+	qs := o.QueryTable(t)
+	if _, err := qs.All(&l); err == nil {
+		return l, nil
+	}
+	return nil, err
+}
+
 // Update{{modelName}} updates {{modelName}} by Id and returns error if
 // the record to be updated doesn't exist
 func Update{{modelName}}ById(m *{{modelName}}) (err error) {
@@ -696,7 +708,23 @@ func (this *{{ctrlName}}Controller) GetOne() {
 	this.ServeJson()
 }
 
-// @Title update
+// @Title Get All
+// @Description get {{ctrlName}}
+// @Param	id		path 	string	true		"get all records matches certain condition"
+// @Success 200 {object} models.{{ctrlName}}
+// @Failure 403 
+// @router / [get]
+func (this *{{ctrlName}}Controller) GetAll() {
+	l, err := models.GetAll{{ctrlName}}()
+	if err != nil {
+		this.Data["json"] = err.Error()
+	} else {
+		this.Data["json"] = l
+	}
+	this.ServeJson()
+}
+
+// @Title Update
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -716,7 +744,7 @@ func (this *{{ctrlName}}Controller) Put() {
 	this.ServeJson()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
