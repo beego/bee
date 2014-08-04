@@ -443,7 +443,6 @@ func writeModelFiles(tables []*Table, mPath string) {
 			ColorLog("[ERRO] %v\n", err)
 			os.Exit(2)
 		}
-		defer f.Close()
 		template := ""
 		if tb.Pk == "" {
 			template = STRUCT_MODEL_TPL
@@ -456,6 +455,7 @@ func writeModelFiles(tables []*Table, mPath string) {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
+		f.Close()
 		ColorLog("[INFO] model => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
@@ -474,12 +474,12 @@ func writeControllerFiles(tables []*Table, cPath string) {
 			ColorLog("[ERRO] %v\n", err)
 			os.Exit(2)
 		}
-		defer f.Close()
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
+		f.Close()
 		ColorLog("[INFO] controller => %s\n", fpath)
 		formatAndFixImports(fpath)
 	}
@@ -507,11 +507,11 @@ func writeRouterFile(tables []*Table, rPath string) {
 		ColorLog("[ERRO] %v\n", err)
 		os.Exit(2)
 	}
-	defer f.Close()
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
 		os.Exit(2)
 	}
+	f.Close()
 	ColorLog("[INFO] router => %s\n", fpath)
 	formatAndFixImports(fpath)
 }
