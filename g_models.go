@@ -632,6 +632,8 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	qs := o.QueryTable(new({{modelName}}))
 	// query k=v
 	for k, v := range query {
+		// rewrite dot-notation to Object__Attribute
+		k = strings.Replace(k, ".", "__", -1)
 		qs = qs.Filter(k, v)
 	}
 	// order by:
