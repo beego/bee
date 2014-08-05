@@ -626,11 +626,55 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 
 // GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
 // no records exist
-func GetAll{{modelName}}() (l []{{modelName}}, err error) {
+func GetAll{{modelName}}(query map[string]string, fields []string, sortby []string, order []string,
+	offset int64, limit int64) (l []{{modelName}}, err error) {
 	o := orm.NewOrm()
-	t := new({{modelName}})
-	qs := o.QueryTable(t)
-	if _, err := qs.All(&l); err == nil {
+	qs := o.QueryTable(new({{modelName}}))
+	// query k=v
+	for k, v := range query {
+		qs = qs.Filter(k, v)
+	}
+	// order by:
+	var sortFields []string
+	if len(sortby) != 0 {
+		if len(sortby) == len(order) {
+			// 1) for each sort field, there is an associated order
+			for i, v := range sortby {
+				orderby := ""
+				if order[i] == "desc" {
+					orderby = "-" + v
+				} else if order[i] == "asc" {
+					orderby = v
+				} else {
+					return nil, errors.New("Error: Invalid order. Must be either [asc|desc]")
+				}
+				sortFields = append(sortFields, orderby)
+			}
+			qs = qs.OrderBy(sortFields...)
+		} else if len(sortby) != len(order) && len(order) == 1 {
+			// 2) there is exactly one order, all the sorted fields will be sorted by this order
+			for _, v := range sortby {
+				orderby := ""
+				if order[0] == "desc" {
+					orderby = "-" + v
+				} else if order[0] == "asc" {
+					orderby = v
+				} else {
+					return nil, errors.New("Error: Invalid order. Must be either [asc|desc]")
+				}
+				sortFields = append(sortFields, orderby)
+			}
+		} else if len(sortby) != len(order) && len(order) != 1 {
+			return nil, errors.New("Error: 'sortby', 'order' sizes mismatch or 'order' size is not 1")
+		}
+	} else {
+		if len(order) != 0 {
+			return nil, errors.New("Error: unused 'order' fields")
+		}
+	}
+
+	qs = qs.OrderBy(sortFields...)
+	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		return l, nil
 	}
 	return nil, err
@@ -715,7 +759,48 @@ func (this *{{ctrlName}}Controller) GetOne() {
 // @Failure 403 
 // @router / [get]
 func (this *{{ctrlName}}Controller) GetAll() {
-	l, err := models.GetAll{{ctrlName}}()
+	var fields []string
+	var sortby []string
+	var order []string
+	var query map[string]string = make(map[string]string)
+	var limit int64 = 10
+	var offset int64 = 0
+
+	// fields: col1,col2,entity.col3
+	if v := this.GetString("fields"); v != "" {
+		fields = strings.Split(v, ",")
+	}
+	// limit: 10 (default is 10)
+	if v, err := this.GetInt("limit"); err == nil {
+		limit = v
+	}
+	// offset: 0 (default is 0)
+	if v, err := this.GetInt("offset"); err == nil {
+		offset = v
+	}
+	// sortby: col1,col2
+	if v := this.GetString("sortby"); v != "" {
+		sortby = strings.Split(v, ",")
+	}
+	// order: desc,asc
+	if v := this.GetString("order"); v != "" {
+		order = strings.Split(v, ",")
+	}
+	// query: k:v,k:v
+	if v := this.GetString("query"); v != "" {
+		for _, cond := range strings.Split(v, ",") {
+			kv := strings.Split(cond, ":")
+			if len(kv) != 2 {
+				this.Data["json"] = errors.New("Error: invalid query key/value pair")
+				this.ServeJson()
+				return
+			}
+			k, v := kv[0], kv[1]
+			query[k] = v
+		}
+	}
+
+	l, err := models.GetAll{{ctrlName}}(query, fields, sortby, order, offset, limit)
 	if err != nil {
 		this.Data["json"] = err.Error()
 	} else {
