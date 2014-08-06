@@ -678,22 +678,29 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
 	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
-		// trim unused fields
-		fieldMap := make(map[string]interface{})
-		for _, v := range fields {
-			fieldMap[v] = true
-		}
-		for _, v := range l {
-			s := reflect.Indirect(reflect.ValueOf(v))
-			typeOfS := s.Type()
-			for i := 0; i < s.NumField(); i++ {
-				f := s.Field(i)
-				if _, ok := fieldMap[typeOfS.Field(i).Name]; ok {
-					fieldMap[typeOfS.Field(i).Name] = f.Interface()
+		if len(fields) == 0 {
+			for _, v := range l {
+				ml = append(ml, v)
+			}
+		} else {
+			// trim unused fields
+			fieldMap := make(map[string]interface{})
+			for _, v := range fields {
+				fieldMap[v] = true
+			}
+			for _, v := range l {
+				m := make(map[string]interface{})
+				s := reflect.Indirect(reflect.ValueOf(v))
+				typeOfS := s.Type()
+				for i := 0; i < s.NumField(); i++ {
+					f := s.Field(i)
+					if _, ok := fieldMap[typeOfS.Field(i).Name]; ok {
+						m[typeOfS.Field(i).Name] = f.Interface()
+					}
 				}
+				ml = append(ml, m)
 			}
 		}
-		ml = append(ml, fieldMap)
 		return ml, nil
 	}
 	return nil, err
