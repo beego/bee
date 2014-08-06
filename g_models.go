@@ -684,19 +684,11 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 			}
 		} else {
 			// trim unused fields
-			fieldMap := make(map[string]interface{})
-			for _, v := range fields {
-				fieldMap[v] = true
-			}
 			for _, v := range l {
 				m := make(map[string]interface{})
-				s := reflect.Indirect(reflect.ValueOf(v))
-				typeOfS := s.Type()
-				for i := 0; i < s.NumField(); i++ {
-					f := s.Field(i)
-					if _, ok := fieldMap[typeOfS.Field(i).Name]; ok {
-						m[typeOfS.Field(i).Name] = f.Interface()
-					}
+				val := reflect.ValueOf(v)
+				for _, fname := range fields {
+					m[fname] = val.FieldByName(fname).Interface()
 				}
 				ml = append(ml, m)
 			}
