@@ -20,11 +20,15 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee generate model [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
+bee generate model [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
     generate model based on an existing database
+    -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router
+
+bee generate migration [filename]
+    generate migration file for making database schema update
 
 bee generate controller [modelfile]
     generate RESTFul controllers based on modelfile             
@@ -43,9 +47,11 @@ bee generate test [routerfile]
 var driver docValue
 var conn docValue
 var level docValue
+var tables docValue
 
 func init() {
 	cmdGenerate.Run = generateCode
+	cmdGenerate.Flag.Var(&tables, "tables", "specify tables to generate model")
 	cmdGenerate.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
 	cmdGenerate.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
 	cmdGenerate.Flag.Var(&level, "level", "1 = models only; 2 = models and controllers; 3 = models, controllers and routers")
@@ -83,8 +89,19 @@ func generateCode(cmd *Command, args []string) {
 		}
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
+		ColorLog("[INFO] Using '%s' as 'tables'", tables)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
-		generateModel(string(driver), string(conn), string(level), curpath)
+		generateModel(string(driver), string(conn), string(level), string(tables), curpath)
+	case "migration":
+		if len(args) == 2 {
+			mname := args[1]
+			ColorLog("[INFO] Using '%s' as migration name\n", mname)
+			generateMigration(mname, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate migration [filename]\n")
+			os.Exit(2)
+		}
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}
