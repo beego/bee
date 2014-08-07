@@ -95,7 +95,7 @@ func generateCode(cmd *Command, args []string) {
 			generateMigration(filename, curpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] usage: bee generate migration [filename]\n")
+			ColorLog("[HINT] Usage: bee generate migration [filename]\n")
 			os.Exit(2)
 		}
 	default:
