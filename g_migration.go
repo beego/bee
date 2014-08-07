@@ -25,7 +25,7 @@ import (
 
 const (
 	M_PATH        = "migrations"
-	M_DATE_FORMAT = "2006-01-02"
+	M_DATE_FORMAT = "20060102_150405"
 )
 
 // generateMigration generates migration file template for database schema update.
@@ -46,7 +46,6 @@ func generateMigration(mname string, curpath string) {
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
 		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname), -1)
-		content = strings.Replace(content, "{{DateFormat}}", M_DATE_FORMAT, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		f.WriteString(content)
 		// gofmt generated source code
@@ -71,27 +70,26 @@ package main
 import (
 	"time"
 
-	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/migration"
 )
-
-func init() {
-	m := &{{StructName}}{}
-	m.Created = time.Parse("{{DateFormat}}", "{{CurrTime}}")
-	migration.Register(m)
-}
 
 type {{StructName}} struct {
 	migration.Migration
 }
 
+func init() {
+	m := &{{StructName}}{}
+	m.Created = "{{CurrTime}}"
+	migration.Register(m)
+}
+
 // Run the migrations
-func (m *{{StructName}}) up() {
-	// use m.Sql("create table ...") to make schema update
+func (m *{{StructName}}) Up() {
+	// use m.Sql("CREATE TABLE ...") to make schema update
 }
 
 // Reverse the migrations
-func (m *{{StructName}}) down() {
-	// use m.Sql("drop table ...") to reverse schema update
+func (m *{{StructName}}) Down() {
+	// use m.Sql("DROP TABLE ...") to reverse schema update
 }
 `
