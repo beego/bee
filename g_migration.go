@@ -45,7 +45,7 @@ func generateMigration(mname string, curpath string) {
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
-		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname), -1)
+		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		f.WriteString(content)
 		// gofmt generated source code
@@ -73,14 +73,16 @@ import (
 	"github.com/astaxie/beego/migration"
 )
 
+// DO NOT MODIFY
 type {{StructName}} struct {
 	migration.Migration
 }
 
+// DO NOT MODIFY
 func init() {
 	m := &{{StructName}}{}
 	m.Created = "{{CurrTime}}"
-	migration.Register(m)
+	migration.Register("{{StructName}}", m)
 }
 
 // Run the migrations
