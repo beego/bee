@@ -26,6 +26,9 @@ bee generate model [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-leve
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router
 
+bee generate migration [filename]
+    generate migration file for making database schema update
+
 bee generate controller [modelfile]
     generate RESTFul controllers based on modelfile             
 
@@ -85,6 +88,16 @@ func generateCode(cmd *Command, args []string) {
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
 		generateModel(string(driver), string(conn), string(level), curpath)
+	case "migration":
+		if len(args) == 2 {
+			filename := args[1]
+			ColorLog("[INFO] Using '%s' as migration file name\n", filename)
+			generateMigration(filename, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] usage: bee generate migration [filename]\n")
+			os.Exit(2)
+		}
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}
