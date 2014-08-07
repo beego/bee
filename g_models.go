@@ -191,7 +191,7 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateModel(driver string, connStr string, level string, currpath string) {
+func generateModel(driver string, connStr string, level string, tables string, currpath string) {
 	var mode byte
 	if level == "1" {
 		mode = O_MODEL
@@ -204,12 +204,19 @@ func generateModel(driver string, connStr string, level string, currpath string)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
 		os.Exit(2)
 	}
-	gen(driver, connStr, mode, currpath)
+	var selectedTables map[string]bool
+	if tables != "" {
+		selectedTables = make(map[string]bool)
+		for _, v := range strings.Split(tables, ",") {
+			selectedTables[v] = true
+		}
+	}
+	gen(driver, connStr, mode, selectedTables, currpath)
 }
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms string, connStr string, mode byte, currpath string) {
+func gen(dbms string, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", dbms, connStr)
@@ -224,7 +231,7 @@ func gen(dbms string, connStr string, mode byte, currpath string) {
 	mvcPath.ControllerPath = path.Join(currpath, "controllers")
 	mvcPath.RouterPath = path.Join(currpath, "routers")
 	createPaths(mode, mvcPath)
-	writeSourceFiles(tables, mode, mvcPath)
+	writeSourceFiles(tables, mode, mvcPath, selectedTableNames)
 }
 
 // getTables gets a list table names in current database
@@ -418,24 +425,30 @@ func createPaths(mode byte, paths *MvcPath) {
 // writeSourceFiles generates source files for model/controller/router
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
-func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath) {
+func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
 	if (O_MODEL & mode) == O_MODEL {
 		ColorLog("[INFO] Creating model files...\n")
-		writeModelFiles(tables, paths.ModelPath)
+		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
 	if (O_CONTROLLER & mode) == O_CONTROLLER {
 		ColorLog("[INFO] Creating controller files...\n")
-		writeControllerFiles(tables, paths.ControllerPath)
+		writeControllerFiles(tables, paths.ControllerPath, selectedTables)
 	}
 	if (O_ROUTER & mode) == O_ROUTER {
 		ColorLog("[INFO] Creating router files...\n")
-		writeRouterFile(tables, paths.RouterPath)
+		writeRouterFile(tables, paths.RouterPath, selectedTables)
 	}
 }
 
 // writeModelFiles generates model files
-func writeModelFiles(tables []*Table, mPath string) {
+func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
 	for _, tb := range tables {
+		// if selectedTables map is not nil and this table is not selected, ignore it
+		if selectedTables != nil {
+			if _, selected := selectedTables[tb.Name]; !selected {
+				continue
+			}
+		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(mPath, filename+".go")
 		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
@@ -462,8 +475,14 @@ func writeModelFiles(tables []*Table, mPath string) {
 }
 
 // writeControllerFiles generates controller files
-func writeControllerFiles(tables []*Table, cPath string) {
+func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool) {
 	for _, tb := range tables {
+		// if selectedTables map is not nil and this table is not selected, ignore it
+		if selectedTables != nil {
+			if _, selected := selectedTables[tb.Name]; !selected {
+				continue
+			}
+		}
 		if tb.Pk == "" {
 			continue
 		}
@@ -486,9 +505,15 @@ func writeControllerFiles(tables []*Table, cPath string) {
 }
 
 // writeRouterFile generates router file
-func writeRouterFile(tables []*Table, rPath string) {
+func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool) {
 	var nameSpaces []string
 	for _, tb := range tables {
+		// if selectedTables map is not nil and this table is not selected, ignore it
+		if selectedTables != nil {
+			if _, selected := selectedTables[tb.Name]; !selected {
+				continue
+			}
+		}
 		if tb.Pk == "" {
 			continue
 		}
