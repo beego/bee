@@ -624,7 +624,6 @@ package models
 	MODEL_TPL = `
 package models
 
-// oprations for {{modelName}}
 {{modelStruct}}
 
 func init() {
@@ -757,6 +756,7 @@ func Delete{{modelName}}(id int) (err error) {
 	CTRL_TPL = `
 package controllers
 
+// oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
