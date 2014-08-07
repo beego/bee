@@ -624,6 +624,7 @@ package models
 	MODEL_TPL = `
 package models
 
+// oprations for {{modelName}}
 {{modelStruct}}
 
 func init() {
