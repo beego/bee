@@ -90,9 +90,9 @@ func generateCode(cmd *Command, args []string) {
 		generateModel(string(driver), string(conn), string(level), curpath)
 	case "migration":
 		if len(args) == 2 {
-			filename := args[1]
-			ColorLog("[INFO] Using '%s' as migration file name\n", filename)
-			generateMigration(filename, curpath)
+			mname := args[1]
+			ColorLog("[INFO] Using '%s' as migration name\n", mname)
+			generateMigration(mname, curpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate migration [filename]\n")
