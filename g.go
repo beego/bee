@@ -30,8 +30,8 @@ bee generate model [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)
 bee generate migration [filename]
     generate migration file for making database schema update
 
-bee generate controller [modelfile]
-    generate RESTFul controllers based on modelfile             
+bee generate controller [controllerfile]
+    generate RESTFul controllers             
 
 bee generate router [controllerfile]
     generate router based on controllerfile
@@ -100,6 +100,16 @@ func generateCode(cmd *Command, args []string) {
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate migration [filename]\n")
+			os.Exit(2)
+		}
+	case "controller":
+		if len(args) == 2 {
+			cname := args[1]
+			ColorLog("[INFO] Using '%s' as controller name\n", cname)
+			generateController(cname, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate controller [filename]\n")
 			os.Exit(2)
 		}
 	default:

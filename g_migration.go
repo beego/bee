@@ -35,7 +35,7 @@ func generateMigration(mname string, curpath string) {
 	migrationFilePath := path.Join(curpath, M_PATH)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
-		if err := os.Mkdir(migrationFilePath, 0777); err != nil {
+		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
 			ColorLog("[ERRO] Could not create migration directory: %s\n", err)
 			os.Exit(2)
 		}
