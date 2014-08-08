@@ -31,6 +31,8 @@ func generateController(cname, crupath string) {
 		i := strings.LastIndex(p[:len(p)-1], "/")
 		packageName = p[i+1 : len(p)-1]
 	}
+	ColorLog("[INFO] Using '%s' as controller name\n", controllerName)
+	ColorLog("[INFO] Using '%s' as package name\n", packageName)
 	fp := path.Join(crupath, "controllers", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
 		// create controller directory

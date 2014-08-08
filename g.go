@@ -105,7 +105,6 @@ func generateCode(cmd *Command, args []string) {
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]
-			ColorLog("[INFO] Using '%s' as controller name\n", cname)
 			generateController(cname, curpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
