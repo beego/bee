@@ -640,7 +640,7 @@ func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 			if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
 				continue
 			}
-			fmt.Printf(pkgpath + ":" + controllerName + ":" + cmpath + ":" + realType + "\n")
+			//fmt.Printf(pkgpath + ":" + controllerName + ":" + cmpath + ":" + realType + "\n")
 			_, _, mod, newRealTypes := getModel(p + realType)
 			modelsList[pkgpath+controllerName][p+realType] = mod
 			appendModels(cmpath, pkgpath, controllerName, newRealTypes)

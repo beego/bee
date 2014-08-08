@@ -25,8 +25,15 @@ var cmdApiapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "api [appname]",
 	Short:     "create an api application base on beego framework",
-	Long: `
+	Long: `	
 create an api application base on beego framework
+
+bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+    -tables: a list of table names separated by ',', default is empty, indicating all tables
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is ''
+	
+if conn is empty will create a example api application. otherwise generate api application based on an existing database.
 
 In the current path, will create a folder named [appname]
 
@@ -73,6 +80,32 @@ func main() {
 	beego.Run()
 }
 `
+
+var apiMainconngo = `package main
+
+import (
+	_ "{{.Appname}}/docs"
+	_ "{{.Appname}}/routers"
+
+	"github.com/astaxie/beego"
+	"github.com/astaxie/beego/orm"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+func init() {
+	orm.RegisterDataBase("default", "mysql", "{{.conn}}")
+}
+
+func main() {
+	if beego.RunMode == "dev" {
+		beego.DirectoryIndex = true
+		beego.StaticDir["/swagger"] = "swagger"
+	}
+	beego.Run()
+}
+
+`
+
 var apirouter = `// @APIVersion 1.0.0
 // @Title beego Test API
 // @Description beego has a very cool tools to autogenerate documents for your API
@@ -504,17 +537,25 @@ func TestGet(t *testing.T) {
 
 func init() {
 	cmdApiapp.Run = createapi
+	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
+	cmdApiapp.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
+	cmdApiapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 func createapi(cmd *Command, args []string) {
-	if len(args) != 1 {
-		fmt.Println("error args")
-		os.Exit(2)
+	curpath, _ := os.Getwd()
+	if len(args) > 1 {
+		cmd.Flag.Parse(args[1:])
 	}
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(2)
+	}
+	if driver == "" {
+		driver = "mysql"
+	}
+	if conn == "" {
 	}
 	os.MkdirAll(apppath, 0755)
 	fmt.Println("create app folder:", apppath)
@@ -524,10 +565,6 @@ func createapi(cmd *Command, args []string) {
 	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
 	os.Mkdir(path.Join(apppath, "docs"), 0755)
 	fmt.Println("create docs:", path.Join(apppath, "docs"))
-	os.Mkdir(path.Join(apppath, "models"), 0755)
-	fmt.Println("create models:", path.Join(apppath, "models"))
-	os.Mkdir(path.Join(apppath, "routers"), 0755)
-	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
 
@@ -535,34 +572,55 @@ func createapi(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(apiconf, "{{.Appname}}", args[0], -1))
 
-	fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
-	writetofile(path.Join(apppath, "controllers", "object.go"),
-		strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
+	if conn != "" {
+		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		writetofile(path.Join(apppath, "main.go"),
+			strings.Replace(
+				strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1),
+				"{{.conn}}",
+				conn.String(),
+				-1,
+			),
+		)
+		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
+		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
+		ColorLog("[INFO] Using '%s' as 'tables'", tables)
+		generateModel(string(driver), string(conn), "3", string(tables), path.Join(curpath, packpath))
+	} else {
+		os.Mkdir(path.Join(apppath, "models"), 0755)
+		fmt.Println("create models:", path.Join(apppath, "models"))
+		os.Mkdir(path.Join(apppath, "routers"), 0755)
+		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
 
-	fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
-	writetofile(path.Join(apppath, "controllers", "user.go"),
-		strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
+		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
+		writetofile(path.Join(apppath, "controllers", "object.go"),
+			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-	fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
-	writetofile(path.Join(apppath, "tests", "default_test.go"),
-		strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
+		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
+		writetofile(path.Join(apppath, "controllers", "user.go"),
+			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
-	fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
-	writetofile(path.Join(apppath, "routers", "router.go"),
-		strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
+		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
+		writetofile(path.Join(apppath, "tests", "default_test.go"),
+			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
 
-	fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-	writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
+		writetofile(path.Join(apppath, "routers", "router.go"),
+			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
-	fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-	writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
+		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
 
-	fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
-	writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
+		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
+		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-	fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"),
-		strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
+		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
+		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
+
+		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		writetofile(path.Join(apppath, "main.go"),
+			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
+	}
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {

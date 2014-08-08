@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-docgen=true]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]",
 	Short:     "run the app which can hot compile",
 	Long: `
 start the appname throw exec.Command
@@ -47,12 +47,12 @@ when the file has changed bee will auto go build and restart the app
 var mainFiles ListOpts
 
 var downdoc docValue
-var docgen docValue
+var gendoc docValue
 
 func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
-	cmdRun.Flag.Var(&docgen, "docgen", "auto generate the docs")
+	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
 	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
 }
 
@@ -98,7 +98,7 @@ func runApp(cmd *Command, args []string) {
 		}
 	}
 
-	if docgen == "true" {
+	if gendoc == "true" {
 		NewWatcher(paths, files, true)
 		Autobuild(files, true)
 	} else {
