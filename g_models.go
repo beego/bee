@@ -451,10 +451,26 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(mPath, filename+".go")
-		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
-		if err != nil {
-			ColorLog("[WARN] %v\n", err)
-			continue
+		var f *os.File
+		var err error
+		if isExist(fpath) {
+			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			if askForConfirmation() {
+				f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+				if err != nil {
+					ColorLog("[WARN] %v\n", err)
+					continue
+				}
+			} else {
+				ColorLog("[WARN] skip create file\n")
+				continue
+			}
+		} else {
+			f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+			if err != nil {
+				ColorLog("[WARN] %v\n", err)
+				continue
+			}
 		}
 		template := ""
 		if tb.Pk == "" {
@@ -488,10 +504,26 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(cPath, filename+".go")
-		f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
-		if err != nil {
-			ColorLog("[WARN] %v\n", err)
-			continue
+		var f *os.File
+		var err error
+		if isExist(fpath) {
+			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			if askForConfirmation() {
+				f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+				if err != nil {
+					ColorLog("[WARN] %v\n", err)
+					continue
+				}
+			} else {
+				ColorLog("[WARN] skip create file\n")
+				continue
+			}
+		} else {
+			f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+			if err != nil {
+				ColorLog("[WARN] %v\n", err)
+				continue
+			}
 		}
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		if _, err := f.WriteString(fileStr); err != nil {
@@ -527,10 +559,26 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	_, projectName := path.Split(path.Dir(rPath))
 	routerStr = strings.Replace(routerStr, "{{projectName}}", projectName, 1)
-	f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666)
-	if err != nil {
-		ColorLog("[WARN] %v\n", err)
-		return
+	var f *os.File
+	var err error
+	if isExist(fpath) {
+		ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+		if askForConfirmation() {
+			f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+			if err != nil {
+				ColorLog("[WARN] %v\n", err)
+				return
+			}
+		} else {
+			ColorLog("[WARN] skip create file\n")
+			return
+		}
+	} else {
+		f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+		if err != nil {
+			ColorLog("[WARN] %v\n", err)
+			return
+		}
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
 		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
