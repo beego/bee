@@ -4,10 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"log"
 	"os"
+	"os/exec"
 	path "path/filepath"
 	"regexp"
-	"runtime"
 )
 
 var cmdVersion = &Command{
@@ -29,7 +30,12 @@ func init() {
 func versionCmd(cmd *Command, args []string) {
 	fmt.Println("bee   :" + version)
 	fmt.Println("beego :" + getbeegoVersion())
-	fmt.Println("Go    :" + runtime.Version())
+	//fmt.Println("Go    :" + runtime.Version())
+	goversion, err := exec.Command("go", "version").Output()
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Go    :" + string(goversion))
 }
 
 func getbeegoVersion() string {
