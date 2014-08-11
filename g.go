@@ -27,7 +27,7 @@ bee generate model [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router
 
-bee generate migration [filename]
+bee generate migration [migrationfile]
     generate migration file for making database schema update
 
 bee generate controller [controllerfile]
