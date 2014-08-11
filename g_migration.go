@@ -32,7 +32,7 @@ const (
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
 func generateMigration(mname string, curpath string) {
-	migrationFilePath := path.Join(curpath, M_PATH)
+	migrationFilePath := path.Join(curpath, "database", M_PATH)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
 		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
