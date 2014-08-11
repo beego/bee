@@ -20,6 +20,11 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
+bee generate scaffold [modelname] [-fields=""]	
+	The generate scaffold command will do a number of things for you。
+	-fields: a list of database fields.
+	example: bee generate scaffold post -fields="title:string,body:text"
+	
 bee generate model [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
     generate model based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
