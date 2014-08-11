@@ -83,6 +83,7 @@ var commands = []*Command{
 	cmdVersion,
 	cmdGenerate,
 	cmdRundocs,
+	cmdMigrate,
 }
 
 func main() {
