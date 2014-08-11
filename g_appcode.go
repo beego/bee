@@ -191,7 +191,7 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateModel(driver string, connStr string, level string, tables string, currpath string) {
+func generateAppcode(driver string, connStr string, level string, tables string, currpath string) {
 	var mode byte
 	if level == "1" {
 		mode = O_MODEL
@@ -663,14 +663,12 @@ func getFileName(tbName string) (filename string) {
 }
 
 const (
-	STRUCT_MODEL_TPL = `
-package models
+	STRUCT_MODEL_TPL = `package models
 
 {{modelStruct}}
 `
 
-	MODEL_TPL = `
-package models
+	MODEL_TPL = `package models
 
 {{modelStruct}}
 
