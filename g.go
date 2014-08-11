@@ -33,8 +33,8 @@ bee generate migration [filename]
 bee generate controller [controllerfile]
     generate RESTFul controllers             
 
-bee generate router [controllerfile]
-    generate router based on controllerfile
+bee generate view [viewpath]
+    generate CRUD view in viewpath
 
 bee generate docs
     generate swagger doc file
@@ -109,6 +109,15 @@ func generateCode(cmd *Command, args []string) {
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate controller [filename]\n")
+			os.Exit(2)
+		}
+	case "view":
+		if len(args) == 2 {
+			cname := args[1]
+			generateView(cname, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate view [filename]\n")
 			os.Exit(2)
 		}
 	default:
