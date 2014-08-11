@@ -64,8 +64,7 @@ func formatSourceCode(fpath string) {
 	cmd.Run()
 }
 
-const MIGRATION_TPL = `
-package main
+const MIGRATION_TPL = `package main
 
 import (
 	"time"
