@@ -83,13 +83,7 @@ func runMigration(cmd *Command, args []string) {
 	}
 }
 
-func checkForSchemaUpdateTable(driver string, connStr string) {
-	db, err := sql.Open(driver, connStr)
-	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
-		os.Exit(2)
-	}
-	defer db.Close()
+func checkForSchemaUpdateTable(db *sql.DB) {
 	if rows, err := db.Query("SHOW TABLES LIKE 'migrations'"); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
 		os.Exit(2)
@@ -138,6 +132,26 @@ func checkForSchemaUpdateTable(driver string, connStr string) {
 	}
 }
 
+func getLatestMigration(db *sql.DB) (file string, createdAt string) {
+	sql := "SELECT file, created_at FROM migrations ORDER BY id_migration DESC LIMIT 1"
+	if rows, err := db.Query(sql); err != nil {
+		ColorLog("[ERRO] Could not retrieve migrations: %s\n", err)
+		os.Exit(2)
+	} else {
+		var fileBytes, createdAtBytes []byte
+		if rows.Next() {
+			if err := rows.Scan(&fileBytes, &createdAtBytes); err != nil {
+				ColorLog("[ERRO] Could not read migrations in database: %s\n", err)
+				os.Exit(2)
+			}
+			file, createdAt = string(fileBytes), string(createdAtBytes)
+		} else {
+			file, createdAt = "", "0"
+		}
+	}
+	return
+}
+
 func createTempMigrationDir(path string) {
 	if err := os.MkdirAll(path, 0777); err != nil {
 		ColorLog("[ERRO] Could not create path: %s\n", err)
@@ -145,14 +159,16 @@ func createTempMigrationDir(path string) {
 	}
 }
 
-func writeMigrationSourceFile(filename string, driver string, connStr string) {
+func writeMigrationSourceFile(filename string, driver string, connStr string, latestTime string, latestName string, task string) {
 	if f, err := os.OpenFile(filename+".go", os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
 	} else {
 		content := strings.Replace(MIGRATION_MAIN_TPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
-		content = strings.Replace(content, "{{CurrTime}}", "123", -1)
+		content = strings.Replace(content, "{{LatestTime}}", latestTime, -1)
+		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
+		content = strings.Replace(content, "{{Task}}", task, -1)
 		if _, err := f.WriteString(content); err != nil {
 			ColorLog("[ERRO] Could not write to file: %s\n", err)
 			os.Exit(2)
@@ -188,10 +204,19 @@ func cleanUpMigrationFiles(tmpPath string) {
 
 func migrateUpdate() {
 	connStr := "root:@tcp(127.0.0.1:3306)/sgfas?charset=utf8"
-	checkForSchemaUpdateTable("mysql", connStr)
+	driver := "mysql"
 	filename := path.Join(TMP_DIR, "super")
+	// connect to database
+	db, err := sql.Open(driver, connStr)
+	if err != nil {
+		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		os.Exit(2)
+	}
+	defer db.Close()
+	checkForSchemaUpdateTable(db)
+	latestTime, latestName := getLatestMigration(db)
 	createTempMigrationDir(TMP_DIR)
-	writeMigrationSourceFile(filename, "mysql", connStr)
+	writeMigrationSourceFile(filename, driver, connStr, latestTime, latestName, "upgrade")
 	buildMigrationBinary(filename)
 	runMigrationBinary(filename)
 	cleanUpMigrationFiles(TMP_DIR)
@@ -204,8 +229,6 @@ func migrateReset() {
 }
 
 func migrateRefresh() {
-	migrateReset()
-	migrateUpdate()
 }
 
 const (
@@ -221,10 +244,17 @@ func init(){
 }
 
 func main(){
-	migration.Upgrade({{CurrTime}})
-	//migration.Rollback()
-	//migration.Reset()
-	//migration.Refresh()
+	task := {{Task}}
+	switch task {
+	case "upgrade":
+		migration.Upgrade({{LatestTime}})
+	case "rollback":
+		migration.Rollback("{{LatestName}}")
+	case "reset":
+		migration.Reset()
+	case "refresh":
+		migration.Refresh()
+	}
 }
 
 `
