@@ -48,10 +48,6 @@ bee migrate refresh
 `,
 }
 
-const (
-	TMP_DIR = "temp"
-)
-
 var mDriver docValue
 var mConn docValue
 
@@ -218,9 +214,9 @@ func runMigrationBinary(filename string) {
 	}
 }
 
-func cleanUpMigrationFiles(tmpPath string) {
-	if err := os.RemoveAll(tmpPath); err != nil {
-		ColorLog("[ERRO] Could not remove temporary migration directory: %s\n", err)
+func removeMigrationBinary(path string) {
+	if err := os.Remove(path); err != nil {
+		ColorLog("[ERRO] Could not remove migration binary: %s\n", err)
 		os.Exit(2)
 	}
 }
@@ -242,7 +238,7 @@ func migrateRefresh(driver, connStr string) {
 }
 
 func migrate(goal, driver, connStr string) {
-	filename := path.Join(TMP_DIR, "migrate")
+	filepath := path.Join("database", "migrations", "migrate")
 	// connect to database
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
@@ -252,11 +248,10 @@ func migrate(goal, driver, connStr string) {
 	defer db.Close()
 	checkForSchemaUpdateTable(db)
 	latestName, latestTime := getLatestMigration(db)
-	createTempMigrationDir(TMP_DIR)
-	writeMigrationSourceFile(filename, driver, connStr, latestTime, latestName, goal)
-	buildMigrationBinary(filename)
-	runMigrationBinary(filename)
-	cleanUpMigrationFiles(TMP_DIR)
+	writeMigrationSourceFile(filepath, driver, connStr, latestTime, latestName, goal)
+	buildMigrationBinary(filepath)
+	runMigrationBinary(filepath)
+	removeMigrationBinary(filepath)
 }
 
 const (
