@@ -198,9 +198,11 @@ func writeMigrationSourceFile(filename string, driver string, connStr string, la
 
 func buildMigrationBinary(filename string) {
 	cmd := exec.Command("go", "build", "-o", filename, filename+".go")
-	if err := cmd.Run(); err != nil {
+	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
 		os.Exit(2)
+	} else {
+		ColorLog("[INFO] %s\n", string(out))
 	}
 }
 
