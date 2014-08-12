@@ -197,12 +197,12 @@ func writeMigrationSourceFile(filename string, driver string, connStr string, la
 }
 
 func buildMigrationBinary(filename string) {
-	cmd := exec.Command("go", "build", "-o", filename, filename+".go")
+	os.Chdir(path.Join("database", "migrations"))
+	cmd := exec.Command("go", "build", "-o", filename)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
+		formatShellErrOutput(string(out))
 		os.Exit(2)
-	} else {
-		ColorLog("[INFO] %s\n", string(out))
 	}
 }
 
@@ -212,7 +212,7 @@ func runMigrationBinary(filename string) {
 		ColorLog("[ERRO] Could not run migration binary\n")
 		os.Exit(2)
 	} else {
-		ColorLog("[INFO] %s\n", string(out))
+		formatShellOutput(string(out))
 	}
 }
 
@@ -254,6 +254,22 @@ func migrate(goal, driver, connStr string) {
 	buildMigrationBinary(filepath)
 	runMigrationBinary(filepath)
 	removeMigrationBinary(filepath)
+}
+
+func formatShellErrOutput(o string) {
+	for _, line := range strings.Split(o, "\n") {
+		if line != "" {
+			ColorLog("[ERRO] -| %s\n", line)
+		}
+	}
+}
+
+func formatShellOutput(o string) {
+	for _, line := range strings.Split(o, "\n") {
+		if line != "" {
+			ColorLog("[INFO] -| %s\n", line)
+		}
+	}
 }
 
 const (
