@@ -191,7 +191,7 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateModel(driver string, connStr string, level string, tables string, currpath string) {
+func generateAppcode(driver string, connStr string, level string, tables string, currpath string) {
 	var mode byte
 	if level == "1" {
 		mode = O_MODEL
@@ -466,7 +466,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 				continue
 			}
 		} else {
-			f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
 				ColorLog("[WARN] %v\n", err)
 				continue
@@ -519,7 +519,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 				continue
 			}
 		} else {
-			f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
 				ColorLog("[WARN] %v\n", err)
 				continue
@@ -574,7 +574,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 			return
 		}
 	} else {
-		f, err = os.OpenFile(fpath, os.O_CREATE, 0666)
+		f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
 			ColorLog("[WARN] %v\n", err)
 			return
@@ -663,14 +663,12 @@ func getFileName(tbName string) (filename string) {
 }
 
 const (
-	STRUCT_MODEL_TPL = `
-package models
+	STRUCT_MODEL_TPL = `package models
 
 {{modelStruct}}
 `
 
-	MODEL_TPL = `
-package models
+	MODEL_TPL = `package models
 
 {{modelStruct}}
 

@@ -8,7 +8,7 @@ import (
 // recipe
 // admin/recipe
 func generateView(vpath, crupath string) {
-	absvpath := path.Join(crupath, vpath)
+	absvpath := path.Join(crupath, "views", vpath)
 	os.MkdirAll(absvpath, os.ModePerm)
 	cfile := path.Join(absvpath, "index.tpl")
 	if f, err := os.OpenFile(cfile, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
