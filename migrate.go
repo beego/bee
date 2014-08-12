@@ -28,15 +28,23 @@ var cmdMigrate = &Command{
 	Long: `
 bee migrate
     run all outstanding migrations
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate rollback
     rollback the last migration operation
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate reset
     rollback all migrations
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate refresh
     rollback all migrations and run them all again
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 `,
 }
 
