@@ -44,13 +44,16 @@ const (
 	TMP_DIR = "temp"
 )
 
+var mDriver docValue
+var mConn docValue
+
 func init() {
 	cmdMigrate.Run = runMigration
+	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgresql, etc.")
+	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 func runMigration(cmd *Command, args []string) {
-	//curpath, _ := os.Getwd()
-
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
@@ -59,24 +62,34 @@ func runMigration(cmd *Command, args []string) {
 		os.Exit(2)
 	}
 	// getting command line arguments
-	connStr := "root:@tcp(127.0.0.1:3306)/sgfas?charset=utf8"
-	driver := "mysql"
+	if len(args) != 0 {
+		cmd.Flag.Parse(args[1:])
+	}
+	if mDriver == "" {
+		mDriver = "mysql"
+	}
+	if mConn == "" {
+		mConn = "root:@tcp(127.0.0.1:3306)/test"
+	}
+	ColorLog("[INFO] Using '%s' as 'driver'\n", mDriver)
+	ColorLog("[INFO] Using '%s' as 'conn'\n", mConn)
+	driverStr, connStr := string(mDriver), string(mConn)
 	if len(args) == 0 {
 		// run all outstanding migrations
 		ColorLog("[INFO] Running all outstanding migrations\n")
-		migrateUpdate(driver, connStr)
+		migrateUpdate(driverStr, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			ColorLog("[INFO] Rolling back the last migration operation\n")
-			migrateRollback(driver, connStr)
+			migrateRollback(driverStr, connStr)
 		case "reset":
 			ColorLog("[INFO] Reseting all migrations\n")
-			migrateReset(driver, connStr)
+			migrateReset(driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateReset(driver, connStr)
+			migrateReset(driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
@@ -273,6 +286,7 @@ CREATE TABLE migrations (
 	name varchar(255) DEFAULT NULL COMMENT 'migration name, unique',
 	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'date migrated or rolled back',
 	statements longtext COMMENT 'SQL statements for this migration',
+	rollback_statements longtext COMMENT 'SQL statment for rolling back migration',
 	status ENUM('update', 'rollback') COMMENT 'update indicates it is a normal migration while rollback means this migration is rolled back',
 	PRIMARY KEY (id_migration),
 	UNIQUE KEY (name)
