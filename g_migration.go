@@ -67,8 +67,6 @@ func formatSourceCode(fpath string) {
 const MIGRATION_TPL = `package main
 
 import (
-	"time"
-
 	"github.com/astaxie/beego/migration"
 )
 
