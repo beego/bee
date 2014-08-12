@@ -81,8 +81,8 @@ func runMigration(cmd *Command, args []string) {
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
 		}
-		ColorLog("[SUCC] Migration successful!\n")
 	}
+	ColorLog("[SUCC] Migration successful!\n")
 }
 
 func checkForSchemaUpdateTable(db *sql.DB) {
