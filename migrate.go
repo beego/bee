@@ -58,23 +58,25 @@ func runMigration(cmd *Command, args []string) {
 		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
 		os.Exit(2)
 	}
-
+	// getting command line arguments
+	connStr := "root:@tcp(127.0.0.1:3306)/sgfas?charset=utf8"
+	driver := "mysql"
 	if len(args) == 0 {
 		// run all outstanding migrations
 		ColorLog("[INFO] Running all outstanding migrations\n")
-		migrateUpdate()
+		migrateUpdate(driver, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			ColorLog("[INFO] Rolling back the last migration operation\n")
-			migrateRollback()
+			migrateRollback(driver, connStr)
 		case "reset":
 			ColorLog("[INFO] Reseting all migrations\n")
-			migrateReset()
+			migrateReset(driver, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateReset()
+			migrateReset(driver, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
@@ -114,16 +116,16 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 					ColorLog("[HINT] Expecting KEY: PRI, EXTRA: auto_increment\n")
 					os.Exit(2)
 				}
-			} else if fieldStr == "file" {
+			} else if fieldStr == "name" {
 				if !strings.HasPrefix(typeStr, "varchar") || nullStr != "YES" {
-					ColorLog("[ERRO] Column migration.file type mismatch: TYPE: %s, NULL: %s\n", typeStr, nullStr)
+					ColorLog("[ERRO] Column migration.name type mismatch: TYPE: %s, NULL: %s\n", typeStr, nullStr)
 					ColorLog("[HINT] Expecting TYPE: varchar, NULL: YES\n")
 					os.Exit(2)
 				}
 
 			} else if fieldStr == "created_at" {
 				if typeStr != "timestamp" || defaultStr != "CURRENT_TIMESTAMP" {
-					ColorLog("[ERRO] Column migration.file type mismatch: TYPE: %s, DEFAULT: %s\n", typeStr, defaultStr)
+					ColorLog("[ERRO] Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s\n", typeStr, defaultStr)
 					ColorLog("[HINT] Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP\n")
 					os.Exit(2)
 				}
@@ -133,7 +135,7 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 }
 
 func getLatestMigration(db *sql.DB) (file string, createdAt string) {
-	sql := "SELECT file, created_at FROM migrations ORDER BY id_migration DESC LIMIT 1"
+	sql := "SELECT name, created_at FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
 	if rows, err := db.Query(sql); err != nil {
 		ColorLog("[ERRO] Could not retrieve migrations: %s\n", err)
 		os.Exit(2)
@@ -191,7 +193,7 @@ func runMigrationBinary(filename string) {
 		ColorLog("[ERRO] Could not run migration binary\n")
 		os.Exit(2)
 	} else {
-		ColorLog("[INFO] %s", string(out))
+		ColorLog("[INFO] %s\n", string(out))
 	}
 }
 
@@ -202,10 +204,24 @@ func cleanUpMigrationFiles(tmpPath string) {
 	}
 }
 
-func migrateUpdate() {
-	connStr := "root:@tcp(127.0.0.1:3306)/sgfas?charset=utf8"
-	driver := "mysql"
-	filename := path.Join(TMP_DIR, "super")
+func migrateUpdate(driver, connStr string) {
+	migrate("upgrade", driver, connStr)
+}
+
+func migrateRollback(driver, connStr string) {
+	migrate("rollback", driver, connStr)
+}
+
+func migrateReset(driver, connStr string) {
+	migrate("reset", driver, connStr)
+}
+
+func migrateRefresh(driver, connStr string) {
+	migrate("refresh", driver, connStr)
+}
+
+func migrate(goal, driver, connStr string) {
+	filename := path.Join(TMP_DIR, "migrate")
 	// connect to database
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
@@ -214,21 +230,12 @@ func migrateUpdate() {
 	}
 	defer db.Close()
 	checkForSchemaUpdateTable(db)
-	latestTime, latestName := getLatestMigration(db)
+	latestName, latestTime := getLatestMigration(db)
 	createTempMigrationDir(TMP_DIR)
-	writeMigrationSourceFile(filename, driver, connStr, latestTime, latestName, "upgrade")
+	writeMigrationSourceFile(filename, driver, connStr, latestTime, latestName, goal)
 	buildMigrationBinary(filename)
 	runMigrationBinary(filename)
 	cleanUpMigrationFiles(TMP_DIR)
-}
-
-func migrateRollback() {
-}
-
-func migrateReset() {
-}
-
-func migrateRefresh() {
 }
 
 const (
@@ -237,14 +244,16 @@ const (
 import(
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/migration"
+
+	_ "github.com/go-sql-driver/mysql"
 )
 
 func init(){
-	orm.RegisterDb("default", "{{DBDriver}}","{{ConnStr}}")
+	orm.RegisterDataBase("default", "{{DBDriver}}","{{ConnStr}}")
 }
 
 func main(){
-	task := {{Task}}
+	task := "{{Task}}"
 	switch task {
 	case "upgrade":
 		migration.Upgrade({{LatestTime}})
@@ -260,11 +269,13 @@ func main(){
 `
 	MYSQL_MIGRATION_DDL = `
 CREATE TABLE migrations (
-	id_migration int(10) unsigned NOT NULL AUTO_INCREMENT,
-	file varchar(255) DEFAULT NULL,
-	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-	statements text,
-	PRIMARY KEY (id_migration)
+	id_migration int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'surrogate key',
+	name varchar(255) DEFAULT NULL COMMENT 'migration name, unique',
+	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'date migrated or rolled back',
+	statements longtext COMMENT 'SQL statements for this migration',
+	status ENUM('update', 'rollback') COMMENT 'update indicates it is a normal migration while rollback means this migration is rolled back',
+	PRIMARY KEY (id_migration),
+	UNIQUE KEY (name)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 
 `
 )
