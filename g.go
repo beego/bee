@@ -43,12 +43,12 @@ bee generate docs
 bee generate test [routerfile]
     generate testcase
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
+bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-    -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router		
+    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router		
 `,
 }
 
@@ -102,19 +102,30 @@ func generateCode(cmd *Command, args []string) {
 	case "docs":
 		generateDocs(curpath)
 	case "appcode":
+		// load config
+		err := loadConfig()
+		if err != nil {
+			ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		}
 		cmd.Flag.Parse(args[1:])
 		if driver == "" {
-			driver = "mysql"
+			driver = docValue(conf.Database.Driver)
+			if driver == "" {
+				driver = "mysql"
+			}
 		}
 		if conn == "" {
-			conn = "root:@tcp(127.0.0.1:3306)/test"
+			conn = docValue(conf.Database.Conn)
+			if conn == "" {
+				conn = "root:@tcp(127.0.0.1:3306)/test"
+			}
 		}
 		if level == "" {
-			level = "1"
+			level = "3"
 		}
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'", tables)
+		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
 		generateAppcode(string(driver), string(conn), string(level), string(tables), curpath)
 	case "migration":
