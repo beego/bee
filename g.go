@@ -43,12 +43,12 @@ bee generate docs
 bee generate test [routerfile]
     generate testcase
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=1]
+bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-    -level:  [1 | 2 | 3], 1 = model; 2 = models,controller; 3 = models,controllers,router		
+    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router		
 `,
 }
 
