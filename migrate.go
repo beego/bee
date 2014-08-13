@@ -209,7 +209,8 @@ func buildMigrationBinary(filename string) {
 func runMigrationBinary(filename string) {
 	cmd := exec.Command("./" + filename)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		ColorLog("[ERRO] Could not run migration binary\n")
+		formatShellOutput(string(out))
+		ColorLog("[ERRO] Could not run migration binary: %s\n", err)
 		os.Exit(2)
 	} else {
 		formatShellOutput(string(out))
@@ -276,6 +277,7 @@ const (
 	MIGRATION_MAIN_TPL = `package main
 
 import(
+	"os"
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/migration"
 
@@ -290,13 +292,21 @@ func main(){
 	task := "{{Task}}"
 	switch task {
 	case "upgrade":
-		migration.Upgrade({{LatestTime}})
+		if err := migration.Upgrade({{LatestTime}}); err != nil {
+			os.Exit(2)
+		}
 	case "rollback":
-		migration.Rollback("{{LatestName}}")
+		if err := migration.Rollback("{{LatestName}}"); err != nil {
+			os.Exit(2)
+		}
 	case "reset":
-		migration.Reset()
+		if err := migration.Reset(); err != nil {
+			os.Exit(2)
+		}
 	case "refresh":
-		migration.Refresh()
+		if err := migration.Refresh(); err != nil {
+			os.Exit(2)
+		}
 	}
 }
 
