@@ -312,6 +312,7 @@ const (
 
 import(
 	"os"
+
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/migration"
 
@@ -353,8 +354,7 @@ CREATE TABLE migrations (
 	statements longtext COMMENT 'SQL statements for this migration',
 	rollback_statements longtext COMMENT 'SQL statment for rolling back migration',
 	status ENUM('update', 'rollback') COMMENT 'update indicates it is a normal migration while rollback means this migration is rolled back',
-	PRIMARY KEY (id_migration),
-	UNIQUE KEY (name)
+	PRIMARY KEY (id_migration)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 
 `
 )
