@@ -106,6 +106,42 @@ func runMigration(cmd *Command, args []string) {
 	ColorLog("[SUCC] Migration successful!\n")
 }
 
+func migrateUpdate(crupath, driver, connStr string) {
+	migrate("upgrade", crupath, driver, connStr)
+}
+
+func migrateRollback(crupath, driver, connStr string) {
+	migrate("rollback", crupath, driver, connStr)
+}
+
+func migrateReset(crupath, driver, connStr string) {
+	migrate("reset", crupath, driver, connStr)
+}
+
+func migrateRefresh(crupath, driver, connStr string) {
+	migrate("refresh", crupath, driver, connStr)
+}
+
+func migrate(goal, crupath, driver, connStr string) {
+	dir := path.Join(crupath, "database", "migrations")
+	binary := "m"
+	source := binary + ".go"
+	// connect to database
+	db, err := sql.Open(driver, connStr)
+	if err != nil {
+		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		os.Exit(2)
+	}
+	defer db.Close()
+	checkForSchemaUpdateTable(db)
+	latestName, latestTime := getLatestMigration(db)
+	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
+	buildMigrationBinary(dir, binary)
+	runMigrationBinary(dir, binary)
+	removeTempFile(dir, source)
+	removeTempFile(dir, binary)
+}
+
 func checkForSchemaUpdateTable(db *sql.DB) {
 	if rows, err := db.Query("SHOW TABLES LIKE 'migrations'"); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
@@ -180,13 +216,6 @@ func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
 	return
 }
 
-func createTempMigrationDir(dir string) {
-	if err := os.MkdirAll(dir, 0777); err != nil {
-		ColorLog("[ERRO] Could not create directory: %s\n", err)
-		os.Exit(2)
-	}
-}
-
 func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
 	os.Chdir(dir)
 	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
@@ -234,42 +263,6 @@ func removeTempFile(dir, file string) {
 		ColorLog("[ERRO] Could not remove temporary migration files: %s\n", err)
 		os.Exit(2)
 	}
-}
-
-func migrateUpdate(crupath, driver, connStr string) {
-	migrate("upgrade", crupath, driver, connStr)
-}
-
-func migrateRollback(crupath, driver, connStr string) {
-	migrate("rollback", crupath, driver, connStr)
-}
-
-func migrateReset(crupath, driver, connStr string) {
-	migrate("reset", crupath, driver, connStr)
-}
-
-func migrateRefresh(crupath, driver, connStr string) {
-	migrate("refresh", crupath, driver, connStr)
-}
-
-func migrate(goal, crupath, driver, connStr string) {
-	dir := path.Join(crupath, "database", "migrations")
-	binary := "m"
-	source := binary + ".go"
-	// connect to database
-	db, err := sql.Open(driver, connStr)
-	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
-		os.Exit(2)
-	}
-	defer db.Close()
-	checkForSchemaUpdateTable(db)
-	latestName, latestTime := getLatestMigration(db)
-	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
-	buildMigrationBinary(dir, binary)
-	runMigrationBinary(dir, binary)
-	removeTempFile(dir, source)
-	removeTempFile(dir, binary)
 }
 
 func formatShellErrOutput(o string) {
