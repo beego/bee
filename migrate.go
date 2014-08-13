@@ -59,6 +59,7 @@ func init() {
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
+// runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) {
 	crupath, _ := os.Getwd()
 
@@ -106,22 +107,27 @@ func runMigration(cmd *Command, args []string) {
 	ColorLog("[SUCC] Migration successful!\n")
 }
 
+// migrateUpdate does the schema update
 func migrateUpdate(crupath, driver, connStr string) {
 	migrate("upgrade", crupath, driver, connStr)
 }
 
+// migrateRollback rolls back the latest migration
 func migrateRollback(crupath, driver, connStr string) {
 	migrate("rollback", crupath, driver, connStr)
 }
 
+// migrateReset rolls back all migrations
 func migrateReset(crupath, driver, connStr string) {
 	migrate("reset", crupath, driver, connStr)
 }
 
+// migrationRefresh rolls back all migrations and start over again
 func migrateRefresh(crupath, driver, connStr string) {
 	migrate("refresh", crupath, driver, connStr)
 }
 
+// migrate generates source code, build it, and invoke the binary who does the actual migration
 func migrate(goal, crupath, driver, connStr string) {
 	dir := path.Join(crupath, "database", "migrations")
 	binary := "m"
@@ -142,6 +148,8 @@ func migrate(goal, crupath, driver, connStr string) {
 	removeTempFile(dir, binary)
 }
 
+// checkForSchemaUpdateTable checks the existence of migrations table.
+// It checks for the proper table structures and creates the table using MYSQL_MIGRATION_DDL if it does not exist.
 func checkForSchemaUpdateTable(db *sql.DB) {
 	if rows, err := db.Query("SHOW TABLES LIKE 'migrations'"); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
@@ -191,6 +199,7 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 	}
 }
 
+// getLatestMigration retrives latest migration with status 'update'
 func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
 	sql := "SELECT name, created_at FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
 	if rows, err := db.Query(sql); err != nil {
@@ -216,6 +225,7 @@ func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
 	return
 }
 
+// writeMigrationSourceFile create the source file based on MIGRATION_MAIN_TPL
 func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
 	os.Chdir(dir)
 	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
@@ -235,6 +245,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 	}
 }
 
+// buildMigrationBinary changes directory to database/migrations folder and go-build the source
 func buildMigrationBinary(dir, binary string) {
 	os.Chdir(dir)
 	cmd := exec.Command("go", "build", "-o", binary)
@@ -245,6 +256,7 @@ func buildMigrationBinary(dir, binary string) {
 	}
 }
 
+// runMigrationBinary runs the migration program who does the actual work
 func runMigrationBinary(dir, binary string) {
 	os.Chdir(dir)
 	cmd := exec.Command("./" + binary)
@@ -257,6 +269,7 @@ func runMigrationBinary(dir, binary string) {
 	}
 }
 
+// removeTempFile removes a file in dir
 func removeTempFile(dir, file string) {
 	os.Chdir(dir)
 	if err := os.Remove(file); err != nil {
@@ -265,6 +278,7 @@ func removeTempFile(dir, file string) {
 	}
 }
 
+// formatShellErrOutput formats the error shell output
 func formatShellErrOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
@@ -273,6 +287,7 @@ func formatShellErrOutput(o string) {
 	}
 }
 
+// formatShellOutput formats the normal shell output
 func formatShellOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
