@@ -110,7 +110,7 @@ func generateCode(cmd *Command, args []string) {
 			conn = "root:@tcp(127.0.0.1:3306)/test"
 		}
 		if level == "" {
-			level = "1"
+			level = "3"
 		}
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
