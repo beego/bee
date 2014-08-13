@@ -19,7 +19,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 )
 
 var cmdMigrate = &Command{
@@ -58,6 +60,8 @@ func init() {
 }
 
 func runMigration(cmd *Command, args []string) {
+	crupath, _ := os.Getwd()
+
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
@@ -81,25 +85,61 @@ func runMigration(cmd *Command, args []string) {
 	if len(args) == 0 {
 		// run all outstanding migrations
 		ColorLog("[INFO] Running all outstanding migrations\n")
-		migrateUpdate(driverStr, connStr)
+		migrateUpdate(crupath, driverStr, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			ColorLog("[INFO] Rolling back the last migration operation\n")
-			migrateRollback(driverStr, connStr)
+			migrateRollback(crupath, driverStr, connStr)
 		case "reset":
 			ColorLog("[INFO] Reseting all migrations\n")
-			migrateReset(driverStr, connStr)
+			migrateReset(crupath, driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateReset(driverStr, connStr)
+			migrateReset(crupath, driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
 		}
 	}
 	ColorLog("[SUCC] Migration successful!\n")
+}
+
+func migrateUpdate(crupath, driver, connStr string) {
+	migrate("upgrade", crupath, driver, connStr)
+}
+
+func migrateRollback(crupath, driver, connStr string) {
+	migrate("rollback", crupath, driver, connStr)
+}
+
+func migrateReset(crupath, driver, connStr string) {
+	migrate("reset", crupath, driver, connStr)
+}
+
+func migrateRefresh(crupath, driver, connStr string) {
+	migrate("refresh", crupath, driver, connStr)
+}
+
+func migrate(goal, crupath, driver, connStr string) {
+	dir := path.Join(crupath, "database", "migrations")
+	binary := "m"
+	source := binary + ".go"
+	// connect to database
+	db, err := sql.Open(driver, connStr)
+	if err != nil {
+		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		os.Exit(2)
+	}
+	defer db.Close()
+	checkForSchemaUpdateTable(db)
+	latestName, latestTime := getLatestMigration(db)
+	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
+	buildMigrationBinary(dir, binary)
+	runMigrationBinary(dir, binary)
+	removeTempFile(dir, source)
+	removeTempFile(dir, binary)
 }
 
 func checkForSchemaUpdateTable(db *sql.DB) {
@@ -151,41 +191,40 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 	}
 }
 
-func getLatestMigration(db *sql.DB) (file string, createdAt string) {
+func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
 	sql := "SELECT name, created_at FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
 	if rows, err := db.Query(sql); err != nil {
 		ColorLog("[ERRO] Could not retrieve migrations: %s\n", err)
 		os.Exit(2)
 	} else {
-		var fileBytes, createdAtBytes []byte
+		var createdAtStr string
 		if rows.Next() {
-			if err := rows.Scan(&fileBytes, &createdAtBytes); err != nil {
+			if err := rows.Scan(&file, &createdAtStr); err != nil {
 				ColorLog("[ERRO] Could not read migrations in database: %s\n", err)
 				os.Exit(2)
 			}
-			file, createdAt = string(fileBytes), string(createdAtBytes)
+			if t, err := time.Parse("2006-01-02 15:04:05", createdAtStr); err != nil {
+				ColorLog("[ERRO] Could not parse time: %s\n", err)
+				os.Exit(2)
+			} else {
+				createdAt = t.Unix()
+			}
 		} else {
-			file, createdAt = "", "0"
+			file, createdAt = "", 0
 		}
 	}
 	return
 }
 
-func createTempMigrationDir(path string) {
-	if err := os.MkdirAll(path, 0777); err != nil {
-		ColorLog("[ERRO] Could not create path: %s\n", err)
-		os.Exit(2)
-	}
-}
-
-func writeMigrationSourceFile(filename string, driver string, connStr string, latestTime string, latestName string, task string) {
-	if f, err := os.OpenFile(filename+".go", os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
+func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
+	os.Chdir(dir)
+	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
 	} else {
 		content := strings.Replace(MIGRATION_MAIN_TPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
-		content = strings.Replace(content, "{{LatestTime}}", latestTime, -1)
+		content = strings.Replace(content, "{{LatestTime}}", strconv.FormatInt(latestTime, 10), -1)
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
 		content = strings.Replace(content, "{{Task}}", task, -1)
 		if _, err := f.WriteString(content); err != nil {
@@ -196,9 +235,9 @@ func writeMigrationSourceFile(filename string, driver string, connStr string, la
 	}
 }
 
-func buildMigrationBinary(filename string) {
-	os.Chdir(path.Join("database", "migrations"))
-	cmd := exec.Command("go", "build", "-o", filename)
+func buildMigrationBinary(dir, binary string) {
+	os.Chdir(dir)
+	cmd := exec.Command("go", "build", "-o", binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
 		formatShellErrOutput(string(out))
@@ -206,54 +245,24 @@ func buildMigrationBinary(filename string) {
 	}
 }
 
-func runMigrationBinary(filename string) {
-	cmd := exec.Command("./" + filename)
+func runMigrationBinary(dir, binary string) {
+	os.Chdir(dir)
+	cmd := exec.Command("./" + binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		ColorLog("[ERRO] Could not run migration binary\n")
+		formatShellOutput(string(out))
+		ColorLog("[ERRO] Could not run migration binary: %s\n", err)
 		os.Exit(2)
 	} else {
 		formatShellOutput(string(out))
 	}
 }
 
-func removeMigrationBinary(path string) {
-	if err := os.Remove(path); err != nil {
-		ColorLog("[ERRO] Could not remove migration binary: %s\n", err)
+func removeTempFile(dir, file string) {
+	os.Chdir(dir)
+	if err := os.Remove(file); err != nil {
+		ColorLog("[ERRO] Could not remove temporary migration files: %s\n", err)
 		os.Exit(2)
 	}
-}
-
-func migrateUpdate(driver, connStr string) {
-	migrate("upgrade", driver, connStr)
-}
-
-func migrateRollback(driver, connStr string) {
-	migrate("rollback", driver, connStr)
-}
-
-func migrateReset(driver, connStr string) {
-	migrate("reset", driver, connStr)
-}
-
-func migrateRefresh(driver, connStr string) {
-	migrate("refresh", driver, connStr)
-}
-
-func migrate(goal, driver, connStr string) {
-	filepath := path.Join("database", "migrations", "migrate")
-	// connect to database
-	db, err := sql.Open(driver, connStr)
-	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
-		os.Exit(2)
-	}
-	defer db.Close()
-	checkForSchemaUpdateTable(db)
-	latestName, latestTime := getLatestMigration(db)
-	writeMigrationSourceFile(filepath, driver, connStr, latestTime, latestName, goal)
-	buildMigrationBinary(filepath)
-	runMigrationBinary(filepath)
-	removeMigrationBinary(filepath)
 }
 
 func formatShellErrOutput(o string) {
@@ -276,6 +285,7 @@ const (
 	MIGRATION_MAIN_TPL = `package main
 
 import(
+	"os"
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/migration"
 
@@ -290,13 +300,21 @@ func main(){
 	task := "{{Task}}"
 	switch task {
 	case "upgrade":
-		migration.Upgrade({{LatestTime}})
+		if err := migration.Upgrade({{LatestTime}}); err != nil {
+			os.Exit(2)
+		}
 	case "rollback":
-		migration.Rollback("{{LatestName}}")
+		if err := migration.Rollback("{{LatestName}}"); err != nil {
+			os.Exit(2)
+		}
 	case "reset":
-		migration.Reset()
+		if err := migration.Reset(); err != nil {
+			os.Exit(2)
+		}
 	case "refresh":
-		migration.Refresh()
+		if err := migration.Refresh(); err != nil {
+			os.Exit(2)
+		}
 	}
 }
 
