@@ -263,6 +263,8 @@ func buildMigrationBinary(dir, binary string) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
 		formatShellErrOutput(string(out))
+		removeTempFile(dir, binary)
+		removeTempFile(dir, binary+".go")
 		os.Exit(2)
 	}
 }
@@ -274,6 +276,8 @@ func runMigrationBinary(dir, binary string) {
 	if out, err := cmd.CombinedOutput(); err != nil {
 		formatShellOutput(string(out))
 		ColorLog("[ERRO] Could not run migration binary: %s\n", err)
+		removeTempFile(dir, binary)
+		removeTempFile(dir, binary+".go")
 		os.Exit(2)
 	} else {
 		formatShellOutput(string(out))
