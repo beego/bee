@@ -102,19 +102,30 @@ func generateCode(cmd *Command, args []string) {
 	case "docs":
 		generateDocs(curpath)
 	case "appcode":
+		// load config
+		err := loadConfig()
+		if err != nil {
+			ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		}
 		cmd.Flag.Parse(args[1:])
 		if driver == "" {
-			driver = "mysql"
+			driver = docValue(conf.Database.Driver)
+			if driver == "" {
+				driver = "mysql"
+			}
 		}
 		if conn == "" {
-			conn = "root:@tcp(127.0.0.1:3306)/test"
+			conn = docValue(conf.Database.Conn)
+			if conn == "" {
+				conn = "root:@tcp(127.0.0.1:3306)/test"
+			}
 		}
 		if level == "" {
 			level = "3"
 		}
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'", tables)
+		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
 		generateAppcode(string(driver), string(conn), string(level), string(tables), curpath)
 	case "migration":
