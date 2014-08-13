@@ -36,7 +36,11 @@ var defaultConf = `{
 		"others": []
 	},
 	"cmd_args": [],
-	"envs": []
+	"envs": [],
+	"database": {
+		"driver": "mysql",
+		"conn": "root:@tcp(127.0.0.1:3306)/test"
+	}
 }
 `
 var conf struct {
@@ -61,6 +65,10 @@ var conf struct {
 		Import string
 		Dirs   []string
 		IngExt []string `json:"ignore_ext"`
+	}
+	Database struct {
+		Driver string
+		Conn   string
 	}
 }
 

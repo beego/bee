@@ -70,15 +70,26 @@ func runMigration(cmd *Command, args []string) {
 		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
 		os.Exit(2)
 	}
+	// load config
+	err := loadConfig()
+	if err != nil {
+		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+	}
 	// getting command line arguments
 	if len(args) != 0 {
 		cmd.Flag.Parse(args[1:])
 	}
 	if mDriver == "" {
-		mDriver = "mysql"
+		mDriver = docValue(conf.Database.Driver)
+		if mDriver == "" {
+			mDriver = "mysql"
+		}
 	}
 	if mConn == "" {
-		mConn = "root:@tcp(127.0.0.1:3306)/test"
+		mConn = docValue(conf.Database.Conn)
+		if mConn == "" {
+			mConn = "root:@tcp(127.0.0.1:3306)/test"
+		}
 	}
 	ColorLog("[INFO] Using '%s' as 'driver'\n", mDriver)
 	ColorLog("[INFO] Using '%s' as 'conn'\n", mConn)

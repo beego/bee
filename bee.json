@@ -13,5 +13,9 @@
 		"others": []
 	},
 	"cmd_args": [],
-	"envs": []
+	"envs": [],
+	"database": {
+		"driver": "mysql",
+		"conn": "root:@tcp(127.0.0.1:3306)/test"
+	}
 }
