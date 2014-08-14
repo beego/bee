@@ -20,7 +20,7 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     The generate scaffold command will do a number of things for you.
     -fields: a list of database fields.
     -driver: [mysql | postgresql | sqlite], the default is mysql
@@ -45,7 +45,7 @@ bee generate docs
 bee generate test [routerfile]
     generate testcase
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=3]
+bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
