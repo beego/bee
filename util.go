@@ -58,6 +58,7 @@ const (
 	//NRed      = uint8(31) // Normal
 	EndColor = "\033[0m"
 
+	INFO = "INFO"
 	TRAC = "TRAC"
 	ERRO = "ERRO"
 	WARN = "WARN"
@@ -139,6 +140,8 @@ func ColorLogS(format string, a ...interface{}) string {
 func getColorLevel(level string) string {
 	level = strings.ToUpper(level)
 	switch level {
+	case INFO:
+		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
 	case TRAC:
 		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
 	case ERRO:
