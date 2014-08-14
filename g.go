@@ -20,13 +20,15 @@ var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
 	Short:     "generate code based on application",
 	Long: `
-bee generate scaffold [scaffoldname] [-fields=""]	
-	The generate scaffold command will do a number of things for you。
-	-fields: a list of database fields.
-	example: bee generate scaffold post -fields="title:string,body:text"
+bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    The generate scaffold command will do a number of things for you.
+    -fields: a list of database fields.
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+    example: bee generate scaffold post -fields="title:string,body:text"
 
 bee generate model [modelname] [-fields=""]
-	generate RESTFul model based on fields
+    generate RESTFul model based on fields
 
 bee generate controller [controllerfile]
     generate RESTFul controllers             
@@ -43,7 +45,7 @@ bee generate docs
 bee generate test [routerfile]
     generate testcase
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test] [-level=3]
+bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
@@ -90,7 +92,23 @@ func generateCode(cmd *Command, args []string) {
 			ColorLog("[HINT] Usage: bee generate scaffold [scaffoldname] [-fields=\"\"]\n")
 			os.Exit(2)
 		}
+		err := loadConfig()
+		if err != nil {
+			ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		}
 		cmd.Flag.Parse(args[2:])
+		if driver == "" {
+			driver = docValue(conf.Database.Driver)
+			if driver == "" {
+				driver = "mysql"
+			}
+		}
+		if conn == "" {
+			conn = docValue(conf.Database.Conn)
+			if conn == "" {
+				conn = "root:@tcp(127.0.0.1:3306)/test"
+			}
+		}
 		if fields == "" {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate scaffold [scaffoldname] [-fields=\"title:string,body:text\"]\n")
@@ -98,7 +116,7 @@ func generateCode(cmd *Command, args []string) {
 		}
 		sname := args[1]
 		ColorLog("[INFO] Using '%s' as scaffold name\n", sname)
-		generateScaffold(sname, fields.String(), curpath)
+		generateScaffold(sname, fields.String(), curpath, driver.String(), conn.String())
 	case "docs":
 		generateDocs(curpath)
 	case "appcode":
@@ -127,7 +145,7 @@ func generateCode(cmd *Command, args []string) {
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
-		generateAppcode(string(driver), string(conn), string(level), string(tables), curpath)
+		generateAppcode(driver.String(), conn.String(), level.String(), tables.String(), curpath)
 	case "migration":
 		if len(args) == 2 {
 			mname := args[1]

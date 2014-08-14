@@ -2,7 +2,7 @@ package main
 
 import "strings"
 
-func generateScaffold(sname, fields, crupath string) {
+func generateScaffold(sname, fields, crupath, driver, conn string) {
 	// generate model
 	ColorLog("[INFO] Do you want me to create a %v model? [yes|no]]  ", sname)
 	if askForConfirmation() {
@@ -27,7 +27,7 @@ func generateScaffold(sname, fields, crupath string) {
 	// run migration
 	ColorLog("[INFO] Do you want to go ahead and migrate the database? [yes|no]]  ")
 	if askForConfirmation() {
-		// @todo
+		migrateUpdate(crupath, driver, conn)
 	}
 	ColorLog("[INFO] All done! Don't forget to add  beego.Router(\"/%v\" ,&controllers.%vController{}) to routers/route.go\n", sname, strings.Title(sname))
 }
