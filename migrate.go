@@ -151,11 +151,7 @@ func migrate(goal, crupath, driver, connStr string) {
 	}
 	defer db.Close()
 	checkForSchemaUpdateTable(db)
-	latestName, latestTime := getLatestMigration(db)
-	if goal == "rollback" && latestName == "" {
-		ColorLog("[ERRO] There is nothing to rollback\n")
-		os.Exit(2)
-	}
+	latestName, latestTime := getLatestMigration(db, goal)
 	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
 	buildMigrationBinary(dir, binary)
 	runMigrationBinary(dir, binary)
@@ -215,25 +211,30 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 }
 
 // getLatestMigration retrives latest migration with status 'update'
-func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
-	sql := "SELECT name, created_at FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
+func getLatestMigration(db *sql.DB, goal string) (file string, createdAt int64) {
+	sql := "SELECT name FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
 	if rows, err := db.Query(sql); err != nil {
 		ColorLog("[ERRO] Could not retrieve migrations: %s\n", err)
 		os.Exit(2)
 	} else {
-		var createdAtStr string
 		if rows.Next() {
-			if err := rows.Scan(&file, &createdAtStr); err != nil {
+			if err := rows.Scan(&file); err != nil {
 				ColorLog("[ERRO] Could not read migrations in database: %s\n", err)
 				os.Exit(2)
 			}
-			if t, err := time.Parse("2006-01-02 15:04:05", createdAtStr); err != nil {
+			createdAtStr := file[len(file)-15:]
+			if t, err := time.Parse("20060102_150405", createdAtStr); err != nil {
 				ColorLog("[ERRO] Could not parse time: %s\n", err)
 				os.Exit(2)
 			} else {
 				createdAt = t.Unix()
 			}
 		} else {
+			// migration table has no 'update' record, no point rolling back
+			if goal == "rollback" {
+				ColorLog("[ERRO] There is nothing to rollback\n")
+				os.Exit(2)
+			}
 			file, createdAt = "", 0
 		}
 	}
