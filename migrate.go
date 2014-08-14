@@ -109,7 +109,7 @@ func runMigration(cmd *Command, args []string) {
 			migrateReset(crupath, driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateReset(crupath, driverStr, connStr)
+			migrateRefresh(crupath, driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
