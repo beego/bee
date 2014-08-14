@@ -16,6 +16,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"os/exec"
 	"path"
@@ -300,10 +301,9 @@ func changeDir(dir string) {
 
 // removeTempFile removes a file in dir
 func removeTempFile(dir, file string) {
-	os.Chdir(dir)
+	changeDir(dir)
 	if err := os.Remove(file); err != nil {
-		ColorLog("[ERRO] Could not remove temporary migration files: %s\n", err)
-		os.Exit(2)
+		ColorLog("[WARN] Could not remove temporary file: %s\n", err)
 	}
 }
 
@@ -311,7 +311,8 @@ func removeTempFile(dir, file string) {
 func formatShellErrOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
-			ColorLog("[ERRO] -| %s\n", line)
+			ColorLog("[ERRO] -| ")
+			fmt.Println(line)
 		}
 	}
 }
@@ -320,7 +321,8 @@ func formatShellErrOutput(o string) {
 func formatShellOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
-			ColorLog("[INFO] -| %s\n", line)
+			ColorLog("[INFO] -| ")
+			fmt.Println(line)
 		}
 	}
 }
