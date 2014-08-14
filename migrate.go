@@ -109,7 +109,7 @@ func runMigration(cmd *Command, args []string) {
 			migrateReset(crupath, driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateReset(crupath, driverStr, connStr)
+			migrateRefresh(crupath, driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
@@ -152,6 +152,10 @@ func migrate(goal, crupath, driver, connStr string) {
 	defer db.Close()
 	checkForSchemaUpdateTable(db)
 	latestName, latestTime := getLatestMigration(db)
+	if goal == "rollback" && latestName == "" {
+		ColorLog("[ERRO] There is nothing to rollback\n")
+		os.Exit(2)
+	}
 	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
 	buildMigrationBinary(dir, binary)
 	runMigrationBinary(dir, binary)
@@ -238,7 +242,7 @@ func getLatestMigration(db *sql.DB) (file string, createdAt int64) {
 
 // writeMigrationSourceFile create the source file based on MIGRATION_MAIN_TPL
 func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
-	os.Chdir(dir)
+	changeDir(dir)
 	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
@@ -258,7 +262,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 
 // buildMigrationBinary changes directory to database/migrations folder and go-build the source
 func buildMigrationBinary(dir, binary string) {
-	os.Chdir(dir)
+	changeDir(dir)
 	cmd := exec.Command("go", "build", "-o", binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
@@ -271,7 +275,7 @@ func buildMigrationBinary(dir, binary string) {
 
 // runMigrationBinary runs the migration program who does the actual work
 func runMigrationBinary(dir, binary string) {
-	os.Chdir(dir)
+	changeDir(dir)
 	cmd := exec.Command("./" + binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		formatShellOutput(string(out))
@@ -281,6 +285,15 @@ func runMigrationBinary(dir, binary string) {
 		os.Exit(2)
 	} else {
 		formatShellOutput(string(out))
+	}
+}
+
+// changeDir changes working directory to dir.
+// It exits the system when encouter an error
+func changeDir(dir string) {
+	if err := os.Chdir(dir); err != nil {
+		ColorLog("[ERRO] Could not find migration directory: %s\n", err)
+		os.Exit(2)
 	}
 }
 
