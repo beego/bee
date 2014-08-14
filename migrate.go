@@ -152,6 +152,10 @@ func migrate(goal, crupath, driver, connStr string) {
 	defer db.Close()
 	checkForSchemaUpdateTable(db)
 	latestName, latestTime := getLatestMigration(db)
+	if goal == "rollback" && latestName == "" {
+		ColorLog("[ERRO] There is nothing to rollback\n")
+		os.Exit(2)
+	}
 	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
 	buildMigrationBinary(dir, binary)
 	runMigrationBinary(dir, binary)
