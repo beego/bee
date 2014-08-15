@@ -43,7 +43,7 @@ func init() {
 	cmdBale.Run = runBale
 }
 
-func runBale(cmd *Command, args []string) {
+func runBale(cmd *Command, args []string) int {
 	err := loadConfig()
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
@@ -82,6 +82,7 @@ func runBale(cmd *Command, args []string) {
 	}
 
 	ColorLog("[SUCC] Baled resources successfully!\n")
+	return 0
 }
 
 const (
