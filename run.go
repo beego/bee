@@ -58,7 +58,7 @@ func init() {
 
 var appname string
 
-func runApp(cmd *Command, args []string) {
+func runApp(cmd *Command, args []string) int {
 	exit := make(chan bool)
 	crupath, _ := os.Getwd()
 
@@ -119,6 +119,7 @@ func runApp(cmd *Command, args []string) {
 			runtime.Goexit()
 		}
 	}
+	return 0
 }
 
 func readAppDirectories(directory string, paths *[]string) {

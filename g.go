@@ -71,7 +71,7 @@ func init() {
 	cmdGenerate.Flag.Var(&fields, "fields", "specify the fields want to generate.")
 }
 
-func generateCode(cmd *Command, args []string) {
+func generateCode(cmd *Command, args []string) int {
 	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
@@ -199,4 +199,5 @@ func generateCode(cmd *Command, args []string) {
 		ColorLog("[ERRO] command is missing\n")
 	}
 	ColorLog("[SUCC] generate successfully created!\n")
+	return 0
 }

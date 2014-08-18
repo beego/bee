@@ -49,7 +49,7 @@ func pathExists(path string) bool {
 
 var started = make(chan bool)
 
-func testApp(cmd *Command, args []string) {
+func testApp(cmd *Command, args []string) int {
 	if len(args) != 1 {
 		ColorLog("[ERRO] Cannot start running[ %s ]\n",
 			"argument 'appname' is missing")
@@ -73,6 +73,7 @@ func testApp(cmd *Command, args []string) {
 			runTest()
 		}
 	}
+	return 0
 }
 
 func runTest() {

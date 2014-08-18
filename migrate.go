@@ -61,7 +61,7 @@ func init() {
 }
 
 // runMigration is the entry point for starting a migration
-func runMigration(cmd *Command, args []string) {
+func runMigration(cmd *Command, args []string) int {
 	crupath, _ := os.Getwd()
 
 	gopath := os.Getenv("GOPATH")
@@ -117,6 +117,7 @@ func runMigration(cmd *Command, args []string) {
 		}
 	}
 	ColorLog("[SUCC] Migration successful!\n")
+	return 0
 }
 
 // migrateUpdate does the schema update
