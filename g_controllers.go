@@ -68,6 +68,14 @@ type {{controllerName}}Controller struct {
 	beego.Controller
 }
 
+func (this *{{controllerName}}Controller) URLMapping() {
+	this.Mapping("Post", this.Post)
+	this.Mapping("GetOne", this.GetOne)
+	this.Mapping("GetAll", this.GetAll)
+	this.Mapping("Put", this.Put)
+	this.Mapping("Delete", this.Delete)
+}
+
 // @Title Post
 // @Description create {{controllerName}}
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"

@@ -158,10 +158,12 @@ func generateCode(cmd *Command, args []string) int {
 		mname := args[1]
 		ColorLog("[INFO] Using '%s' as migration name\n", mname)
 		upsql := ""
+		downsql := ""
 		if fields != "" {
 			upsql = `m.Sql("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
+			downsql = `m.Sql("DROP TABLE ` + "`" + mname + "`" + `")`
 		}
-		generateMigration(mname, upsql, "", curpath)
+		generateMigration(mname, upsql, downsql, curpath)
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]

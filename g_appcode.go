@@ -807,6 +807,14 @@ type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
+func (this *{{ctrlName}}Controller) URLMapping() {
+	this.Mapping("Post", this.Post)
+	this.Mapping("GetOne", this.GetOne)
+	this.Mapping("GetAll", this.GetAll)
+	this.Mapping("Put", this.Put)
+	this.Mapping("Delete", this.Delete)
+}
+
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"

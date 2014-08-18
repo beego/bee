@@ -26,10 +26,12 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 	ColorLog("[INFO] Do you want me to create a %v migration and schema for this resource? [yes|no]]  ", sname)
 	if askForConfirmation() {
 		upsql := ""
+		downsql := ""
 		if fields != "" {
 			upsql = `m.Sql("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
+			downsql = `m.Sql("DROP TABLE ` + "`" + sname + "`" + `")`
 		}
-		generateMigration(sname, upsql, "", crupath)
+		generateMigration(sname, upsql, downsql, crupath)
 	}
 	// run migration
 	ColorLog("[INFO] Do you want to go ahead and migrate the database? [yes|no]]  ")
