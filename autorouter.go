@@ -44,8 +44,9 @@ func init() {
 	cmdRouter.Run = autoRouter
 }
 
-func autoRouter(cmd *Command, args []string) {
+func autoRouter(cmd *Command, args []string) int {
 	fmt.Println("[INFO] Starting auto-generating routers...")
+	return 0
 }
 
 // getControllerInfo returns controllers that embeded "beego.controller"

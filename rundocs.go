@@ -57,7 +57,7 @@ func init() {
 	cmdRundocs.Flag.Var(&docport, "docport", "doc server port")
 }
 
-func runDocs(cmd *Command, args []string) {
+func runDocs(cmd *Command, args []string) int {
 	if isDownload == "true" {
 		downloadFromUrl(swaggerlink, "swagger.zip")
 		err := unzipAndDelete("swagger.zip", "swagger")
@@ -74,6 +74,7 @@ func runDocs(cmd *Command, args []string) {
 	}
 	fmt.Println("start the docs server on: http://127.0.0.1:" + docport)
 	log.Fatal(http.ListenAndServe(":"+string(docport), http.FileServer(http.Dir("swagger"))))
+	return 0
 }
 
 func downloadFromUrl(url, fileName string) {

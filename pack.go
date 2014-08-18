@@ -469,7 +469,7 @@ func isBeegoProject(thePath string) bool {
 	return false
 }
 
-func packApp(cmd *Command, args []string) {
+func packApp(cmd *Command, args []string) int {
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -624,4 +624,5 @@ func packApp(cmd *Command, args []string) {
 	}
 
 	fmt.Printf("file write to `%s`\n", outputP)
+	return 0
 }
