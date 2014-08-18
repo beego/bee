@@ -77,12 +77,12 @@ var commands = []*Command{
 	cmdRun,
 	cmdPack,
 	cmdApiapp,
-	cmdRouter,
-	cmdTest,
+	//cmdRouter,
+	//cmdTest,
 	cmdBale,
 	cmdVersion,
 	cmdGenerate,
-	cmdRundocs,
+	//cmdRundocs,
 	cmdMigrate,
 }
 
