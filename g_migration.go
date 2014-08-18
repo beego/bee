@@ -31,7 +31,7 @@ const (
 // generateMigration generates migration file template for database schema update.
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
-func generateMigration(mname string, curpath string) {
+func generateMigration(mname, upsql, downsql, curpath string) {
 	migrationFilePath := path.Join(curpath, "database", M_PATH)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
@@ -47,6 +47,8 @@ func generateMigration(mname string, curpath string) {
 		defer f.Close()
 		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
+		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
+		content = strings.Replace(content, "{{DownSQL}}", downsql, -1)
 		f.WriteString(content)
 		// gofmt generated source code
 		formatSourceCode(fpath)
@@ -85,10 +87,12 @@ func init() {
 // Run the migrations
 func (m *{{StructName}}) Up() {
 	// use m.Sql("CREATE TABLE ...") to make schema update
+	{{UpSQL}}
 }
 
 // Reverse the migrations
 func (m *{{StructName}}) Down() {
 	// use m.Sql("DROP TABLE ...") to reverse schema update
+	{{DownSQL}}
 }
 `
