@@ -22,13 +22,14 @@ var cmdGenerate = &Command{
 	Long: `
 bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     The generate scaffold command will do a number of things for you.
-    -fields: a list of database fields.
+    -fields: a list of table fields.
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     example: bee generate scaffold post -fields="title:string,body:text"
 
 bee generate model [modelname] [-fields=""]
     generate RESTFul model based on fields
+	-fields: a list of table fields.
 
 bee generate controller [controllerfile]
     generate RESTFul controllers             
@@ -36,8 +37,9 @@ bee generate controller [controllerfile]
 bee generate view [viewpath]
     generate CRUD view in viewpath
 
-bee generate migration [migrationfile]
+bee generate migration [migrationfile] [-fields=""]
     generate migration file for making database schema update
+	-fields: a list of table fields.
 	
 bee generate docs
     generate swagger doc file
@@ -69,7 +71,7 @@ func init() {
 	cmdGenerate.Flag.Var(&fields, "fields", "specify the fields want to generate.")
 }
 
-func generateCode(cmd *Command, args []string) {
+func generateCode(cmd *Command, args []string) int {
 	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
@@ -147,15 +149,21 @@ func generateCode(cmd *Command, args []string) {
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
 		generateAppcode(driver.String(), conn.String(), level.String(), tables.String(), curpath)
 	case "migration":
-		if len(args) == 2 {
-			mname := args[1]
-			ColorLog("[INFO] Using '%s' as migration name\n", mname)
-			generateMigration(mname, curpath)
-		} else {
+		if len(args) < 2 {
 			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate migration [migrationname]\n")
+			ColorLog("[HINT] Usage: bee generate migration [migrationname] [-fields=\"\"]\n")
 			os.Exit(2)
 		}
+		cmd.Flag.Parse(args[2:])
+		mname := args[1]
+		ColorLog("[INFO] Using '%s' as migration name\n", mname)
+		upsql := ""
+		downsql := ""
+		if fields != "" {
+			upsql = `m.Sql("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
+			downsql = `m.Sql("DROP TABLE ` + "`" + mname + "`" + `")`
+		}
+		generateMigration(mname, upsql, downsql, curpath)
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]
@@ -193,4 +201,5 @@ func generateCode(cmd *Command, args []string) {
 		ColorLog("[ERRO] command is missing\n")
 	}
 	ColorLog("[SUCC] generate successfully created!\n")
+	return 0
 }

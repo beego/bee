@@ -55,7 +55,7 @@ func init() {
 	cmdNew.Run = createApp
 }
 
-func createApp(cmd *Command, args []string) {
+func createApp(cmd *Command, args []string) int {
 	curpath, _ := os.Getwd()
 	if len(args) != 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
@@ -139,6 +139,7 @@ func createApp(cmd *Command, args []string) {
 	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
 
 	ColorLog("[SUCC] New application successfully created!\n")
+	return 0
 }
 
 var appconf = `appname = {{.Appname}}

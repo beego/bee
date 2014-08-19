@@ -25,12 +25,12 @@ import (
 	"strings"
 )
 
-const version = "1.2.0"
+const version = "1.2.1"
 
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
-	Run func(cmd *Command, args []string)
+	Run func(cmd *Command, args []string) int
 
 	// UsageLine is the one-line usage message.
 	// The first word in the line is taken to be the command name.
@@ -77,12 +77,12 @@ var commands = []*Command{
 	cmdRun,
 	cmdPack,
 	cmdApiapp,
-	cmdRouter,
-	cmdTest,
+	//cmdRouter,
+	//cmdTest,
 	cmdBale,
 	cmdVersion,
 	cmdGenerate,
-	cmdRundocs,
+	//cmdRundocs,
 	cmdMigrate,
 }
 
@@ -110,8 +110,7 @@ func main() {
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
-			cmd.Run(cmd, args)
-			os.Exit(2)
+			os.Exit(cmd.Run(cmd, args))
 			return
 		}
 	}

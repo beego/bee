@@ -27,7 +27,7 @@ func init() {
 	cmdVersion.Run = versionCmd
 }
 
-func versionCmd(cmd *Command, args []string) {
+func versionCmd(cmd *Command, args []string) int {
 	fmt.Println("bee   :" + version)
 	fmt.Println("beego :" + getbeegoVersion())
 	//fmt.Println("Go    :" + runtime.Version())
@@ -36,6 +36,7 @@ func versionCmd(cmd *Command, args []string) {
 		log.Fatal(err)
 	}
 	fmt.Println("Go    :" + string(goversion))
+	return 0
 }
 
 func getbeegoVersion() string {

@@ -542,7 +542,7 @@ func init() {
 	cmdApiapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
-func createapi(cmd *Command, args []string) {
+func createapi(cmd *Command, args []string) int {
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
@@ -621,6 +621,7 @@ func createapi(cmd *Command, args []string) {
 		writetofile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
+  return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
