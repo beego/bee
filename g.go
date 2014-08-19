@@ -18,18 +18,18 @@ import "os"
 
 var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
-	Short:     "generate code based on application",
+	Short:     "source code generator",
 	Long: `
 bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     The generate scaffold command will do a number of things for you.
-    -fields: a list of table fields.
+    -fields: a list of table fields. Format: field:type, ...
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     example: bee generate scaffold post -fields="title:string,body:text"
 
 bee generate model [modelname] [-fields=""]
     generate RESTFul model based on fields
-	-fields: a list of table fields.
+    -fields: a list of table fields. Format: field:type, ...
 
 bee generate controller [controllerfile]
     generate RESTFul controllers             
@@ -39,7 +39,7 @@ bee generate view [viewpath]
 
 bee generate migration [migrationfile] [-fields=""]
     generate migration file for making database schema update
-	-fields: a list of table fields.
+    -fields: a list of table fields. Format: field:type, ...
 	
 bee generate docs
     generate swagger doc file
@@ -52,7 +52,7 @@ bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:33
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router		
+    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router
 `,
 }
 
