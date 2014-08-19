@@ -711,7 +711,6 @@ func getPackagePath(curpath string) (packpath string) {
 const (
 	STRUCT_MODEL_TPL = `package models
 {{importTimePkg}}
-
 {{modelStruct}}
 `
 
