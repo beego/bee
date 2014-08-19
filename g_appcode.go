@@ -70,6 +70,8 @@ var typeMapping = map[string]string{
 	"float":              "float32", // float & decimal
 	"double":             "float64",
 	"decimal":            "float64",
+	"binary":             "string", // binary
+	"varbinary":          "string",
 }
 
 // Table represent a table in a database
@@ -407,6 +409,9 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 				if isSQLDecimal(dataType) {
 					tag.Digits, tag.Decimals = extractDecimal(columnType)
 				}
+				if isSQLBinaryType(dataType) {
+					tag.Size = extractColSize(columnType)
+				}
 			}
 		}
 		col.Tag = tag
@@ -646,6 +651,10 @@ func isSQLSignedIntType(t string) bool {
 
 func isSQLDecimal(t string) bool {
 	return t == "decimal"
+}
+
+func isSQLBinaryType(t string) bool {
+	return t == "binary" || t == "varbinary"
 }
 
 // extractColSize extracts field size: e.g. varchar(255) => 255
