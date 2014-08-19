@@ -38,7 +38,7 @@ func generateModel(mname, fields, crupath string) {
 		content = strings.Replace(content, "{{modelStruct}}", modelStruct, -1)
 		f.WriteString(content)
 		// gofmt generated source code
-		formatAndFixImports(fpath)
+		formatSourceCode(fpath)
 		ColorLog("[INFO] model file generated: %s\n", fpath)
 	} else {
 		// error creating file

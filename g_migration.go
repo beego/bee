@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"strings"
 	"time"
@@ -58,12 +57,6 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 		ColorLog("[ERRO] Could not create migration file: %s\n", err)
 		os.Exit(2)
 	}
-}
-
-// formatSourceCode formats the source code using gofmt
-func formatSourceCode(fpath string) {
-	cmd := exec.Command("gofmt", "-w", fpath)
-	cmd.Run()
 }
 
 const MIGRATION_TPL = `package main

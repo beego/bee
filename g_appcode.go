@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -73,11 +74,12 @@ var typeMapping = map[string]string{
 
 // Table represent a table in a database
 type Table struct {
-	Name    string
-	Pk      string
-	Uk      []string
-	Fk      map[string]*ForeignKey
-	Columns []*Column
+	Name          string
+	Pk            string
+	Uk            []string
+	Fk            map[string]*ForeignKey
+	Columns       []*Column
+	ImportTimePkg bool
 }
 
 // Column reprsents a column for a table
@@ -191,7 +193,7 @@ func (tag *OrmTag) String() string {
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
-func generateAppcode(driver string, connStr string, level string, tables string, currpath string) {
+func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	if level == "1" {
 		mode = O_MODEL
@@ -216,7 +218,7 @@ func generateAppcode(driver string, connStr string, level string, tables string,
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms string, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
+func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", dbms, connStr)
@@ -231,7 +233,8 @@ func gen(dbms string, connStr string, mode byte, selectedTableNames map[string]b
 	mvcPath.ControllerPath = path.Join(currpath, "controllers")
 	mvcPath.RouterPath = path.Join(currpath, "routers")
 	createPaths(mode, mvcPath)
-	writeSourceFiles(tables, mode, mvcPath, selectedTableNames)
+	pkgPath := getPackagePath(currpath)
+	writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 }
 
 // getTables gets a list table names in current database
@@ -398,6 +401,8 @@ func getColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 					} else if columnDefault == "CURRENT_TIMESTAMP" {
 						tag.AutoNowAdd = true
 					}
+					// need to import time package
+					table.ImportTimePkg = true
 				}
 				if isSQLDecimal(dataType) {
 					tag.Digits, tag.Decimals = extractDecimal(columnType)
@@ -425,18 +430,18 @@ func createPaths(mode byte, paths *MvcPath) {
 // writeSourceFiles generates source files for model/controller/router
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
-func writeSourceFiles(tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
+func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
 	if (O_MODEL & mode) == O_MODEL {
 		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
 	if (O_CONTROLLER & mode) == O_CONTROLLER {
 		ColorLog("[INFO] Creating controller files...\n")
-		writeControllerFiles(tables, paths.ControllerPath, selectedTables)
+		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
 	}
 	if (O_ROUTER & mode) == O_ROUTER {
 		ColorLog("[INFO] Creating router files...\n")
-		writeRouterFile(tables, paths.RouterPath, selectedTables)
+		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
 	}
 }
 
@@ -480,18 +485,24 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
+		// if table contains time field, import time.Time package
+		timePkg := ""
+		if tb.ImportTimePkg {
+			timePkg = "\"time\"\n"
+		}
+		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
 		f.Close()
 		ColorLog("[INFO] model => %s\n", fpath)
-		formatAndFixImports(fpath)
+		formatSourceCode(fpath)
 	}
 }
 
 // writeControllerFiles generates controller files
-func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool) {
+func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool, pkgPath string) {
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -526,18 +537,19 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 			}
 		}
 		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
+		fileStr = strings.Replace(fileStr, "{{pkgPath}}", pkgPath, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
 		f.Close()
 		ColorLog("[INFO] controller => %s\n", fpath)
-		formatAndFixImports(fpath)
+		formatSourceCode(fpath)
 	}
 }
 
 // writeRouterFile generates router file
-func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool) {
+func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool, pkgPath string) {
 	var nameSpaces []string
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
@@ -557,8 +569,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
-	_, projectName := path.Split(path.Dir(rPath))
-	routerStr = strings.Replace(routerStr, "{{projectName}}", projectName, 1)
+	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File
 	var err error
 	if isExist(fpath) {
@@ -586,13 +597,15 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	}
 	f.Close()
 	ColorLog("[INFO] router => %s\n", fpath)
-	formatAndFixImports(fpath)
+	formatSourceCode(fpath)
 }
 
-// formatAndFixImports formats source files (add imports, too)
-func formatAndFixImports(filename string) {
-	cmd := exec.Command("goimports", "-w", filename)
-	cmd.Run()
+// formatSourceCode formats source files
+func formatSourceCode(filename string) {
+	cmd := exec.Command("gofmt", "-w", filename)
+	if err := cmd.Run(); err != nil {
+		ColorLog("[WARN] gofmt err: %s\n", err)
+	}
 }
 
 // camelCase converts a _ delimited string to camel case
@@ -662,6 +675,36 @@ func getFileName(tbName string) (filename string) {
 	return
 }
 
+func getPackagePath(curpath string) (packpath string) {
+	gopath := os.Getenv("GOPATH")
+	Debugf("gopath:%s", gopath)
+	if gopath == "" {
+		ColorLog("[ERRO] you should set GOPATH in the env")
+		os.Exit(2)
+	}
+
+	appsrcpath := ""
+	haspath := false
+	wgopath := filepath.SplitList(gopath)
+
+	for _, wg := range wgopath {
+		wg, _ = filepath.EvalSymlinks(path.Join(wg, "src"))
+
+		if filepath.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
+			haspath = true
+			appsrcpath = wg
+			break
+		}
+	}
+
+	if !haspath {
+		ColorLog("[ERRO] Can't generate application code outside of GOPATH '%s'\n", gopath)
+		os.Exit(2)
+	}
+	packpath = strings.Join(strings.Split(curpath[len(appsrcpath)+1:], string(filepath.Separator)), "/")
+	return
+}
+
 const (
 	STRUCT_MODEL_TPL = `package models
 
@@ -669,6 +712,15 @@ const (
 `
 
 	MODEL_TPL = `package models
+
+import (
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+	{{timePkg}}
+	"github.com/astaxie/beego/orm"
+)
 
 {{modelStruct}}
 
@@ -799,8 +851,17 @@ func Delete{{modelName}}(id int) (err error) {
 	return
 }
 `
-	CTRL_TPL = `
-package controllers
+	CTRL_TPL = `package controllers
+
+import (
+	"{{pkgPath}}/models"
+	"encoding/json"
+	"errors"
+	"strconv"
+	"strings"
+
+	"github.com/astaxie/beego"
+)
 
 // oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
@@ -949,8 +1010,7 @@ func (this *{{ctrlName}}Controller) Delete() {
 	this.ServeJson()
 }
 `
-	ROUTER_TPL = `
-// @APIVersion 1.0.0
+	ROUTER_TPL = `// @APIVersion 1.0.0
 // @Title beego Test API
 // @Description beego has a very cool tools to autogenerate documents for your API
 // @Contact astaxie@gmail.com
@@ -960,7 +1020,8 @@ func (this *{{ctrlName}}Controller) Delete() {
 package routers
 
 import (
-	"{{projectName}}/controllers"
+	"{{pkgPath}}/controllers"
+
 	"github.com/astaxie/beego"
 )
 
@@ -972,10 +1033,10 @@ func init() {
 }
 `
 	NAMESPACE_TPL = `
-beego.NSNamespace("/{{nameSpace}}",
-	beego.NSInclude(
-		&controllers.{{ctrlName}}Controller{},
-	),
-),
+		beego.NSNamespace("/{{nameSpace}}",
+			beego.NSInclude(
+				&controllers.{{ctrlName}}Controller{},
+			),
+		),
 `
 )
