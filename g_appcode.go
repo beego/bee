@@ -487,10 +487,13 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
 		// if table contains time field, import time.Time package
 		timePkg := ""
+		importTimePkg := ""
 		if tb.ImportTimePkg {
 			timePkg = "\"time\"\n"
+			importTimePkg = "import \"time\"\n"
 		}
 		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
+		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
@@ -707,6 +710,7 @@ func getPackagePath(curpath string) (packpath string) {
 
 const (
 	STRUCT_MODEL_TPL = `package models
+{{importTimePkg}}
 
 {{modelStruct}}
 `
