@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -197,13 +198,14 @@ func (tag *OrmTag) String() string {
 
 func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
-	if level == "1" {
+	switch level {
+	case "1":
 		mode = O_MODEL
-	} else if level == "2" {
+	case "2":
 		mode = O_MODEL | O_CONTROLLER
-	} else if level == "3" {
+	case "3":
 		mode = O_MODEL | O_CONTROLLER | O_ROUTER
-	} else {
+	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
 		os.Exit(2)
@@ -215,6 +217,17 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 			selectedTables[v] = true
 		}
 	}
+	switch driver {
+	case "mysql":
+	case "postgres":
+	case "sqlite":
+		ColorLog("[ERRO] Generating app code from SQLite database is not supported yet.\n")
+		os.Exit(2)
+	default:
+		ColorLog("[ERRO] Unknown database driver: %s\n", driver)
+		ColorLog("[HINT] Driver must be one of mysql, postgres or sqlite\n")
+		os.Exit(2)
+	}
 	gen(driver, connStr, mode, selectedTables, currpath)
 }
 
@@ -223,7 +236,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", dbms, connStr)
+		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
 		os.Exit(2)
 	}
 	defer db.Close()
