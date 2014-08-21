@@ -41,7 +41,7 @@ type MvcPath struct {
 }
 
 // typeMapping maps SQL data type to corresponding Go data type
-var typeMapping = map[string]string{
+var typeMappingMysql = map[string]string{
 	"int":                "int", // int signed
 	"integer":            "int",
 	"tinyint":            "int8",
@@ -665,7 +665,7 @@ func camelCase(in string) string {
 
 // getGoDataType maps an SQL data type to Golang data type
 func getGoDataType(sqlType string) (goType string) {
-	if v, ok := typeMapping[sqlType]; ok {
+	if v, ok := typeMappingMysql[sqlType]; ok {
 		return v
 	} else {
 		fmt.Println("Error:", sqlType, "not found!")
