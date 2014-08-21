@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 const (
@@ -223,7 +224,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", dbms, connStr)
+		ColorLog("[ERRO] Could not connect to %s database: %s %s\n", dbms, connStr, err)
 		os.Exit(2)
 	}
 	defer db.Close()
