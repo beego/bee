@@ -236,7 +236,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s database: %s %s\n", dbms, connStr, err)
+		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
 		os.Exit(2)
 	}
 	defer db.Close()
