@@ -40,7 +40,7 @@ type MvcPath struct {
 	RouterPath     string
 }
 
-// typeMapping maps a SQL data type to its corresponding Go data type
+// typeMapping maps SQL data type to corresponding Go data type
 var typeMapping = map[string]string{
 	"int":                "int", // int signed
 	"integer":            "int",
@@ -73,6 +73,30 @@ var typeMapping = map[string]string{
 	"decimal":            "float64",
 	"binary":             "string", // binary
 	"varbinary":          "string",
+}
+
+// typeMappingPostgres maps SQL data type to corresponding Go data type
+var typeMappingPostgres = map[string]string{
+	"serial":            "int", // serial
+	"big serial":        "int64",
+	"smallint":          "int16", // int
+	"integer":           "int",
+	"bigint":            "int64",
+	"boolean":           "bool",   // bool
+	"char":              "string", // string
+	"character":         "string",
+	"character varying": "string",
+	"varchar":           "string",
+	"text":              "string",
+	"date":              "time.Time", // time
+	"time":              "time.Time",
+	"timestamp":         "time.Time",
+	"real":              "float32", // float & decimal
+	"double precision":  "float64",
+	"decimal":           "float64",
+	"numeric":           "float64",
+	"money":             "float64", // money
+	"bytea":             "string",  // binary
 }
 
 // Table represent a table in a database
