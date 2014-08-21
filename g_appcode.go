@@ -198,13 +198,14 @@ func (tag *OrmTag) String() string {
 
 func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
-	if level == "1" {
+	switch level {
+	case "1":
 		mode = O_MODEL
-	} else if level == "2" {
+	case "2":
 		mode = O_MODEL | O_CONTROLLER
-	} else if level == "3" {
+	case "3":
 		mode = O_MODEL | O_CONTROLLER | O_ROUTER
-	} else {
+	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
 		os.Exit(2)
@@ -215,6 +216,19 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 		for _, v := range strings.Split(tables, ",") {
 			selectedTables[v] = true
 		}
+	}
+	switch driver {
+	case "mysql":
+		fmt.Println("MySQL")
+	case "postgres":
+		fmt.Println("PostgreSQL")
+	case "sqlite":
+		ColorLog("[ERRO] Generating app code from SQLite database is not supported yet.\n")
+		os.Exit(2)
+	default:
+		ColorLog("[ERRO] Unknown database driver: %s\n", driver)
+		ColorLog("[HINT] Driver must be one of mysql, postgres or sqlite\n")
+		os.Exit(2)
 	}
 	gen(driver, connStr, mode, selectedTables, currpath)
 }
