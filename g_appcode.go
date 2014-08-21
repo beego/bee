@@ -219,9 +219,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	}
 	switch driver {
 	case "mysql":
-		fmt.Println("MySQL")
 	case "postgres":
-		fmt.Println("PostgreSQL")
 	case "sqlite":
 		ColorLog("[ERRO] Generating app code from SQLite database is not supported yet.\n")
 		os.Exit(2)
