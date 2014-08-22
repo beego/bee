@@ -38,8 +38,7 @@ var defaultConf = `{
 	"cmd_args": [],
 	"envs": [],
 	"database": {
-		"driver": "mysql",
-		"conn": "root:@tcp(127.0.0.1:3306)/test"
+		"driver": "mysql"
 	}
 }
 `

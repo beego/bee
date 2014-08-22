@@ -30,7 +30,7 @@ create an api application base on beego framework
 
 bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
     -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is ''
 	
 if conn is empty will create a example api application. otherwise generate api application based on an existing database.
@@ -89,11 +89,11 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
-	_ "github.com/go-sql-driver/mysql"
+	{{.DriverPkg}}
 )
 
 func init() {
-	orm.RegisterDataBase("default", "mysql", "{{.conn}}")
+	orm.RegisterDataBase("default", "{{.DriverName}}", "{{.conn}}")
 }
 
 func main() {
@@ -574,9 +574,16 @@ func createapi(cmd *Command, args []string) int {
 
 	if conn != "" {
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
+		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
+		if driver == "mysql" {
+			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/go-sql-driver/mysql"`, -1)
+		} else if driver == "postgres" {
+			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
+		}
 		writetofile(path.Join(apppath, "main.go"),
 			strings.Replace(
-				strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1),
+				maingoContent,
 				"{{.conn}}",
 				conn.String(),
 				-1,
@@ -584,8 +591,8 @@ func createapi(cmd *Command, args []string) int {
 		)
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, packpath))
+		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
+		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, args[0]))
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
@@ -621,7 +628,7 @@ func createapi(cmd *Command, args []string) int {
 		writetofile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
-  return 0
+	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {

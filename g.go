@@ -50,8 +50,10 @@ bee generate test [routerfile]
 bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgresql | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+    -driver: [mysql | postgres | sqlite], the default is mysql
+    -conn:   the connection string used by the driver.
+             default for mysql:    root:@tcp(127.0.0.1:3306)/test
+             default for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
     -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router
 `,
 }
@@ -137,7 +139,11 @@ func generateCode(cmd *Command, args []string) int {
 		if conn == "" {
 			conn = docValue(conf.Database.Conn)
 			if conn == "" {
-				conn = "root:@tcp(127.0.0.1:3306)/test"
+				if driver == "mysql" {
+					conn = "root:@tcp(127.0.0.1:3306)/test"
+				} else if driver == "postgres" {
+					conn = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
+				}
 			}
 		}
 		if level == "" {
