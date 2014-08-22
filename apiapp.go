@@ -89,11 +89,11 @@ import (
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
-	_ "github.com/go-sql-driver/mysql"
+	{{.DriverPkg}}
 )
 
 func init() {
-	orm.RegisterDataBase("default", "mysql", "{{.conn}}")
+	orm.RegisterDataBase("default", "{{.DriverName}}", "{{.conn}}")
 }
 
 func main() {
@@ -574,9 +574,16 @@ func createapi(cmd *Command, args []string) int {
 
 	if conn != "" {
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
+		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
+		if driver == "mysql" {
+			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/go-sql-driver/mysql"`, -1)
+		} else if driver == "postgres" {
+			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
+		}
 		writetofile(path.Join(apppath, "main.go"),
 			strings.Replace(
-				strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1),
+				maingoContent,
 				"{{.conn}}",
 				conn.String(),
 				-1,
