@@ -50,7 +50,7 @@ bee generate test [routerfile]
 bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver.
              default for mysql:    root:@tcp(127.0.0.1:3306)/test
              default for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres

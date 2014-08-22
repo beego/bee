@@ -30,7 +30,7 @@ create an api application base on beego framework
 
 bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
     -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is ''
 	
 if conn is empty will create a example api application. otherwise generate api application based on an existing database.
