@@ -680,11 +680,7 @@ func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
 // deleteAndRecreatePaths removes several directories completely
 func createPaths(mode byte, paths *MvcPath) {
 	if (mode & O_MODEL) == O_MODEL {
-		err := os.Mkdir(paths.ModelPath, 0777)
-		if err != nil {
-			ColorLog("[ERRO]", err)
-			os.Exit(2)
-		}
+		os.Mkdir(paths.ModelPath, 0777)
 	}
 	if (mode & O_CONTROLLER) == O_CONTROLLER {
 		os.Mkdir(paths.ControllerPath, 0777)

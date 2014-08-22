@@ -32,6 +32,8 @@ bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is ''
+             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
+             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
 	
 if conn is empty will create a example api application. otherwise generate api application based on an existing database.
 
