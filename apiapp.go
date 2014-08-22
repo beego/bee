@@ -585,7 +585,7 @@ func createapi(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, packpath))
+		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, args[0]))
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
@@ -621,7 +621,7 @@ func createapi(cmd *Command, args []string) int {
 		writetofile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
-  return 0
+	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
