@@ -132,8 +132,7 @@ func ColorLogS(format string, a ...interface{}) string {
 		log = clog + log
 	}
 
-	return strings.TrimPrefix(
-		time.Now().Format("2006-01-02 03:04:05 "), "20") + log
+	return time.Now().Format("2006/01/02 15:04:05 ") + log
 }
 
 // getColorLevel returns colored level string by given level.
