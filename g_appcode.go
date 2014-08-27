@@ -93,6 +93,7 @@ var typeMappingMysql = map[string]string{
 	"date":               "time.Time", // time
 	"datetime":           "time.Time",
 	"timestamp":          "time.Time",
+	"time":               "time.Time",
 	"float":              "float32", // float & decimal
 	"double":             "float64",
 	"decimal":            "float64",
