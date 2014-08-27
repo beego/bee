@@ -87,6 +87,8 @@ var typeMappingMysql = map[string]string{
 	"text":               "string",
 	"longtext":           "string",
 	"blob":               "string", // blob
+	"tinyblob":           "string",
+	"mediumblob":         "string",
 	"longblob":           "string",
 	"date":               "time.Time", // time
 	"datetime":           "time.Time",
