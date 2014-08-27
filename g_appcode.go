@@ -76,6 +76,7 @@ var typeMappingMysql = map[string]string{
 	"smallint unsigned":  "uint16",
 	"mediumint unsigned": "uint32",
 	"bigint unsigned":    "uint64",
+	"bit":                "uint64",
 	"bool":               "bool",   // boolean
 	"enum":               "string", // enum
 	"set":                "string", // set
@@ -478,6 +479,9 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 					tag.Digits, tag.Decimals = extractDecimal(columnType)
 				}
 				if isSQLBinaryType(dataType) {
+					tag.Size = extractColSize(columnType)
+				}
+				if isSQLBitType(dataType) {
 					tag.Size = extractColSize(columnType)
 				}
 			}
@@ -902,6 +906,10 @@ func isSQLDecimal(t string) bool {
 
 func isSQLBinaryType(t string) bool {
 	return t == "binary" || t == "varbinary"
+}
+
+func isSQLBitType(t string) bool {
+	return t == "bit"
 }
 
 // extractColSize extracts field size: e.g. varchar(255) => 255
