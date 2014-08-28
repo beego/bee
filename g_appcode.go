@@ -892,7 +892,7 @@ func camelCase(in string) string {
 }
 
 func isSQLTemporalType(t string) bool {
-	return t == "date" || t == "datetime" || t == "timestamp"
+	return t == "date" || t == "datetime" || t == "timestamp" || t == "time"
 }
 
 func isSQLStringType(t string) bool {
