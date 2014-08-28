@@ -731,7 +731,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		if isExist(fpath) {
 			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
 			if askForConfirmation() {
-				f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
 					ColorLog("[WARN] %v\n", err)
 					continue
@@ -793,7 +793,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		if isExist(fpath) {
 			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
 			if askForConfirmation() {
-				f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
 					ColorLog("[WARN] %v\n", err)
 					continue
@@ -848,7 +848,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	if isExist(fpath) {
 		ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
 		if askForConfirmation() {
-			f, err = os.OpenFile(fpath, os.O_RDWR, 0666)
+			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
 				ColorLog("[WARN] %v\n", err)
 				return
