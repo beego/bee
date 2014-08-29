@@ -76,8 +76,14 @@ $ bee new myapp
 2014/08/29 15:45:47 [SUCC] New application successfully created!
 ```
 
-
 ## bee run
+
+To run the application we just created, navigate to the application folder and execute `bee run`.
+
+```bash
+$ cd myapp
+$ bee run
+```
 
 ## bee pack
 
