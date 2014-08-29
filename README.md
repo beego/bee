@@ -51,6 +51,31 @@ Go    :go version go1.2.1 linux/amd64
 
 ## bee new
 
+Creating a new beego web application is no big deal, too.
+
+```bash
+$ bee new myapp
+[INFO] Creating application...
+/home/zheng/gopath/src/bee/myapp/
+/home/zheng/gopath/src/bee/myapp/conf/
+/home/zheng/gopath/src/bee/myapp/controllers/
+/home/zheng/gopath/src/bee/myapp/models/
+/home/zheng/gopath/src/bee/myapp/routers/
+/home/zheng/gopath/src/bee/myapp/tests/
+/home/zheng/gopath/src/bee/myapp/static/
+/home/zheng/gopath/src/bee/myapp/static/js/
+/home/zheng/gopath/src/bee/myapp/static/css/
+/home/zheng/gopath/src/bee/myapp/static/img/
+/home/zheng/gopath/src/bee/myapp/views/
+/home/zheng/gopath/src/bee/myapp/conf/app.conf
+/home/zheng/gopath/src/bee/myapp/controllers/default.go
+/home/zheng/gopath/src/bee/myapp/views/index.tpl
+/home/zheng/gopath/src/bee/myapp/routers/router.go
+/home/zheng/gopath/src/bee/myapp/tests/default_test.go
+/home/zheng/gopath/src/bee/myapp/main.go
+2014/08/29 15:38:59 [SUCC] New application successfully created!
+```
+
 
 ## bee run
 
