@@ -87,15 +87,75 @@ $ bee run
 
 ## bee pack
 
-coming soon ...
+```bash
+usage: bee pack
+
+compress an beego project
+
+-p            app path. default is current path
+-b            build specify platform app. default true
+-ba           additional args of go build
+-be=[]        additional ENV Variables of go build. eg: GOARCH=arm
+-o            compressed file output dir. default use current path
+-f=""         format. [ tar.gz / zip ]. default tar.gz
+-exp=""       relpath exclude prefix. default: .
+-exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
+              all path use : as separator
+-exr=[]       file/directory name exclude by Regexp. default: ^.
+-fs=false     follow symlink. default false
+-ss=false     skip symlink. default false
+              default embed symlink into compressed file
+-v=false      verbose
+```
 
 ## bee api
 
-coming soon ...
+```bash
+usage: bee api [appname]
+
+create an api application base on beego framework
+
+bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+    -tables: a list of table names separated by ',', default is empty, indicating all tables
+    -driver: [mysql | postgres | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is ''
+             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
+             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
+	
+if conn is empty will create a example api application. otherwise generate api application based on an existing database.
+
+In the current path, will create a folder named [appname]
+
+In the appname folder has the follow struct:
+
+	├── conf
+	│   └── app.conf
+	├── controllers
+	│   └── object.go
+	│   └── user.go
+	├── routers
+	│   └── router.go
+	├── tests
+	│   └── default_test.go
+	├── main.go
+	└── models
+	    └── object.go
+	    └── user.go
+```
 
 ## bee bale
 
-coming soon ...
+```bash
+usage: bee bale
+
+bale packs non-Go files to Go source files and
+
+auto-generate unpack function to main package then run it
+
+during the runtime.
+
+This is mainly used for zealots who are requiring 100% Go code.
+```
 
 ## bee migrate
 
