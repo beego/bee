@@ -126,7 +126,7 @@ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
 ## bee generate
 
-Bee also comes with a souce code generate which speeds up the development.
+Bee also comes with a souce code generator which speeds up the development.
 
 ```bash
 usage: bee generate [Command]
