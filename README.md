@@ -15,9 +15,11 @@ Begin by installing `bee` using `go get` command.
 
 	go get github.com/beego/bee
 
-Then you can add `bee` binary to PATH:
+Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
 
-	export PATH=$PATH:<your_main_gopath>/bin/bee
+```bash
+export PATH=$PATH:<your_main_gopath>/bin/bee
+```
 
 > If you already have `bee` installed, updating `bee` is simple:
 
@@ -46,7 +48,7 @@ alias g:a="bee generate appcode"
 alias g:m="bee generate model"
 alias g:c="bee generate controller"
 alias g:v="bee generate view"
-alias g:mig="bee generate migration"
+alias g:mi="bee generate migration"
 ```
 
 These can be stored in, for example, your `~/.bash_profile` or `~/.bashrc` files.
