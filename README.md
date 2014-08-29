@@ -89,28 +89,22 @@ For instance, to get more information about the `run` command:
 
 ```bash
 $ bee help run
-usage: bee new [appname]
+usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]
 
-create an application base on beego framework,
+start the appname throw exec.Command
 
-which in the current path with folder named [appname].
+then start a inotify watch for current dir
+										
+when the file has changed bee will auto go build and restart the app
 
-The [appname] folder has following structure:
+	file changed
+	     |
+  check if it's go file
+	     |
+     yes     no
+      |       |
+ go build    do nothing
+     |
+ restart app
 
-    |- main.go
-    |- conf
-        |-  app.conf
-    |- controllers
-         |- default.go
-    |- models
-    |- routers
-         |- router.go
-    |- tests
-         |- default_test.go
-	|- static
-         |- js
-         |- css
-         |- img
-    |- views
-        index.tpl
 ```
