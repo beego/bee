@@ -87,14 +87,87 @@ $ bee run
 
 ## bee pack
 
+coming soon ...
+
 ## bee api
+
+coming soon ...
 
 ## bee bale
 
+coming soon ...
+
 ## bee migrate
+
+```bash
+usage: bee migrate [Command]
+
+bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    run all outstanding migrations
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+
+bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    rollback the last migration operation
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+
+bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    rollback all migrations
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+
+bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    rollback all migrations and run them all again
+    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+
+```
 
 ## bee generate
 
+Bee also comes with a souce code generate which speeds up the development.
+
+```bash
+usage: bee generate [Command]
+
+bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    The generate scaffold command will do a number of things for you.
+    -fields: a list of table fields. Format: field:type, ...
+    -driver: [mysql | postgres | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+    example: bee generate scaffold post -fields="title:string,body:text"
+
+bee generate model [modelname] [-fields=""]
+    generate RESTFul model based on fields
+    -fields: a list of table fields. Format: field:type, ...
+
+bee generate controller [controllerfile]
+    generate RESTFul controllers             
+
+bee generate view [viewpath]
+    generate CRUD view in viewpath
+
+bee generate migration [migrationfile] [-fields=""]
+    generate migration file for making database schema update
+    -fields: a list of table fields. Format: field:type, ...
+	
+bee generate docs
+    generate swagger doc file
+
+bee generate test [routerfile]
+    generate testcase
+
+bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
+    generate appcode based on an existing database
+    -tables: a list of table names separated by ',', default is empty, indicating all tables
+    -driver: [mysql | postgres | sqlite], the default is mysql
+    -conn:   the connection string used by the driver.
+             default for mysql:    root:@tcp(127.0.0.1:3306)/test
+             default for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
+    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router
+
+```
 
 
 ## Shortcuts
