@@ -886,7 +886,7 @@ func formatSourceCode(filename string) {
 func camelCase(in string) string {
 	tokens := strings.Split(in, "_")
 	for i := range tokens {
-		tokens[i] = strings.ToUpper(tokens[i][:1]) + tokens[i][1:]
+	    tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
 	}
 	return strings.Join(tokens, "")
 }
