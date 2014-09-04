@@ -118,15 +118,17 @@ var typeMappingPostgres = map[string]string{
 	"time":                        "time.Time",
 	"timestamp":                   "time.Time",
 	"timestamp without time zone": "time.Time",
-	"real":             "float32", // float & decimal
-	"double precision": "float64",
-	"decimal":          "float64",
-	"numeric":          "float64",
-	"money":            "float64", // money
-	"bytea":            "string",  // binary
-	"tsvector":         "string",  // fulltext
-	"ARRAY":            "string",  // array
-	"USER-DEFINED":     "string",  // user defined
+	"interval":                    "string",  // time interval, string for now
+	"real":                        "float32", // float & decimal
+	"double precision":            "float64",
+	"decimal":                     "float64",
+	"numeric":                     "float64",
+	"money":                       "float64", // money
+	"bytea":                       "string",  // binary
+	"tsvector":                    "string",  // fulltext
+	"ARRAY":                       "string",  // array
+	"USER-DEFINED":                "string",  // user defined
+	"uuid":                        "string",  // uuid
 }
 
 // Table represent a table in a database
@@ -668,6 +670,9 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 				if isSQLBinaryType(dataType) {
 					tag.Size = extractColSize(columnType)
 				}
+				if isSQLStrangeType(dataType) {
+					tag.Type = dataType
+				}
 			}
 		}
 		col.Tag = tag
@@ -913,6 +918,9 @@ func isSQLBinaryType(t string) bool {
 
 func isSQLBitType(t string) bool {
 	return t == "bit"
+}
+func isSQLStrangeType(t string) bool {
+	return t == "interval" || t == "uuid"
 }
 
 // extractColSize extracts field size: e.g. varchar(255) => 255
