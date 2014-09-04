@@ -551,7 +551,13 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 							mp := swagger.ModelProperty{}
 							// add type slice
 							if isSlice {
-								mp.Type = "[]" + realType
+								if isBasicType(realType) {
+									mp.Type = "[]" + realType
+								} else {
+									mp.Type = "array"
+									mp.Items = make(map[string]string)
+									mp.Items["$ref"] = realType
+								}
 							} else {
 								mp.Type = realType
 							}
