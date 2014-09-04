@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -255,6 +256,9 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 
 func analisyscontrollerPkg(pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
+	if isSystemPackage(pkgpath) {
+		return
+	}
 	pps := strings.Split(pkgpath, "/")
 	importlist[pps[len(pps)-1]] = pkgpath
 	if pkgpath == "github.com/astaxie/beego" {
@@ -316,6 +320,18 @@ func analisyscontrollerPkg(pkgpath string) {
 			}
 		}
 	}
+}
+
+func isSystemPackage(pkgpath string) bool {
+	goroot := runtime.GOROOT()
+	if goroot == "" {
+		panic("goroot is empty, do you install Go right?")
+	}
+	wg, _ := filepath.EvalSymlinks(filepath.Join(goroot, "src", "pkg", pkgpath))
+	if utils.FileExists(wg) {
+		return true
+	}
+	return false
 }
 
 // parse the func comments
