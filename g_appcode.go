@@ -129,6 +129,7 @@ var typeMappingPostgres = map[string]string{
 	"ARRAY":                       "string",  // array
 	"USER-DEFINED":                "string",  // user defined
 	"uuid":                        "string",  // uuid
+	"json":                        "string",  // json
 }
 
 // Table represent a table in a database
@@ -891,7 +892,7 @@ func formatSourceCode(filename string) {
 func camelCase(in string) string {
 	tokens := strings.Split(in, "_")
 	for i := range tokens {
-	    tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
+		tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
 	}
 	return strings.Join(tokens, "")
 }
@@ -920,7 +921,7 @@ func isSQLBitType(t string) bool {
 	return t == "bit"
 }
 func isSQLStrangeType(t string) bool {
-	return t == "interval" || t == "uuid"
+	return t == "interval" || t == "uuid" || t == "json"
 }
 
 // extractColSize extracts field size: e.g. varchar(255) => 255
