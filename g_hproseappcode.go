@@ -145,8 +145,16 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 		ColorLog("[INFO] Analyzing database tables...\n")
 		tableNames := trans.GetTableNames(db)
 		// 添加 Hprose Function
-		for _, tb := range tableNames {
-			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb), -1))
+		if selectedTableNames == nil {
+			for _, tb := range tableNames {
+				hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb), -1))
+			}
+		} else {
+			for tb, v := range selectedTableNames {
+				if v {
+					hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb), -1))
+				}
+			}
 		}
 		// 添加结束
 		tables := getTableObjects(tableNames, db, trans)
