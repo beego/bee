@@ -92,7 +92,7 @@ func createApp(cmd *Command, args []string) int {
 	apppath := path.Join(curpath, args[0])
 
 	if _, err := os.Stat(apppath); os.IsNotExist(err) == false {
-		fmt.Printf("[ERRO] Path(%s) has alreay existed\n", apppath)
+		fmt.Printf("[ERRO] Path (%s) already exists\n", apppath)
 		os.Exit(2)
 	}
 
