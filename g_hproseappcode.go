@@ -51,10 +51,10 @@ var typeMappingMysqlOfRpc = map[string]string{
 	"mediumtext":         "string",
 	"text":               "string",
 	"longtext":           "string",
-	"blob":               "byte", // blob as byte
-	"tinyblob":           "byte",
-	"mediumblob":         "byte",
-	"longblob":           "byte",
+	"blob":               "[]byte", // blob as byte
+	"tinyblob":           "[]byte",
+	"mediumblob":         "[]byte",
+	"longblob":           "[]byte",
 	"date":               "time.Time", // time
 	"datetime":           "time.Time",
 	"timestamp":          "time.Time",
@@ -89,7 +89,7 @@ var typeMappingPostgresOfRpc = map[string]string{
 	"decimal":                     "float64",
 	"numeric":                     "float64",
 	"money":                       "float64", // money
-	"bytea":                       "byte",    // binary
+	"bytea":                       "[]byte",  // binary
 	"tsvector":                    "string",  // fulltext
 	"ARRAY":                       "string",  // array
 	"USER-DEFINED":                "string",  // user defined
