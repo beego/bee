@@ -48,13 +48,6 @@ In the appname folder has the follow struct:
 
 	├── conf
 	│   └── app.conf
-	├── controllers
-	│   └── object.go
-	│   └── user.go
-	├── routers
-	│   └── router.go
-	├── tests
-	│   └── default_test.go
 	├── main.go
 	└── models
 	    └── object.go
@@ -74,23 +67,17 @@ EnableDocs = true
 var hproseMaingo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	"{{.Appname}}/models"
-	_ "{{.Appname}}/routers"
 	"github.com/hprose/hprose-go/hprose"
 
 	"github.com/astaxie/beego"
 )
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
-	}
 	service := hprose.NewHttpService()
 	service.AddFunction("AddOne", models.AddOne)
 	service.AddFunction("GetOne", models.GetOne)
-	beego.Handler("/hprose", service)
+	beego.Handler("/", service)
 	beego.Run()
 }
 `
@@ -98,9 +85,7 @@ func main() {
 var hproseMainconngo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	"{{.Appname}}/models"
-	_ "{{.Appname}}/routers"
 	"github.com/hprose/hprose-go/hprose"
 
 	"github.com/astaxie/beego"
@@ -113,48 +98,12 @@ func init() {
 }
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
-	}
 	service := hprose.NewHttpService()
 	{{HproseFunctionList}}
-	beego.Handler("/hprose", service)
+	beego.Handler("/", service)
 	beego.Run()
 }
 
-`
-
-var hproserouter = `// @APIVersion 1.0.0
-// @Title beego Test API
-// @Description beego has a very cool tools to autogenerate documents for your API
-// @Contact astaxie@gmail.com
-// @TermsOfServiceUrl http://beego.me/
-// @License Apache 2.0
-// @LicenseUrl http://www.apache.org/licenses/LICENSE-2.0.html
-package routers
-
-import (
-	"{{.Appname}}/controllers"
-
-	"github.com/astaxie/beego"
-)
-
-func init() {
-	ns := beego.NewNamespace("/v1",
-		beego.NSNamespace("/object",
-			beego.NSInclude(
-				&controllers.ObjectController{},
-			),
-		),
-		beego.NSNamespace("/user",
-			beego.NSInclude(
-				&controllers.UserController{},
-			),
-		),
-	)
-	beego.AddNamespace(ns)
-}
 `
 
 var hproseModels = `package models
@@ -300,260 +249,6 @@ func DeleteUser(uid string) {
 }
 `
 
-var hproseControllers = `package controllers
-
-import (
-	"{{.Appname}}/models"
-	"encoding/json"
-
-	"github.com/astaxie/beego"
-)
-
-// Operations about object
-type ObjectController struct {
-	beego.Controller
-}
-
-// @Title create
-// @Description create object
-// @Param	body		body 	models.Object	true		"The object content"
-// @Success 200 {string} models.Object.Id
-// @Failure 403 body is empty
-// @router / [post]
-func (this *ObjectController) Post() {
-	var ob models.Object
-	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
-	objectid := models.AddOne(ob)
-	this.Data["json"] = map[string]string{"ObjectId": objectid}
-	this.ServeJson()
-}
-
-// @Title Get
-// @Description find object by objectid
-// @Param	objectId		path 	string	true		"the objectid you want to get"
-// @Success 200 {object} models.Object
-// @Failure 403 :objectId is empty
-// @router /:objectId [get]
-func (this *ObjectController) Get() {
-	objectId := this.Ctx.Input.Params[":objectId"]
-	if objectId != "" {
-		ob, err := models.GetOne(objectId)
-		if err != nil {
-			this.Data["json"] = err
-		} else {
-			this.Data["json"] = ob
-		}
-	}
-	this.ServeJson()
-}
-
-// @Title GetAll
-// @Description get all objects
-// @Success 200 {object} models.Object
-// @Failure 403 :objectId is empty
-// @router / [get]
-func (this *ObjectController) GetAll() {
-	obs := models.GetAll()
-	this.Data["json"] = obs
-	this.ServeJson()
-}
-
-// @Title update
-// @Description update the object
-// @Param	objectId		path 	string	true		"The objectid you want to update"
-// @Param	body		body 	models.Object	true		"The body"
-// @Success 200 {object} models.Object
-// @Failure 403 :objectId is empty
-// @router /:objectId [put]
-func (this *ObjectController) Put() {
-	objectId := this.Ctx.Input.Params[":objectId"]
-	var ob models.Object
-	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
-
-	err := models.Update(objectId, ob.Score)
-	if err != nil {
-		this.Data["json"] = err
-	} else {
-		this.Data["json"] = "update success!"
-	}
-	this.ServeJson()
-}
-
-// @Title delete
-// @Description delete the object
-// @Param	objectId		path 	string	true		"The objectId you want to delete"
-// @Success 200 {string} delete success!
-// @Failure 403 objectId is empty
-// @router /:objectId [delete]
-func (this *ObjectController) Delete() {
-	objectId := this.Ctx.Input.Params[":objectId"]
-	models.Delete(objectId)
-	this.Data["json"] = "delete success!"
-	this.ServeJson()
-}
-
-`
-var hproseControllers2 = `package controllers
-
-import (
-	"{{.Appname}}/models"
-	"encoding/json"
-
-	"github.com/astaxie/beego"
-)
-
-// Operations about Users
-type UserController struct {
-	beego.Controller
-}
-
-// @Title createUser
-// @Description create users
-// @Param	body		body 	models.User	true		"body for user content"
-// @Success 200 {int} models.User.Id
-// @Failure 403 body is empty
-// @router / [post]
-func (u *UserController) Post() {
-	var user models.User
-	json.Unmarshal(u.Ctx.Input.RequestBody, &user)
-	uid := models.AddUser(user)
-	u.Data["json"] = map[string]string{"uid": uid}
-	u.ServeJson()
-}
-
-// @Title Get
-// @Description get all Users
-// @Success 200 {object} models.User
-// @router / [get]
-func (u *UserController) GetAll() {
-	users := models.GetAllUsers()
-	u.Data["json"] = users
-	u.ServeJson()
-}
-
-// @Title Get
-// @Description get user by uid
-// @Param	uid		path 	string	true		"The key for staticblock"
-// @Success 200 {object} models.User
-// @Failure 403 :uid is empty
-// @router /:uid [get]
-func (u *UserController) Get() {
-	uid := u.GetString(":uid")
-	if uid != "" {
-		user, err := models.GetUser(uid)
-		if err != nil {
-			u.Data["json"] = err
-		} else {
-			u.Data["json"] = user
-		}
-	}
-	u.ServeJson()
-}
-
-// @Title update
-// @Description update the user
-// @Param	uid		path 	string	true		"The uid you want to update"
-// @Param	body		body 	models.User	true		"body for user content"
-// @Success 200 {object} models.User
-// @Failure 403 :uid is not int
-// @router /:uid [put]
-func (u *UserController) Put() {
-	uid := u.GetString(":uid")
-	if uid != "" {
-		var user models.User
-		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
-		uu, err := models.UpdateUser(uid, &user)
-		if err != nil {
-			u.Data["json"] = err
-		} else {
-			u.Data["json"] = uu
-		}
-	}
-	u.ServeJson()
-}
-
-// @Title delete
-// @Description delete the user
-// @Param	uid		path 	string	true		"The uid you want to delete"
-// @Success 200 {string} delete success!
-// @Failure 403 uid is empty
-// @router /:uid [delete]
-func (u *UserController) Delete() {
-	uid := u.GetString(":uid")
-	models.DeleteUser(uid)
-	u.Data["json"] = "delete success!"
-	u.ServeJson()
-}
-
-// @Title login
-// @Description Logs user into the system
-// @Param	username		query 	string	true		"The username for login"
-// @Param	password		query 	string	true		"The password for login"
-// @Success 200 {string} lonin success
-// @Failure 403 user not exist
-// @router /login [get]
-func (u *UserController) Login() {
-	username := u.GetString("username")
-	password := u.GetString("password")
-	if models.Login(username, password) {
-		u.Data["json"] = "login success"
-	} else {
-		u.Data["json"] = "user not exist"
-	}
-	u.ServeJson()
-}
-
-// @Title logout
-// @Description Logs out current logged in user session
-// @Success 200 {string} logout success
-// @router /logout [get]
-func (u *UserController) Logout() {
-	u.Data["json"] = "logout success"
-	u.ServeJson()
-}
-
-`
-
-var hproseTests = `package test
-
-import (
-	"net/http"
-	"net/http/httptest"
-	"testing"
-	"runtime"
-	"path/filepath"
-	_ "{{.Appname}}/routers"
-
-	"github.com/astaxie/beego"
-	. "github.com/smartystreets/goconvey/convey"
-)
-
-func init() {
-	_, file, _, _ := runtime.Caller(1)
-	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
-	beego.TestBeegoInit(apppath)
-}
-
-// TestGet is a sample to run an endpoint test
-func TestGet(t *testing.T) {
-	r, _ := http.NewRequest("GET", "/v1/object", nil)
-	w := httptest.NewRecorder()
-	beego.BeeApp.Handlers.ServeHTTP(w, r)
-
-	beego.Trace("testing", "TestGet", "Code[%d]\n%s", w.Code, w.Body.String())
-
-	Convey("Subject: Test Station Endpoint\n", t, func() {
-	        Convey("Status Code Should Be 200", func() {
-	                So(w.Code, ShouldEqual, 200)
-	        })
-	        Convey("The Result Should Not Be Empty", func() {
-	                So(w.Body.Len(), ShouldBeGreaterThan, 0)
-	        })
-	})
-}
-
-`
-
 var hproseAddFunctions = []string{}
 
 func init() {
@@ -583,13 +278,6 @@ func createhprose(cmd *Command, args []string) int {
 	fmt.Println("create app folder:", apppath)
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
 	fmt.Println("create conf:", path.Join(apppath, "conf"))
-	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
-	os.Mkdir(path.Join(apppath, "docs"), 0755)
-	fmt.Println("create docs:", path.Join(apppath, "docs"))
-	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println("create tests:", path.Join(apppath, "tests"))
-
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
@@ -598,7 +286,7 @@ func createhprose(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		generateHproseAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, args[0]))
+		generateHproseAppcode(string(driver), string(conn), "1", string(tables), path.Join(curpath, args[0]))
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
 		maingoContent := strings.Replace(hproseMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
@@ -619,33 +307,12 @@ func createhprose(cmd *Command, args []string) int {
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
-		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
-
-		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
-		writetofile(path.Join(apppath, "controllers", "object.go"),
-			strings.Replace(hproseControllers, "{{.Appname}}", packpath, -1))
-
-		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
-		writetofile(path.Join(apppath, "controllers", "user.go"),
-			strings.Replace(hproseControllers2, "{{.Appname}}", packpath, -1))
-
-		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
-		writetofile(path.Join(apppath, "tests", "default_test.go"),
-			strings.Replace(hproseTests, "{{.Appname}}", packpath, -1))
-
-		fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
-		writetofile(path.Join(apppath, "routers", "router.go"),
-			strings.Replace(hproserouter, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
 		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
 		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
-
-		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
-		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
 
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
 		writetofile(path.Join(apppath, "main.go"),

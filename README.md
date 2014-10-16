@@ -5,15 +5,34 @@ bee
 
 Bee is a command line tool facilitating development with beego framework.
 
+
+## 新增采用 Hprose 发布RPC服务
+
+  go get github.com/Lao-liu/bee
+  
+  bee hprose DbApi -conn=root:@tcp\(127.0.0.1:3306\)/test
+  OR
+  bee hprose DbApi -conn=root:@tcp\(127.0.0.1:3306\)/test -tables=tablename
+  
+  cd DbApi
+  
+  bee run
+
+#### 浏览器打开 http://127.0.0.1:8080
+
+
+  
+
 ## Requirements
 
 - Go version >= 1.1.
+
 
 ## Installation
 
 Begin by installing `bee` using `go get` command.
 
-	go get github.com/beego/bee
+  go get github.com/beego/bee
 
 Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
 
@@ -23,20 +42,20 @@ export PATH=$PATH:<your_main_gopath>/bin/bee
 
 > If you already have `bee` installed, updating `bee` is simple:
 
-	go get -u github.com/beego/bee
+  go get -u github.com/beego/bee
 
 ## Basic commands
 
 Bee provides a variety of commands which can be helpful at various stage of development. The top level commands include: 
 
-	new         create an application base on beego framework
-	run         run the app which can hot compile
-	pack        compress an beego project
-	api         create an api application base on beego framework
-	bale        packs non-Go files to Go source files
-	version     show the bee & beego version
-	generate    source code generator
-	migrate     run database migrations
+  new         create an application base on beego framework
+  run         run the app which can hot compile
+  pack        compress an beego project
+  api         create an api application base on beego framework
+  bale        packs non-Go files to Go source files
+  version     show the bee & beego version
+  generate    source code generator
+  migrate     run database migrations
 
 ## bee version
 
@@ -121,26 +140,26 @@ bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/
     -conn:   the connection string used by the driver, the default is ''
              e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
              e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-	
+  
 if conn is empty will create a example api application. otherwise generate api application based on an existing database.
 
 In the current path, will create a folder named [appname]
 
 In the appname folder has the follow struct:
 
-	├── conf
-	│   └── app.conf
-	├── controllers
-	│   └── object.go
-	│   └── user.go
-	├── routers
-	│   └── router.go
-	├── tests
-	│   └── default_test.go
-	├── main.go
-	└── models
-	    └── object.go
-	    └── user.go
+  ├── conf
+  │   └── app.conf
+  ├── controllers
+  │   └── object.go
+  │   └── user.go
+  ├── routers
+  │   └── router.go
+  ├── tests
+  │   └── default_test.go
+  ├── main.go
+  └── models
+      └── object.go
+      └── user.go
 ```
 
 ## bee bale
@@ -211,7 +230,7 @@ bee generate view [viewpath]
 bee generate migration [migrationfile] [-fields=""]
     generate migration file for making database schema update
     -fields: a list of table fields. Format: field:type, ...
-	
+  
 bee generate docs
     generate swagger doc file
 
@@ -258,13 +277,13 @@ usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]
 start the appname throw exec.Command
 
 then start a inotify watch for current dir
-										
+                    
 when the file has changed bee will auto go build and restart the app
 
-	file changed
-	     |
+  file changed
+       |
   check if it's go file
-	     |
+       |
      yes     no
       |       |
  go build    do nothing
