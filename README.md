@@ -8,6 +8,7 @@ Bee is a command line tool facilitating development with beego framework.
 
 ## 新增采用 Hprose 发布RPC服务
 
+```bash
   go get github.com/Lao-liu/bee
   
   bee hprose DbApi -conn=root:@tcp\(127.0.0.1:3306\)/test
@@ -17,6 +18,7 @@ Bee is a command line tool facilitating development with beego framework.
   cd DbApi
   
   bee run
+```
 
 #### 浏览器打开 http://127.0.0.1:8080
 
