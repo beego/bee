@@ -52,8 +52,6 @@ In the appname folder has the follow struct:
 	└── models
 	    └── object.go
 	    └── user.go
-
-##  For hprose client URL : http://127.0.0.1:8080/hprose
 `,
 }
 
