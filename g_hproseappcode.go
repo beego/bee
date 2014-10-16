@@ -144,19 +144,6 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 	if trans, ok := dbDriver[dbms]; ok {
 		ColorLog("[INFO] Analyzing database tables...\n")
 		tableNames := trans.GetTableNames(db)
-		// 添加 Hprose Function
-		if selectedTableNames == nil {
-			for _, tb := range tableNames {
-				hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb), -1))
-			}
-		} else {
-			for tb, v := range selectedTableNames {
-				if v {
-					hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb), -1))
-				}
-			}
-		}
-		// 添加结束
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
 		mvcPath.ModelPath = path.Join(currpath, "models")
@@ -216,6 +203,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 			template = HPROSE_STRUCT_MODEL_TPL
 		} else {
 			template = HPROSE_MODEL_TPL
+			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb.Name), -1))
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
