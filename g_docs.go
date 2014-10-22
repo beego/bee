@@ -561,27 +561,51 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 							} else {
 								mp.Type = realType
 							}
-							// if the tag contains json tag, set the name to the left most json tag
-							var name = field.Names[0].Name
-							if field.Tag != nil {
+
+							// dont add property if anonymous field
+							if field.Names != nil {
+
+								// set property name as field name
+								var name = field.Names[0].Name
+
+								// if no tag skip tag processing
+								if field.Tag == nil {
+									m.Properties[name] = mp
+									continue
+								}
+
+								var tagValues []string
 								stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
-								if tag := stag.Get("json"); tag != "" {
-									name = tag
+								tag := stag.Get("json")
+
+								if tag != "" {
+									tagValues = strings.Split(tag, ",")
 								}
-								if thrifttag := stag.Get("thrift"); thrifttag != "" {
-									ts := strings.Split(thrifttag, ",")
-									if ts[0] != "" {
-										name = ts[0]
+
+								// dont add property if json tag first value is "-"
+								if len(tagValues) == 0 || tagValues[0] != "-" {
+
+									// set property name to the left most json tag value only if is not omitempty
+									if len(tagValues) > 0 && tagValues[0] != "omitempty" {
+										name = tagValues[0]
 									}
-								}
-								if required := stag.Get("required"); required != "" {
-									m.Required = append(m.Required, name)
-								}
-								if desc := stag.Get("description"); desc != "" {
-									mp.Description = desc
+
+									if thrifttag := stag.Get("thrift"); thrifttag != "" {
+										ts := strings.Split(thrifttag, ",")
+										if ts[0] != "" {
+											name = ts[0]
+										}
+									}
+									if required := stag.Get("required"); required != "" {
+										m.Required = append(m.Required, name)
+									}
+									if desc := stag.Get("description"); desc != "" {
+										mp.Description = desc
+									}
+
+									m.Properties[name] = mp
 								}
 							}
-							m.Properties[name] = mp
 						}
 					}
 					return
