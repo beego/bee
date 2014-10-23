@@ -5,26 +5,6 @@ bee
 
 Bee is a command line tool facilitating development with beego framework.
 
-
-## 新增采用 Hprose 发布RPC服务
-
-```bash
-  go get github.com/Lao-liu/bee
-  
-  bee hprose DbApi -conn=root:@tcp\(127.0.0.1:3306\)/test
-  OR
-  bee hprose DbApi -conn=root:@tcp\(127.0.0.1:3306\)/test -tables=tablename
-  
-  cd DbApi
-  
-  bee run
-```
-
-#### 浏览器打开 http://127.0.0.1:8080
-
-
-  
-
 ## Requirements
 
 - Go version >= 1.1.
@@ -162,6 +142,35 @@ In the appname folder has the follow struct:
   └── models
       └── object.go
       └── user.go
+```
+
+## bee hprose
+
+```bash
+usage: bee hprose [appname]
+
+create an rpc application use hprose base on beego framework
+
+bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+    -tables: a list of table names separated by ',', default is empty, indicating all tables
+    -driver: [mysql | postgres | sqlite], the default is mysql
+    -conn:   the connection string used by the driver, the default is ''
+             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
+             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
+  
+if conn is empty will create a example rpc application. otherwise generate rpc application use hprose based on an existing database.
+
+In the current path, will create a folder named [appname]
+
+In the appname folder has the follow struct:
+
+  ├── conf
+  │   └── app.conf
+  ├── main.go
+  └── models
+      └── object.go
+      └── user.go
+
 ```
 
 ## bee bale

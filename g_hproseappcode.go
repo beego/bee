@@ -10,7 +10,7 @@
  *                                                        *
  * Build rpc application use Hprose base on beego         *
  *                                                        *
- * LastModified: Oct 13, 2014                             *
+ * LastModified: Oct 23, 2014                             *
  * Author: Liu jian <laoliu@lanmv.com>                    *
  *                                                        *
 \**********************************************************/
@@ -26,76 +26,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
-
-// typeMapping maps SQL data type to corresponding Go data type
-var typeMappingMysqlOfRpc = map[string]string{
-	"int":                "int", // int signed
-	"integer":            "int",
-	"tinyint":            "int8",
-	"smallint":           "int16",
-	"mediumint":          "int32",
-	"bigint":             "int64",
-	"int unsigned":       "uint", // int unsigned
-	"integer unsigned":   "uint",
-	"tinyint unsigned":   "uint8",
-	"smallint unsigned":  "uint16",
-	"mediumint unsigned": "uint32",
-	"bigint unsigned":    "uint64",
-	"bit":                "uint64",
-	"bool":               "bool",   // boolean
-	"enum":               "string", // enum
-	"set":                "string", // set
-	"varchar":            "string", // string & text
-	"char":               "string",
-	"tinytext":           "string",
-	"mediumtext":         "string",
-	"text":               "string",
-	"longtext":           "string",
-	"blob":               "[]byte", // blob as byte
-	"tinyblob":           "[]byte",
-	"mediumblob":         "[]byte",
-	"longblob":           "[]byte",
-	"date":               "time.Time", // time
-	"datetime":           "time.Time",
-	"timestamp":          "time.Time",
-	"time":               "time.Time",
-	"float":              "float32", // float & decimal
-	"double":             "float64",
-	"decimal":            "float64",
-	"binary":             "string", // binary
-	"varbinary":          "string",
-}
-
-// typeMappingPostgres maps SQL data type to corresponding Go data type
-var typeMappingPostgresOfRpc = map[string]string{
-	"serial":                      "int", // serial
-	"big serial":                  "int64",
-	"smallint":                    "int16", // int
-	"integer":                     "int",
-	"bigint":                      "int64",
-	"boolean":                     "bool",   // bool
-	"char":                        "string", // string
-	"character":                   "string",
-	"character varying":           "string",
-	"varchar":                     "string",
-	"text":                        "string",
-	"date":                        "time.Time", // time
-	"time":                        "time.Time",
-	"timestamp":                   "time.Time",
-	"timestamp without time zone": "time.Time",
-	"interval":                    "string",  // time interval, string for now
-	"real":                        "float32", // float & decimal
-	"double precision":            "float64",
-	"decimal":                     "float64",
-	"numeric":                     "float64",
-	"money":                       "float64", // money
-	"bytea":                       "[]byte",  // binary
-	"tsvector":                    "string",  // fulltext
-	"ARRAY":                       "string",  // array
-	"USER-DEFINED":                "string",  // user defined
-	"uuid":                        "string",  // uuid
-	"json":                        "string",  // json
-}
 
 func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte

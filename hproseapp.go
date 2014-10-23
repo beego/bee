@@ -24,8 +24,6 @@ import (
 	"strings"
 )
 
-var isCreateHproseApp = false
-
 var cmdHproseapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "hprose [appname]",
@@ -257,7 +255,6 @@ func init() {
 }
 
 func createhprose(cmd *Command, args []string) int {
-	isCreateHproseApp = true
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
