@@ -128,7 +128,7 @@ func readAppDirectories(directory string, paths *[]string) {
 		return
 	}
 
-	useDiectory := false
+	useDirectory := false
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), "docs") {
 			continue
@@ -138,13 +138,13 @@ func readAppDirectories(directory string, paths *[]string) {
 			continue
 		}
 
-		if useDiectory == true {
+		if useDirectory == true {
 			continue
 		}
 
 		if path.Ext(fileInfo.Name()) == ".go" {
 			*paths = append(*paths, directory)
-			useDiectory = true
+			useDirectory = true
 		}
 	}
 
