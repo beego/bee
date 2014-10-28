@@ -516,7 +516,6 @@ func packApp(cmd *Command, args []string) int {
 
 	str := strconv.FormatInt(time.Now().UnixNano(), 10)[9:]
 
-	gobin := path.Join(runtime.GOROOT(), "bin", "go")
 	tmpdir := path.Join(os.TempDir(), "beePack-"+str)
 
 	os.Mkdir(tmpdir, 0700)
@@ -558,10 +557,10 @@ func packApp(cmd *Command, args []string) int {
 		}
 
 		if verbose {
-			fmt.Println(gobin, " ", strings.Join(args, " "))
+			fmt.Println("go ", strings.Join(args, " "))
 		}
 
-		execmd := exec.Command(gobin, args...)
+		execmd := exec.Command("go", args...)
 		execmd.Env = append(os.Environ(), envs...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
