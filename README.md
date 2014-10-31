@@ -33,7 +33,7 @@ go get -u github.com/beego/bee
 ## Basic commands
 
 Bee provides a variety of commands which can be helpful at various stage of development. The top level commands include: 
-
+```base
   new         create an application base on beego framework
   run         run the app which can hot compile
   pack        compress an beego project
@@ -43,7 +43,7 @@ Bee provides a variety of commands which can be helpful at various stage of deve
   generate    source code generator
   migrate     run database migrations
   hprose      create an rpc application use hprose base on beego framework
-
+```
 ## bee version
 
 The first command is the easiest: displaying which version of `bee`, `beego` and `go` is installed on your machine:
