@@ -14,7 +14,9 @@ Bee is a command line tool facilitating development with beego framework.
 
 Begin by installing `bee` using `go get` command.
 
-  go get github.com/beego/bee
+```bash
+go get github.com/beego/bee
+```
 
 Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
 
@@ -24,7 +26,9 @@ export PATH=$PATH:<your_main_gopath>/bin/bee
 
 > If you already have `bee` installed, updating `bee` is simple:
 
-  go get -u github.com/beego/bee
+```bash
+go get -u github.com/beego/bee
+```
 
 ## Basic commands
 
@@ -38,6 +42,7 @@ Bee provides a variety of commands which can be helpful at various stage of deve
   version     show the bee & beego version
   generate    source code generator
   migrate     run database migrations
+  hprose      create an rpc application use hprose base on beego framework
 
 ## bee version
 
