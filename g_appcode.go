@@ -1147,12 +1147,12 @@ type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
-func (this *{{ctrlName}}Controller) URLMapping() {
-	this.Mapping("Post", this.Post)
-	this.Mapping("GetOne", this.GetOne)
-	this.Mapping("GetAll", this.GetAll)
-	this.Mapping("Put", this.Put)
-	this.Mapping("Delete", this.Delete)
+func (c *{{ctrlName}}Controller) URLMapping() {
+	c.Mapping("Post", c.Post)
+	c.Mapping("GetOne", c.GetOne)
+	c.Mapping("GetAll", c.GetAll)
+	c.Mapping("Put", c.Put)
+	c.Mapping("Delete", c.Delete)
 }
 
 // @Title Post
@@ -1161,15 +1161,15 @@ func (this *{{ctrlName}}Controller) URLMapping() {
 // @Success 200 {int} models.{{ctrlName}}.Id
 // @Failure 403 body is empty
 // @router / [post]
-func (this *{{ctrlName}}Controller) Post() {
+func (c *{{ctrlName}}Controller) Post() {
 	var v models.{{ctrlName}}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &v)
+	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if id, err := models.Add{{ctrlName}}(&v); err == nil {
-		this.Data["json"] = map[string]int64{"id": id}
+		c.Data["json"] = map[string]int64{"id": id}
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJson()
 }
 
 // @Title Get
@@ -1178,16 +1178,16 @@ func (this *{{ctrlName}}Controller) Post() {
 // @Success 200 {object} models.{{ctrlName}}
 // @Failure 403 :id is empty
 // @router /:id [get]
-func (this *{{ctrlName}}Controller) GetOne() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) GetOne() {
+	idStr := c.Ctx.Input.Params[":id"]
 	id, _ := strconv.Atoi(idStr)
 	v, err := models.Get{{ctrlName}}ById(id)
 	if err != nil {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	} else {
-		this.Data["json"] = v
+		c.Data["json"] = v
 	}
-	this.ServeJson()
+	c.ServeJson()
 }
 
 // @Title Get All
@@ -1201,7 +1201,7 @@ func (this *{{ctrlName}}Controller) GetOne() {
 // @Success 200 {object} models.{{ctrlName}}
 // @Failure 403 
 // @router / [get]
-func (this *{{ctrlName}}Controller) GetAll() {
+func (c *{{ctrlName}}Controller) GetAll() {
 	var fields []string
 	var sortby []string
 	var order []string
@@ -1210,32 +1210,32 @@ func (this *{{ctrlName}}Controller) GetAll() {
 	var offset int64 = 0
 
 	// fields: col1,col2,entity.col3
-	if v := this.GetString("fields"); v != "" {
+	if v := c.GetString("fields"); v != "" {
 		fields = strings.Split(v, ",")
 	}
 	// limit: 10 (default is 10)
-	if v, err := this.GetInt64("limit"); err == nil {
+	if v, err := c.GetInt64("limit"); err == nil {
 		limit = v
 	}
 	// offset: 0 (default is 0)
-	if v, err := this.GetInt64("offset"); err == nil {
+	if v, err := c.GetInt64("offset"); err == nil {
 		offset = v
 	}
 	// sortby: col1,col2
-	if v := this.GetString("sortby"); v != "" {
+	if v := c.GetString("sortby"); v != "" {
 		sortby = strings.Split(v, ",")
 	}
 	// order: desc,asc
-	if v := this.GetString("order"); v != "" {
+	if v := c.GetString("order"); v != "" {
 		order = strings.Split(v, ",")
 	}
 	// query: k:v,k:v
-	if v := this.GetString("query"); v != "" {
+	if v := c.GetString("query"); v != "" {
 		for _, cond := range strings.Split(v, ",") {
 			kv := strings.Split(cond, ":")
 			if len(kv) != 2 {
-				this.Data["json"] = errors.New("Error: invalid query key/value pair")
-				this.ServeJson()
+				c.Data["json"] = errors.New("Error: invalid query key/value pair")
+				c.ServeJson()
 				return
 			}
 			k, v := kv[0], kv[1]
@@ -1245,11 +1245,11 @@ func (this *{{ctrlName}}Controller) GetAll() {
 
 	l, err := models.GetAll{{ctrlName}}(query, fields, sortby, order, offset, limit)
 	if err != nil {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	} else {
-		this.Data["json"] = l
+		c.Data["json"] = l
 	}
-	this.ServeJson()
+	c.ServeJson()
 }
 
 // @Title Update
@@ -1259,17 +1259,17 @@ func (this *{{ctrlName}}Controller) GetAll() {
 // @Success 200 {object} models.{{ctrlName}}
 // @Failure 403 :id is not int
 // @router /:id [put]
-func (this *{{ctrlName}}Controller) Put() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) Put() {
+	idStr := c.Ctx.Input.Params[":id"]
 	id, _ := strconv.Atoi(idStr)
 	v := models.{{ctrlName}}{Id: id}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &v)
+	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if err := models.Update{{ctrlName}}ById(&v); err == nil {
-		this.Data["json"] = "OK"
+		c.Data["json"] = "OK"
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJson()
 }
 
 // @Title Delete
@@ -1278,15 +1278,15 @@ func (this *{{ctrlName}}Controller) Put() {
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
 // @router /:id [delete]
-func (this *{{ctrlName}}Controller) Delete() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) Delete() {
+	idStr := c.Ctx.Input.Params[":id"]
 	id, _ := strconv.Atoi(idStr)
 	if err := models.Delete{{ctrlName}}(id); err == nil {
-		this.Data["json"] = "OK"
+		c.Data["json"] = "OK"
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJson()
 }
 `
 	ROUTER_TPL = `// @APIVersion 1.0.0

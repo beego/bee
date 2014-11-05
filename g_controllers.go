@@ -68,12 +68,12 @@ type {{controllerName}}Controller struct {
 	beego.Controller
 }
 
-func (this *{{controllerName}}Controller) URLMapping() {
-	this.Mapping("Post", this.Post)
-	this.Mapping("GetOne", this.GetOne)
-	this.Mapping("GetAll", this.GetAll)
-	this.Mapping("Put", this.Put)
-	this.Mapping("Delete", this.Delete)
+func (c *{{controllerName}}Controller) URLMapping() {
+	c.Mapping("Post", c.Post)
+	c.Mapping("GetOne", c.GetOne)
+	c.Mapping("GetAll", c.GetAll)
+	c.Mapping("Put", c.Put)
+	c.Mapping("Delete", c.Delete)
 }
 
 // @Title Post
@@ -82,7 +82,7 @@ func (this *{{controllerName}}Controller) URLMapping() {
 // @Success 200 {int} models.{{controllerName}}.Id
 // @Failure 403 body is empty
 // @router / [post]
-func (this *{{controllerName}}Controller) Post() {
+func (c *{{controllerName}}Controller) Post() {
 
 }
 
@@ -92,7 +92,7 @@ func (this *{{controllerName}}Controller) Post() {
 // @Success 200 {object} models.{{controllerName}}
 // @Failure 403 :id is empty
 // @router /:id [get]
-func (this *{{controllerName}}Controller) GetOne() {
+func (c *{{controllerName}}Controller) GetOne() {
 
 }
 
@@ -107,7 +107,7 @@ func (this *{{controllerName}}Controller) GetOne() {
 // @Success 200 {object} models.{{controllerName}}
 // @Failure 403
 // @router / [get]
-func (this *{{controllerName}}Controller) GetAll() {
+func (c *{{controllerName}}Controller) GetAll() {
 
 }
 
@@ -118,7 +118,7 @@ func (this *{{controllerName}}Controller) GetAll() {
 // @Success 200 {object} models.{{controllerName}}
 // @Failure 403 :id is not int
 // @router /:id [put]
-func (this *{{controllerName}}Controller) Put() {
+func (c *{{controllerName}}Controller) Put() {
 	
 }
 
@@ -128,7 +128,7 @@ func (this *{{controllerName}}Controller) Put() {
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
 // @router /:id [delete]
-func (this *{{controllerName}}Controller) Delete() {
+func (c *{{controllerName}}Controller) Delete() {
 	
 }
 `

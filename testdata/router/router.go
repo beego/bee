@@ -8,21 +8,21 @@ type Router struct {
 	beego.Controller
 }
 
-func (this *Router) Get() {
+func (r *Router) Get() {
 
 }
 
-func (this *Router) Post() {
+func (r *Router) Post() {
 
 }
 
 type Controller struct {
 }
 
-func (this *Controller) Put() {
+func (c *Controller) Put() {
 
 }
 
-func (this *Controller) Delete() {
+func (c *Controller) Delete() {
 
 }

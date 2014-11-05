@@ -303,12 +303,12 @@ type ObjectController struct {
 // @Success 200 {string} models.Object.Id
 // @Failure 403 body is empty
 // @router / [post]
-func (this *ObjectController) Post() {
+func (o *ObjectController) Post() {
 	var ob models.Object
-	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
+	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	objectid := models.AddOne(ob)
-	this.Data["json"] = map[string]string{"ObjectId": objectid}
-	this.ServeJson()
+	o.Data["json"] = map[string]string{"ObjectId": objectid}
+	o.ServeJson()
 }
 
 // @Title Get
@@ -317,17 +317,17 @@ func (this *ObjectController) Post() {
 // @Success 200 {object} models.Object
 // @Failure 403 :objectId is empty
 // @router /:objectId [get]
-func (this *ObjectController) Get() {
-	objectId := this.Ctx.Input.Params[":objectId"]
+func (o *ObjectController) Get() {
+	objectId := o.Ctx.Input.Params[":objectId"]
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
-			this.Data["json"] = err
+			o.Data["json"] = err
 		} else {
-			this.Data["json"] = ob
+			o.Data["json"] = ob
 		}
 	}
-	this.ServeJson()
+	o.ServeJson()
 }
 
 // @Title GetAll
@@ -335,10 +335,10 @@ func (this *ObjectController) Get() {
 // @Success 200 {object} models.Object
 // @Failure 403 :objectId is empty
 // @router / [get]
-func (this *ObjectController) GetAll() {
+func (o *ObjectController) GetAll() {
 	obs := models.GetAll()
-	this.Data["json"] = obs
-	this.ServeJson()
+	o.Data["json"] = obs
+	o.ServeJson()
 }
 
 // @Title update
@@ -348,18 +348,18 @@ func (this *ObjectController) GetAll() {
 // @Success 200 {object} models.Object
 // @Failure 403 :objectId is empty
 // @router /:objectId [put]
-func (this *ObjectController) Put() {
-	objectId := this.Ctx.Input.Params[":objectId"]
+func (o *ObjectController) Put() {
+	objectId := o.Ctx.Input.Params[":objectId"]
 	var ob models.Object
-	json.Unmarshal(this.Ctx.Input.RequestBody, &ob)
+	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 
 	err := models.Update(objectId, ob.Score)
 	if err != nil {
-		this.Data["json"] = err
+		o.Data["json"] = err
 	} else {
-		this.Data["json"] = "update success!"
+		o.Data["json"] = "update success!"
 	}
-	this.ServeJson()
+	o.ServeJson()
 }
 
 // @Title delete
@@ -368,11 +368,11 @@ func (this *ObjectController) Put() {
 // @Success 200 {string} delete success!
 // @Failure 403 objectId is empty
 // @router /:objectId [delete]
-func (this *ObjectController) Delete() {
-	objectId := this.Ctx.Input.Params[":objectId"]
+func (o *ObjectController) Delete() {
+	objectId := o.Ctx.Input.Params[":objectId"]
 	models.Delete(objectId)
-	this.Data["json"] = "delete success!"
-	this.ServeJson()
+	o.Data["json"] = "delete success!"
+	o.ServeJson()
 }
 
 `
