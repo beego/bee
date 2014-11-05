@@ -1214,11 +1214,11 @@ func (this *{{ctrlName}}Controller) GetAll() {
 		fields = strings.Split(v, ",")
 	}
 	// limit: 10 (default is 10)
-	if v, err := this.GetInt("limit"); err == nil {
+	if v, err := this.GetInt64("limit"); err == nil {
 		limit = v
 	}
 	// offset: 0 (default is 0)
-	if v, err := this.GetInt("offset"); err == nil {
+	if v, err := this.GetInt64("offset"); err == nil {
 		offset = v
 	}
 	// sortby: col1,col2

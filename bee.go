@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-const version = "1.2.2"
+const version = "1.2.3"
 
 type Command struct {
 	// Run runs the command.
