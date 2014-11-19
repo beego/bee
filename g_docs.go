@@ -44,17 +44,17 @@ import (
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/swagger"
 )
+
 const (
     Rootinfo string = {{.rootinfo}}
     Subapi string = {{.subapi}}
+    BasePath string= "{{.version}}"
 )
 
 var rootapi swagger.ResourceListing
-
 var apilist map[string]*swagger.ApiDeclaration
 
 func init() {
-	basepath := "{{.version}}"
 	err := json.Unmarshal([]byte(Rootinfo), &rootapi)
 	if err != nil {
 		beego.Error(err)
@@ -69,7 +69,7 @@ func init() {
 			a.Path = urlReplace(k + a.Path)
 			v.Apis[i] = a
 		}
-		v.BasePath = basepath
+		v.BasePath = BasePath
 		beego.GlobalDocApi[strings.Trim(k, "/")] = v
 	}
 }
