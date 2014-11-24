@@ -28,10 +28,10 @@ import (
 )
 
 var (
-	cmd         *exec.Cmd
-	state       sync.Mutex
-	eventTime   = make(map[string]int64)
-	buildPeriod time.Time
+	cmd          *exec.Cmd
+	state        sync.Mutex
+	eventTime    = make(map[string]int64)
+	scheduleTime time.Time
 )
 
 func NewWatcher(paths []string, files []string, isgenerate bool) {
@@ -51,15 +51,9 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 				if checkTMPFile(e.Name) {
 					continue
 				}
-				if !chekcIfWatchExt(e.Name) {
+				if !checkIfWatchExt(e.Name) {
 					continue
 				}
-
-				// Prevent duplicated builds.
-				if buildPeriod.Add(1 * time.Second).After(time.Now()) {
-					continue
-				}
-				buildPeriod = time.Now()
 
 				mt := getFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
@@ -71,7 +65,19 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 
 				if isbuild {
 					ColorLog("[EVEN] %s\n", e)
-					go Autobuild(files, isgenerate)
+					go func() {
+						// Wait 1s before autobuild util there is no file change.
+						scheduleTime = time.Now().Add(1 * time.Second)
+						for {
+							time.Sleep(scheduleTime.Sub(time.Now()))
+							if time.Now().After(scheduleTime) {
+								break
+							}
+							return
+						}
+
+						Autobuild(files, isgenerate)
+					}()
 				}
 			case err := <-watcher.Error:
 				ColorLog("[WARN] %s\n", err.Error()) // No need to exit here
@@ -227,8 +233,8 @@ func checkTMPFile(name string) bool {
 
 var watchExts = []string{".go"}
 
-// chekcIfWatchExt returns true if the name HasSuffix <watch_ext>.
-func chekcIfWatchExt(name string) bool {
+// checkIfWatchExt returns true if the name HasSuffix <watch_ext>.
+func checkIfWatchExt(name string) bool {
 	for _, s := range watchExts {
 		if strings.HasSuffix(name, s) {
 			return true
