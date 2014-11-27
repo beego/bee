@@ -472,7 +472,7 @@ func (u *UserController) Delete() {
 // @Description Logs user into the system
 // @Param	username		query 	string	true		"The username for login"
 // @Param	password		query 	string	true		"The password for login"
-// @Success 200 {string} lonin success
+// @Success 200 {string} login success
 // @Failure 403 user not exist
 // @router /login [get]
 func (u *UserController) Login() {
