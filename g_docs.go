@@ -333,6 +333,13 @@ func isSystemPackage(pkgpath string) bool {
 	if utils.FileExists(wg) {
 		return true
 	}
+	
+        //TODO(zh):support go1.4
+        wg, _ = filepath.EvalSymlinks(filepath.Join(goroot, "src", pkgpath))
+        if utils.FileExists(wg) {
+            return true
+        }
+
 	return false
 }
 
