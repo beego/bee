@@ -13,13 +13,15 @@ import (
 
 var cmdVersion = &Command{
 	UsageLine: "version",
-	Short:     "show the bee & beego version",
+	Short:     "show the Bee, Beego and Go version",
 	Long: `
-show the bee & beego version                  
+show the Bee, Beego and Go version
 
 bee version
-    bee: 1.1.1
-	beego: 1.2
+    bee   :1.2.3
+    beego :1.4.2
+    Go    :go version go1.3.3 linux/amd64
+
 `,
 }
 

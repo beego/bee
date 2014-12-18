@@ -24,23 +24,11 @@ import (
 
 var cmdRun = &Command{
 	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]",
-	Short:     "run the app which can hot compile",
+	Short:     "run the app and start a Web server for development",
 	Long: `
-start the appname throw exec.Command
+Run command will supervise the file system of the beego project using inotify,
+it will recompile and restart the app after any modifications.
 
-then start a inotify watch for current dir
-										
-when the file has changed bee will auto go build and restart the app
-
-	file changed
-	     |
-  check if it's go file
-	     |
-     yes     no
-      |       |
- go build    do nothing
-     |
- restart app   
 `,
 }
 

@@ -23,13 +23,12 @@ import (
 
 var cmdNew = &Command{
 	UsageLine: "new [appname]",
-	Short:     "create an application base on beego framework",
+	Short:     "Create a Beego application",
 	Long: `
-create an application base on beego framework,
+Creates a Beego application for the given app name in the current directory.
 
-which in the current path with folder named [appname].
-
-The [appname] folder has following structure:
+The command 'new' creates a folder named [appname] and inside the folder deploy
+the following files/directories structure:
 
     |- main.go
     |- conf
@@ -313,9 +312,9 @@ var indextpl = `<!DOCTYPE html>
   </header>
   <footer>
     <div class="author">
-      Official website: 
-      <a href="http://{{.Website}}">{{.Website}}</a> / 
-      Contact me: 
+      Official website:
+      <a href="http://{{.Website}}">{{.Website}}</a> /
+      Contact me:
       <a class="email" href="mailto:{{.Email}}">{{.Email}}</a>
     </div>
   </footer>
