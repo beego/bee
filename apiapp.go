@@ -24,22 +24,23 @@ import (
 var cmdApiapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "api [appname]",
-	Short:     "create an api application base on beego framework",
-	Long: `	
-create an api application base on beego framework
+	Short:     "create an API beego application",
+	Long: `
+Create an API beego application.
 
 bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
+    -tables: a list of table names separated by ',' (default is empty, indicating all tables)
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is ''
              e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
              e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-	
-if conn is empty will create a example api application. otherwise generate api application based on an existing database.
 
-In the current path, will create a folder named [appname]
+If 'conn' argument is empty, bee api creates an example API application,
+when 'conn' argument is provided, bee api generates an API application based
+on the existing database.
 
-In the appname folder has the follow struct:
+The command 'api' creates a folder named [appname] and inside the folder deploy
+the following files/directories structure:
 
 	├── conf
 	│   └── app.conf

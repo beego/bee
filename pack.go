@@ -37,22 +37,23 @@ import (
 var cmdPack = &Command{
 	CustomFlags: true,
 	UsageLine:   "pack",
-	Short:       "compress an beego project",
+	Short:       "Compress a beego project into a single file",
 	Long: `
-compress an beego project
+Pack is used to compress a beego project into a single file.
+This eases the deployment by extracting the zip file to a server.
 
--p            app path. default is current path
--b            build specify platform app. default true
+-p            app path (default is the current path).
+-b            build specify platform app (default: true).
 -ba           additional args of go build
 -be=[]        additional ENV Variables of go build. eg: GOARCH=arm
 -o            compressed file output dir. default use current path
--f=""         format. [ tar.gz / zip ]. default tar.gz
--exp=""       relpath exclude prefix. default: .
--exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
+-f=""         format: tar.gz, zip (default: tar.gz)
+-exp=""       relpath exclude prefix (default: .).
+-exs=""       relpath exclude suffix (default: .go:.DS_Store:.tmp).
               all path use : as separator
--exr=[]       file/directory name exclude by Regexp. default: ^.
--fs=false     follow symlink. default false
--ss=false     skip symlink. default false
+-exr=[]       file/directory name exclude by Regexp (default: ^).
+-fs=false     follow symlink (default: false).
+-ss=false     skip symlink (default: false)
               default embed symlink into compressed file
 -v=false      verbose
 `,

@@ -31,22 +31,22 @@ var cmdMigrate = &Command{
 	Long: `
 bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     run all outstanding migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgresql | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback the last migration operation
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgresql | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgresql | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations and run them all again
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgresql | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 `,
 }
@@ -56,7 +56,7 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
-	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgresql, etc.")
+	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgresql, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
@@ -376,6 +376,6 @@ CREATE TABLE migrations (
 	rollback_statements longtext COMMENT 'SQL statment for rolling back migration',
 	status ENUM('update', 'rollback') COMMENT 'update indicates it is a normal migration while rollback means this migration is rolled back',
 	PRIMARY KEY (id_migration)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
 `
 )

@@ -30,13 +30,15 @@ var cmdBale = &Command{
 	UsageLine: "bale",
 	Short:     "packs non-Go files to Go source files",
 	Long: `
-bale packs non-Go files to Go source files and
+Bale command compress all the static files in to a single binary file.
 
-auto-generate unpack function to main package then run it
+This is usefull to not have to carry static files including js, css, images
+and views when publishing a project.
 
-during the runtime.
+auto-generate unpack function to main package then run it during the runtime.
+This is mainly used for zealots who are requiring 100% Go code.
 
-This is mainly used for zealots who are requiring 100% Go code.`,
+`,
 }
 
 func init() {
