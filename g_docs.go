@@ -333,12 +333,12 @@ func isSystemPackage(pkgpath string) bool {
 	if utils.FileExists(wg) {
 		return true
 	}
-	
-        //TODO(zh):support go1.4
-        wg, _ = filepath.EvalSymlinks(filepath.Join(goroot, "src", pkgpath))
-        if utils.FileExists(wg) {
-            return true
-        }
+
+	//TODO(zh):support go1.4
+	wg, _ = filepath.EvalSymlinks(filepath.Join(goroot, "src", pkgpath))
+	if utils.FileExists(wg) {
+		return true
+	}
 
 	return false
 }
@@ -588,6 +588,9 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 								}
 								if desc := stag.Get("description"); desc != "" {
 									mp.Description = desc
+								}
+								if ignore := stag.Get("ignore"); ignore != "" {
+									continue
 								}
 							}
 							m.Properties[name] = mp
