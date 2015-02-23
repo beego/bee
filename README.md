@@ -115,7 +115,7 @@ usage: bee api [appname]
 
 create an api application base on beego framework
 
-bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+bee api [appname] [-tables=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is ''
@@ -162,22 +162,22 @@ This is mainly used for zealots who are requiring 100% Go code.
 ```bash
 usage: bee migrate [Command]
 
-bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+bee migrate [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     run all outstanding migrations
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
-bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+bee migrate rollback [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback the last migration operation
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
-bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+bee migrate reset [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
-bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+bee migrate refresh [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations and run them all again
     -driver: [mysql | postgresql | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
@@ -191,7 +191,7 @@ Bee also comes with a souce code generator which speeds up the development.
 ```bash
 usage: bee generate [Command]
 
-bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+bee generate scaffold [scaffoldname] [-fields=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     The generate scaffold command will do a number of things for you.
     -fields: a list of table fields. Format: field:type, ...
     -driver: [mysql | postgres | sqlite], the default is mysql
@@ -218,7 +218,7 @@ bee generate docs
 bee generate test [routerfile]
     generate testcase
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
+bee generate appcode [-tables=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
     generate appcode based on an existing database
     -tables: a list of table names separated by ',', default is empty, indicating all tables
     -driver: [mysql | postgres | sqlite], the default is mysql
