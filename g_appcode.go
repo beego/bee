@@ -761,6 +761,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
+		fileStr = strings.Replace(fileStr, "{{tableName}}", tb.Name, -1)
 		// if table contains time field, import time.Time package
 		timePkg := ""
 		importTimePkg := ""
@@ -1002,6 +1003,10 @@ import (
 )
 
 {{modelStruct}}
+
+func (t *{{modelName}}) TableName() string {
+	return "{{tableName}}"
+}
 
 func init() {
 	orm.RegisterModel(new({{modelName}}))
