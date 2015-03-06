@@ -547,6 +547,10 @@ func init() {
 
 func createapi(cmd *Command, args []string) int {
 	curpath, _ := os.Getwd()
+	if len(args) < 1 {
+		ColorLog("[ERRO] Argument [appname] is missing\n")
+		os.Exit(2)
+	}
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
 	}
