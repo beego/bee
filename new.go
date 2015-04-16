@@ -73,13 +73,23 @@ func createApp(cmd *Command, args []string) int {
 
 	wgopath := path.SplitList(gopath)
 	for _, wg := range wgopath {
-		wg, _ = path.EvalSymlinks(path.Join(wg, "src"))
+
+		wg = path.Join(wg, "src")
 
 		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
 			haspath = true
 			appsrcpath = wg
 			break
 		}
+
+		wg, _ = path.EvalSymlinks(wg)
+
+		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
+			haspath = true
+			appsrcpath = wg
+			break
+		}
+
 	}
 
 	if !haspath {
