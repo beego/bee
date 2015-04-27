@@ -575,7 +575,8 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 							if field.Tag != nil {
 								stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
 								if tag := stag.Get("json"); tag != "" {
-									name = tag
+									leaveomitempty := strings.Split(tag, ",")
+									name = leaveomitempty[0]
 								}
 								if thrifttag := stag.Get("thrift"); thrifttag != "" {
 									ts := strings.Split(thrifttag, ",")
