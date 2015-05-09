@@ -100,9 +100,12 @@ func createApp(cmd *Command, args []string) int {
 
 	apppath := path.Join(curpath, args[0])
 
-	if _, err := os.Stat(apppath); os.IsNotExist(err) == false {
-		fmt.Printf("[ERRO] Path (%s) already exists\n", apppath)
-		os.Exit(2)
+	if isExist(apppath) {
+		ColorLog("[ERRO] Path (%s) already exists\n", apppath)
+		ColorLog("[WARN] Do you want to overwrite it? [yes|no]]")
+		if !askForConfirmation() {
+			os.Exit(2)
+		}
 	}
 
 	fmt.Println("[INFO] Creating application...")
