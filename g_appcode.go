@@ -499,7 +499,9 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 
 // getGoDataType maps an SQL data type to Golang data type
 func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
-	if v, ok := typeMappingMysql[sqlType]; ok {
+	var typeMapping = map[string]string{}
+	typeMapping = typeMappingMysql
+	if v, ok := typeMapping[sqlType]; ok {
 		return v
 	} else {
 		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)

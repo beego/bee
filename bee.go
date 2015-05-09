@@ -77,6 +77,7 @@ var commands = []*Command{
 	cmdRun,
 	cmdPack,
 	cmdApiapp,
+	cmdHproseapp,
 	//cmdRouter,
 	//cmdTest,
 	cmdBale,
