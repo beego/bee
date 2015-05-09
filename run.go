@@ -55,6 +55,14 @@ func runApp(cmd *Command, args []string) int {
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	} else {
 		appname = args[0]
+		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+		if strings.HasSuffix(appname, ".go") && isExist(path.Join(crupath, appname)) {
+			ColorLog("[WARN] The appname has conflic with crupath's file, do you want to build appname as %s\n", appname)
+			ColorLog("[INFO] Do you want to overwrite it? [yes|no]]  ")
+			if !askForConfirmation() {
+				return 0
+			}
+		}
 	}
 	Debugf("current path:%s\n", crupath)
 
