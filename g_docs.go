@@ -149,7 +149,11 @@ func generateDocs(curpath string) {
 		}
 	}
 	for _, im := range f.Imports {
-		analisyscontrollerPkg(im.Path.Value)
+		localName := ""
+		if im.Name != nil {
+			localName = im.Name.Name
+		}
+		analisyscontrollerPkg(localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -256,13 +260,17 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analisyscontrollerPkg(pkgpath string) {
+func analisyscontrollerPkg(localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
 	}
-	pps := strings.Split(pkgpath, "/")
-	importlist[pps[len(pps)-1]] = pkgpath
+	if localName != "" {
+		importlist[localName] = pkgpath
+	} else {
+		pps := strings.Split(pkgpath, "/")
+		importlist[pps[len(pps)-1]] = pkgpath
+	}
 	if pkgpath == "github.com/astaxie/beego" {
 		return
 	}
