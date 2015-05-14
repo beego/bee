@@ -93,7 +93,7 @@ func createApp(cmd *Command, args []string) int {
 	}
 
 	if !haspath {
-		ColorLog("[ERRO] Unable to create an application outside of $GOPATH(%s)\n", gopath)
+		ColorLog("[ERRO] Unable to create an application outside of $GOPATH%ssrc(%s%ssrc)\n", string(path.Separator), gopath, string(path.Separator)
 		ColorLog("[HINT] Change your work directory by `cd ($GOPATH%ssrc)`\n", string(path.Separator))
 		os.Exit(2)
 	}
