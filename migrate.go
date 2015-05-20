@@ -31,22 +31,22 @@ var cmdMigrate = &Command{
 	Long: `
 bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     run all outstanding migrations
-    -driver: [mysql | postgresql | sqlite] (default: mysql)
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback the last migration operation
-    -driver: [mysql | postgresql | sqlite] (default: mysql)
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations
-    -driver: [mysql | postgresql | sqlite] (default: mysql)
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations and run them all again
-    -driver: [mysql | postgresql | sqlite] (default: mysql)
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 `,
 }
@@ -56,7 +56,7 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
-	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgresql, sqlite, etc.")
+	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
@@ -149,6 +149,7 @@ func migrate(goal, crupath, driver, connStr string) {
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		ColorLog("[ERRO] Error: %v", err.Error())
 		os.Exit(2)
 	}
 	defer db.Close()
