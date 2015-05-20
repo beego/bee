@@ -149,6 +149,7 @@ func migrate(goal, crupath, driver, connStr string) {
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		ColorLog("[ERRO] Error: %v", err.Error())
 		os.Exit(2)
 	}
 	defer db.Close()
