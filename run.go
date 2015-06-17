@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]  [-e=Godeps -e=folderToExclude]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the beego project using inotify,
@@ -37,11 +37,15 @@ var mainFiles ListOpts
 var downdoc docValue
 var gendoc docValue
 
+// The flags list of the paths excluded from watching
+var excludedPaths strFlags
+
 func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
 	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
 	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
+	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 }
 
 var appname string
@@ -129,6 +133,11 @@ func readAppDirectories(directory string, paths *[]string) {
 		if strings.HasSuffix(fileInfo.Name(), "docs") {
 			continue
 		}
+
+		if isExcluded(fileInfo) {
+			continue
+		}
+
 		if fileInfo.IsDir() == true && fileInfo.Name()[0] != '.' {
 			readAppDirectories(directory+"/"+fileInfo.Name(), paths)
 			continue
@@ -145,4 +154,15 @@ func readAppDirectories(directory string, paths *[]string) {
 	}
 
 	return
+}
+
+// If a file is excluded
+func isExcluded(fileInfo os.FileInfo) bool {
+	for _, p := range excludedPaths {
+		if strings.HasSuffix(fileInfo.Name(), p) {
+			ColorLog("[INFO] Excluding from watching [ %s ]\n", fileInfo.Name())
+			return true
+		}
+	}
+	return false
 }
