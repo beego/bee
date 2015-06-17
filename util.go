@@ -247,3 +247,15 @@ func camelString(s string) string {
 	}
 	return string(data[:len(data)])
 }
+
+// The string flag list, implemented flag.Value interface
+type strFlags []string
+
+func (s *strFlags) String() string {
+	return fmt.Sprintf("%d", *s)
+}
+
+func (s *strFlags) Set(value string) error {
+	*s = append(*s, value)
+	return nil
+}
