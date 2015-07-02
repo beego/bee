@@ -55,22 +55,24 @@ var rootapi swagger.ResourceListing
 var apilist map[string]*swagger.ApiDeclaration
 
 func init() {
-	err := json.Unmarshal([]byte(Rootinfo), &rootapi)
-	if err != nil {
-		beego.Error(err)
-	}
-	err = json.Unmarshal([]byte(Subapi), &apilist)
-	if err != nil {
-		beego.Error(err)
-	}
-	beego.GlobalDocApi["Root"] = rootapi
-	for k, v := range apilist {
-		for i, a := range v.Apis {
-			a.Path = urlReplace(k + a.Path)
-			v.Apis[i] = a
+	if beego.EnableDocs {
+		err := json.Unmarshal([]byte(Rootinfo), &rootapi)
+		if err != nil {
+			beego.Error(err)
 		}
-		v.BasePath = BasePath
-		beego.GlobalDocApi[strings.Trim(k, "/")] = v
+		err = json.Unmarshal([]byte(Subapi), &apilist)
+		if err != nil {
+			beego.Error(err)
+		}
+		beego.GlobalDocApi["Root"] = rootapi
+		for k, v := range apilist {
+			for i, a := range v.Apis {
+				a.Path = urlReplace(k + a.Path)
+				v.Apis[i] = a
+			}
+			v.BasePath = BasePath
+			beego.GlobalDocApi[strings.Trim(k, "/")] = v
+		}
 	}
 }
 
