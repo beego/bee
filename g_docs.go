@@ -395,10 +395,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 							tmp = make([]rune, 0)
 							j += 1
 							start = false
-							continue
-						} else {
-							st[j] = strings.TrimSpace(ss[i+1:])
-							break
+							if j == 1 {
+								continue
+							} else {
+								st[j] = strings.TrimSpace(ss[i+1:])
+								break
+
+							}
 						}
 					} else {
 						start = true
