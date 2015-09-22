@@ -52,7 +52,7 @@ const (
 )
 
 var rootapi swagger.ResourceListing
-var apilist map[string]*swagger.ApiDeclaration
+var apilist map[string]*swagger.APIDeclaration
 
 func init() {
 	if beego.EnableDocs {
@@ -64,14 +64,14 @@ func init() {
 		if err != nil {
 			beego.Error(err)
 		}
-		beego.GlobalDocApi["Root"] = rootapi
+		beego.GlobalDocAPI["Root"] = rootapi
 		for k, v := range apilist {
-			for i, a := range v.Apis {
+			for i, a := range v.APIs {
 				a.Path = urlReplace(k + a.Path)
-				v.Apis[i] = a
+				v.APIs[i] = a
 			}
 			v.BasePath = BasePath
-			beego.GlobalDocApi[strings.Trim(k, "/")] = v
+			beego.GlobalDocAPI[strings.Trim(k, "/")] = v
 		}
 	}
 }
@@ -102,8 +102,8 @@ const (
 var pkgCache map[string]bool //pkg:controller:function:comments comments: key:value
 var controllerComments map[string]string
 var importlist map[string]string
-var apilist map[string]*swagger.ApiDeclaration
-var controllerList map[string][]swagger.Api
+var apilist map[string]*swagger.APIDeclaration
+var controllerList map[string][]swagger.API
 var modelsList map[string]map[string]swagger.Model
 var rootapi swagger.ResourceListing
 
@@ -111,8 +111,8 @@ func init() {
 	pkgCache = make(map[string]bool)
 	controllerComments = make(map[string]string)
 	importlist = make(map[string]string)
-	apilist = make(map[string]*swagger.ApiDeclaration)
-	controllerList = make(map[string][]swagger.Api)
+	apilist = make(map[string]*swagger.APIDeclaration)
+	controllerList = make(map[string][]swagger.API)
 	modelsList = make(map[string]map[string]swagger.Model)
 }
 
@@ -133,19 +133,19 @@ func generateDocs(curpath string) {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
 				if strings.HasPrefix(s, "@APIVersion") {
-					rootapi.ApiVersion = strings.TrimSpace(s[len("@APIVersion"):])
+					rootapi.APIVersion = strings.TrimSpace(s[len("@APIVersion"):])
 				} else if strings.HasPrefix(s, "@Title") {
 					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
 					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Infos.TermsOfServiceUrl = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
+					rootapi.Infos.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
 					rootapi.Infos.Contact = strings.TrimSpace(s[len("@Contact"):])
 				} else if strings.HasPrefix(s, "@License") {
 					rootapi.Infos.License = strings.TrimSpace(s[len("@License"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.LicenseUrl = strings.TrimSpace(s[len("@LicenseUrl"):])
+					rootapi.Infos.LicenseURL = strings.TrimSpace(s[len("@LicenseUrl"):])
 				}
 			}
 		}
@@ -172,7 +172,7 @@ func generateDocs(curpath string) {
 								case *ast.CallExpr:
 									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
 										s, params := analisysNewNamespace(pp)
-										subapi := swagger.ApiRef{Path: s}
+										subapi := swagger.APIRef{Path: s}
 										controllerName := ""
 										for _, sp := range params {
 											switch pp := sp.(type) {
@@ -185,7 +185,7 @@ func generateDocs(curpath string) {
 										if v, ok := controllerComments[controllerName]; ok {
 											subapi.Description = v
 										}
-										rootapi.Apis = append(rootapi.Apis, subapi)
+										rootapi.APIs = append(rootapi.APIs, subapi)
 									} else if selname == "NSInclude" {
 										analisysNSInclude(f, pp)
 									}
@@ -233,12 +233,12 @@ func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 
 func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	cname := ""
-	a := &swagger.ApiDeclaration{}
-	a.ApiVersion = rootapi.ApiVersion
+	a := &swagger.APIDeclaration{}
+	a.APIVersion = rootapi.APIVersion
 	a.SwaggerVersion = swagger.SwaggerVersion
 	a.ResourcePath = baseurl
 	a.Produces = []string{"application/json", "application/xml", "text/plain", "text/html"}
-	a.Apis = make([]swagger.Api, 0)
+	a.APIs = make([]swagger.API, 0)
 	a.Models = make(map[string]swagger.Model)
 	for _, p := range ce.Args {
 		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
@@ -246,15 +246,15 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 			cname = v + x.Sel.Name
 		}
 		if apis, ok := controllerList[cname]; ok {
-			if len(a.Apis) > 0 {
-				a.Apis = append(a.Apis, apis...)
+			if len(a.APIs) > 0 {
+				a.APIs = append(a.APIs, apis...)
 			} else {
-				a.Apis = apis
+				a.APIs = apis
 			}
 		}
 		if models, ok := modelsList[cname]; ok {
 			for _, m := range models {
-				a.Models[m.Id] = m
+				a.Models[m.ID] = m
 			}
 		}
 	}
@@ -355,7 +355,7 @@ func isSystemPackage(pkgpath string) bool {
 
 // parse the func comments
 func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpath string) error {
-	innerapi := swagger.Api{}
+	innerapi := swagger.API{}
 	opts := swagger.Operation{}
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
@@ -369,9 +369,9 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				innerapi.Path = e1[0]
 				if len(e1) == 2 && e1[1] != "" {
 					e1 = strings.SplitN(e1[1], " ", 2)
-					opts.HttpMethod = strings.ToUpper(strings.Trim(e1[0], "[]"))
+					opts.HTTPMethod = strings.ToUpper(strings.Trim(e1[0], "[]"))
 				} else {
-					opts.HttpMethod = "GET"
+					opts.HTTPMethod = "GET"
 				}
 			} else if strings.HasPrefix(t, "@Title") {
 				opts.Nickname = strings.TrimSpace(t[len("@Title"):])
@@ -490,7 +490,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 		if _, ok := controllerList[pkgpath+controllerName]; ok {
 			controllerList[pkgpath+controllerName] = append(controllerList[pkgpath+controllerName], innerapi)
 		} else {
-			controllerList[pkgpath+controllerName] = make([]swagger.Api, 1)
+			controllerList[pkgpath+controllerName] = make([]swagger.API, 1)
 			controllerList[pkgpath+controllerName][0] = innerapi
 		}
 	}
@@ -561,7 +561,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 					if !ok {
 						continue
 					}
-					m.Id = k
+					m.ID = k
 					if st.Fields.List != nil {
 						m.Properties = make(map[string]swagger.ModelProperty)
 						for _, field := range st.Fields.List {
@@ -635,7 +635,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 			}
 		}
 	}
-	if m.Id == "" {
+	if m.ID == "" {
 		ColorLog("can't find the object: %v", str)
 		os.Exit(1)
 	}
