@@ -323,7 +323,7 @@ func (o *ObjectController) Get() {
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
-			o.Data["json"] = err
+			o.Data["json"] = err.Error()
 		} else {
 			o.Data["json"] = ob
 		}
@@ -356,7 +356,7 @@ func (o *ObjectController) Put() {
 
 	err := models.Update(objectId, ob.Score)
 	if err != nil {
-		o.Data["json"] = err
+		o.Data["json"] = err.Error()
 	} else {
 		o.Data["json"] = "update success!"
 	}
@@ -426,7 +426,7 @@ func (u *UserController) Get() {
 	if uid != "" {
 		user, err := models.GetUser(uid)
 		if err != nil {
-			u.Data["json"] = err
+			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = user
 		}
@@ -448,7 +448,7 @@ func (u *UserController) Put() {
 		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 		uu, err := models.UpdateUser(uid, &user)
 		if err != nil {
-			u.Data["json"] = err
+			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = uu
 		}
