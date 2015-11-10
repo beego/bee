@@ -166,8 +166,8 @@ func generateCode(cmd *Command, args []string) int {
 		upsql := ""
 		downsql := ""
 		if fields != "" {
-			upsql = `m.Sql("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
-			downsql = `m.Sql("DROP TABLE ` + "`" + mname + "`" + `")`
+			upsql = `m.SQL("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
+			downsql = `m.SQL("DROP TABLE ` + "`" + mname + "`" + `")`
 		}
 		generateMigration(mname, upsql, downsql, curpath)
 	case "controller":
