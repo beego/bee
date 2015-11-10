@@ -79,13 +79,13 @@ func init() {
 
 // Run the migrations
 func (m *{{StructName}}) Up() {
-	// use m.Sql("CREATE TABLE ...") to make schema update
+	// use m.SQL("CREATE TABLE ...") to make schema update
 	{{UpSQL}}
 }
 
 // Reverse the migrations
 func (m *{{StructName}}) Down() {
-	// use m.Sql("DROP TABLE ...") to reverse schema update
+	// use m.SQL("DROP TABLE ...") to reverse schema update
 	{{DownSQL}}
 }
 `

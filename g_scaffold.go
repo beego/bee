@@ -28,8 +28,8 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 		upsql := ""
 		downsql := ""
 		if fields != "" {
-			upsql = `m.Sql("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
-			downsql = `m.Sql("DROP TABLE ` + "`" + sname + "`" + `")`
+			upsql = `m.SQL("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
+			downsql = `m.SQL("DROP TABLE ` + "`" + sname + "`" + `")`
 		}
 		generateMigration(sname, upsql, downsql, crupath)
 	}
