@@ -1172,10 +1172,13 @@ func (c *{{ctrlName}}Controller) URLMapping() {
 // @router / [post]
 func (c *{{ctrlName}}Controller) Post() {
 	var v models.{{ctrlName}}
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if _, err := models.Add{{ctrlName}}(&v); err == nil {
-		c.Ctx.Output.SetStatus(201)
-		c.Data["json"] = v
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if _, err := models.Add{{ctrlName}}(&v); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = v
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
 		c.Data["json"] = err.Error()
 	}
@@ -1273,9 +1276,12 @@ func (c *{{ctrlName}}Controller) Put() {
 	idStr := c.Ctx.Input.Params[":id"]
 	id, _ := strconv.Atoi(idStr)
 	v := models.{{ctrlName}}{Id: id}
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if err := models.Update{{ctrlName}}ById(&v); err == nil {
-		c.Data["json"] = "OK"
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if err := models.Update{{ctrlName}}ById(&v); err == nil {
+			c.Data["json"] = "OK"
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
 		c.Data["json"] = err.Error()
 	}
