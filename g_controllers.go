@@ -88,7 +88,7 @@ func (c *{{controllerName}}Controller) URLMapping() {
 // @Title Post
 // @Description create {{controllerName}}
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 200 {int} models.{{controllerName}}.Id
+// @Success 201 {object} models.{{controllerName}}
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
@@ -128,7 +128,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 // @Failure 403 :id is not int
 // @router /:id [put]
 func (c *{{controllerName}}Controller) Put() {
-	
+
 }
 
 // @Title Delete
@@ -138,7 +138,7 @@ func (c *{{controllerName}}Controller) Put() {
 // @Failure 403 id is empty
 // @router /:id [delete]
 func (c *{{controllerName}}Controller) Delete() {
-	
+
 }
 `
 
@@ -170,14 +170,15 @@ func (c *{{controllerName}}Controller) URLMapping() {
 // @Title Post
 // @Description create {{controllerName}}
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 200 {int} models.{{controllerName}}.Id
+// @Success 201 {int} models.{{controllerName}}
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
 	var v models.{{controllerName}}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if id, err := models.Add{{controllerName}}(&v); err == nil {
-		c.Data["json"] = map[string]int64{"id": id}
+	if _, err := models.Add{{controllerName}}(&v); err == nil {
+		c.Ctx.Output.SetStatus(201)
+		c.Data["json"] = v
 	} else {
 		c.Data["json"] = err.Error()
 	}
@@ -211,7 +212,7 @@ func (c *{{controllerName}}Controller) GetOne() {
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.{{controllerName}}
-// @Failure 403 
+// @Failure 403
 // @router / [get]
 func (c *{{controllerName}}Controller) GetAll() {
 	var fields []string

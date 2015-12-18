@@ -362,12 +362,12 @@ func getTableObjects(tableNames []string, db *sql.DB, dbTransformer DbTransforme
 // and fill in Table struct
 func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 	rows, err := db.Query(
-		`SELECT 
+		`SELECT
 			c.constraint_type, u.column_name, u.referenced_table_schema, u.referenced_table_name, referenced_column_name, u.ordinal_position
 		FROM
-			information_schema.table_constraints c 
+			information_schema.table_constraints c
 		INNER JOIN
-			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name 
+			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name
 		WHERE
 			c.table_schema = database() AND c.table_name = ? AND u.table_schema = database() AND u.table_name = ?`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
@@ -412,9 +412,9 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	// retrieve columns
 	colDefRows, _ := db.Query(
 		`SELECT
-			column_name, data_type, column_type, is_nullable, column_default, extra 
+			column_name, data_type, column_type, is_nullable, column_default, extra
 		FROM
-			information_schema.columns 
+			information_schema.columns
 		WHERE
 			table_schema = database() AND table_name = ?`,
 		table.Name)
@@ -537,7 +537,7 @@ func (*PostgresDB) GetTableNames(db *sql.DB) (tables []string) {
 // GetConstraints for PostgreSQL
 func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 	rows, err := db.Query(
-		`SELECT 
+		`SELECT
 			c.constraint_type,
 			u.column_name,
 			cu.table_catalog AS referenced_table_catalog,
@@ -545,13 +545,13 @@ func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string
 			cu.column_name AS referenced_column_name,
 			u.ordinal_position
 		FROM
-			information_schema.table_constraints c 
+			information_schema.table_constraints c
 		INNER JOIN
 			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name
 		INNER JOIN
 			information_schema.constraint_column_usage cu ON cu.constraint_name =  c.constraint_name
 		WHERE
-			c.table_catalog = current_database() AND c.table_schema = 'public' AND c.table_name = $1 
+			c.table_catalog = current_database() AND c.table_schema = 'public' AND c.table_name = $1
 			AND u.table_catalog = current_database() AND u.table_schema = 'public' AND u.table_name = $2`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
@@ -606,7 +606,7 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 			column_default,
 			'' AS extra
 		FROM
-			information_schema.columns 
+			information_schema.columns
 		WHERE
 			table_catalog = current_database() AND table_schema = 'public' AND table_name = $1`,
 		table.Name)
@@ -1167,14 +1167,18 @@ func (c *{{ctrlName}}Controller) URLMapping() {
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
-// @Success 200 {int} models.{{ctrlName}}.Id
+// @Success 201 {int} models.{{ctrlName}}
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{ctrlName}}Controller) Post() {
 	var v models.{{ctrlName}}
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if id, err := models.Add{{ctrlName}}(&v); err == nil {
-		c.Data["json"] = map[string]int64{"id": id}
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if _, err := models.Add{{ctrlName}}(&v); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = v
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
 		c.Data["json"] = err.Error()
 	}
@@ -1208,7 +1212,7 @@ func (c *{{ctrlName}}Controller) GetOne() {
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.{{ctrlName}}
-// @Failure 403 
+// @Failure 403
 // @router / [get]
 func (c *{{ctrlName}}Controller) GetAll() {
 	var fields []string
@@ -1272,9 +1276,12 @@ func (c *{{ctrlName}}Controller) Put() {
 	idStr := c.Ctx.Input.Params[":id"]
 	id, _ := strconv.Atoi(idStr)
 	v := models.{{ctrlName}}{Id: id}
-	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
-	if err := models.Update{{ctrlName}}ById(&v); err == nil {
-		c.Data["json"] = "OK"
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if err := models.Update{{ctrlName}}ById(&v); err == nil {
+			c.Data["json"] = "OK"
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
 		c.Data["json"] = err.Error()
 	}
