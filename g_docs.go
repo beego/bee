@@ -55,7 +55,7 @@ var rootapi swagger.ResourceListing
 var apilist map[string]*swagger.APIDeclaration
 
 func init() {
-	if beego.EnableDocs {
+	if beego.Bconfig.WebConifg.EnableDocs {
 		err := json.Unmarshal([]byte(Rootinfo), &rootapi)
 		if err != nil {
 			beego.Error(err)

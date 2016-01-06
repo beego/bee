@@ -76,9 +76,9 @@ import (
 )
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
+	if beego.BConfig.RunMode == "dev" {
+		beego.BConfig.WebConfig.DirectoryIndex = true
+		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 	beego.Run()
 }
@@ -100,9 +100,9 @@ func init() {
 }
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
+	if beego.BConfig.RunMode == "dev" {
+		beego.BConfig.WebConfig.DirectoryIndex = true
+		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 	beego.Run()
 }
@@ -319,7 +319,7 @@ func (o *ObjectController) Post() {
 // @Failure 403 :objectId is empty
 // @router /:objectId [get]
 func (o *ObjectController) Get() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
@@ -350,7 +350,7 @@ func (o *ObjectController) GetAll() {
 // @Failure 403 :objectId is empty
 // @router /:objectId [put]
 func (o *ObjectController) Put() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	var ob models.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 
@@ -370,7 +370,7 @@ func (o *ObjectController) Put() {
 // @Failure 403 objectId is empty
 // @router /:objectId [delete]
 func (o *ObjectController) Delete() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	models.Delete(objectId)
 	o.Data["json"] = "delete success!"
 	o.ServeJSON()
