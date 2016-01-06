@@ -199,6 +199,7 @@ func (wft *walkFileTree) virPath(fpath string) string {
 		return ""
 	}
 	name = name[1:]
+	name = strings.Replace(name, "\\", "/", -1)
 	return name
 }
 
