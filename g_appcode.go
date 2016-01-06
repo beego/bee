@@ -985,6 +985,12 @@ func getPackagePath(curpath string) (packpath string) {
 		ColorLog("[ERRO] Can't generate application code outside of GOPATH '%s'\n", gopath)
 		os.Exit(2)
 	}
+
+	if curpath == appsrcpath {
+		ColorLog("[ERRO] Can't generate application code outside of application PATH \n")
+		os.Exit(2)
+	}
+
 	packpath = strings.Join(strings.Split(curpath[len(appsrcpath)+1:], string(filepath.Separator)), "/")
 	return
 }
