@@ -28,8 +28,8 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 		upsql := ""
 		downsql := ""
 		if fields != "" {
-			upsql = `m.Sql("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
-			downsql = `m.Sql("DROP TABLE ` + "`" + sname + "`" + `")`
+			upsql = `m.SQL("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
+			downsql = `m.SQL("DROP TABLE ` + "`" + sname + "`" + `")`
 		}
 		generateMigration(sname, upsql, downsql, crupath)
 	}
@@ -48,12 +48,12 @@ func generateSQLFromFields(fields string) string {
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			ColorLog("[ERRO] the filds format is wrong. should key:type,key:type " + v)
+			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
 			return ""
 		}
 		typ, tag := getSqlType(kv[1])
 		if typ == "" {
-			ColorLog("[ERRO] the filds format is wrong. should key:type,key:type " + v)
+			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {

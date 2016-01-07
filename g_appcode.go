@@ -1188,7 +1188,7 @@ func (c *{{ctrlName}}Controller) Post() {
 	} else {
 		c.Data["json"] = err.Error()
 	}
-	c.ServeJson()
+	c.ServeJSON()
 }
 
 // @Title Get
@@ -1206,7 +1206,7 @@ func (c *{{ctrlName}}Controller) GetOne() {
 	} else {
 		c.Data["json"] = v
 	}
-	c.ServeJson()
+	c.ServeJSON()
 }
 
 // @Title Get All
@@ -1254,7 +1254,7 @@ func (c *{{ctrlName}}Controller) GetAll() {
 			kv := strings.Split(cond, ":")
 			if len(kv) != 2 {
 				c.Data["json"] = errors.New("Error: invalid query key/value pair")
-				c.ServeJson()
+				c.ServeJSON()
 				return
 			}
 			k, v := kv[0], kv[1]
@@ -1268,7 +1268,7 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	} else {
 		c.Data["json"] = l
 	}
-	c.ServeJson()
+	c.ServeJSON()
 }
 
 // @Title Update
@@ -1291,7 +1291,7 @@ func (c *{{ctrlName}}Controller) Put() {
 	} else {
 		c.Data["json"] = err.Error()
 	}
-	c.ServeJson()
+	c.ServeJSON()
 }
 
 // @Title Delete
@@ -1308,7 +1308,7 @@ func (c *{{ctrlName}}Controller) Delete() {
 	} else {
 		c.Data["json"] = err.Error()
 	}
-	c.ServeJson()
+	c.ServeJSON()
 }
 `
 	ROUTER_TPL = `// @APIVersion 1.0.0
