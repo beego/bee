@@ -199,6 +199,7 @@ func (wft *walkFileTree) virPath(fpath string) string {
 		return ""
 	}
 	name = name[1:]
+	name = path.ToSlash(name)
 	return name
 }
 
