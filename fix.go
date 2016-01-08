@@ -127,10 +127,10 @@ func fixFile(file string) error {
 		return err
 	}
 	fixed := rp.Replace(string(content))
-	pareg := regexp.MustCompile(`(Ctx.Input.Params\[")(.*)("])`)
-	fixed = pareg.ReplaceAllString(fixed, "Ctx.Input.Param(\"$2\")")
-	pareg = regexp.MustCompile(`Ctx.Input.Params\)`)
-	fixed = pareg.ReplaceAllString(fixed, "Ctx.Input.Params())")
+	pareg := regexp.MustCompile(`(Input.Params\[")(.*)("])`)
+	fixed = pareg.ReplaceAllString(fixed, "Input.Param(\"$2\")")
+	pareg = regexp.MustCompile(`Input.Params\)`)
+	fixed = pareg.ReplaceAllString(fixed, "Input.Params())")
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
