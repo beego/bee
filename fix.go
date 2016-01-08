@@ -29,7 +29,13 @@ func runFix(cmd *Command, args []string) int {
 	}
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
+			if strings.HasPrefix(info.Name(), ".") {
+				return filepath.SkipDir
+			}
 			return nil
+		}
+		if err != nil {
+			return err
 		}
 		ColorLog("%s\n", path)
 		err = fixFile(path)
