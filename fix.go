@@ -118,6 +118,7 @@ var rules = []string{
 	"swagger.Api", "swagger.API",
 	"swagger.ApiRef", "swagger.APIRef",
 	"toolbox.UrlMap", "toolbox.URLMap",
+	"log.LoggerInterface", "log.Logger",
 }
 
 func fixFile(file string) error {
@@ -131,6 +132,10 @@ func fixFile(file string) error {
 	fixed = pareg.ReplaceAllString(fixed, "Input.Param(\"$2\")")
 	pareg = regexp.MustCompile(`Input.Params\)`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Params())")
+	// replace the v.Apis in docs.go
+	if strings.Contains("docs.go") {
+		strings.Replace(fixed, "v.Apis", "v.APIs", -1)
+	}
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
