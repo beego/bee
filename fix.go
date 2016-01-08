@@ -85,6 +85,7 @@ var rules = []string{
 	"beego.SessionCookieLifeTime", "beego.BConfig.WebConfig.Session.SessionCookieLifeTime",
 	"beego.SessionAutoSetCookie", "beego.BConfig.WebConfig.Session.SessionAutoSetCookie",
 	"beego.SessionDomain", "beego.BConfig.WebConfig.Session.SessionDomain",
+	"Ctx.Input.CopyBody(", "Ctx.Input.CopyBody(beego.BConfig.MaxMemory",
 	".UrlFor(", ".URLFor(",
 	".ServeJson(", ".ServeJSON(",
 	".ServeXml(", ".ServeXML(",
@@ -106,6 +107,11 @@ var rules = []string{
 	"Ctx.CheckXsrfCookie()", "Ctx.CheckXSRFCookie()",
 	"session.SessionStore", "session.Store",
 	".TplNames", ".TplName",
+	"swagger.ApiRef", "swagger.APIRef",
+	"swagger.ApiDeclaration", "swagger.APIDeclaration",
+	"swagger.Api", "swagger.API",
+	"swagger.ApiRef", "swagger.APIRef",
+	"toolbox.UrlMap", "toolbox.URLMap",
 }
 
 func fixFile(file string) error {
