@@ -121,6 +121,8 @@ var rules = []string{
 	"swagger.ApiRef", "swagger.APIRef",
 	"toolbox.UrlMap", "toolbox.URLMap",
 	"logs.LoggerInterface", "logs.Logger",
+	"Input.Request", "Input.Context.Request",
+	"Input.Params)", "Input.Params())",
 }
 
 func fixFile(file string) error {
@@ -130,14 +132,21 @@ func fixFile(file string) error {
 		return err
 	}
 	fixed := rp.Replace(string(content))
+
+	// forword the RequestBody from the replace
+	// "Input.Request", "Input.Context.Request",
+	fixed = strings.Replace(fixed, "Input.Context.RequestBody", "Input.RequestBody", -1)
+
+	// regexp replace
 	pareg := regexp.MustCompile(`(Input.Params\[")(.*)("])`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Param(\"$2\")")
-	pareg = regexp.MustCompile(`Input.Params\)`)
-	fixed = pareg.ReplaceAllString(fixed, "Input.Params())")
+	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])(\s)(=)(\s)(.*)`)
+	fixed = pareg.ReplaceAllString(fixed, "Input.SetData(\"$2\", $7)")
 	// replace the v.Apis in docs.go
 	if strings.Contains(file, "docs.go") {
 		fixed = strings.Replace(fixed, "v.Apis", "v.APIs", -1)
 	}
+
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
