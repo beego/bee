@@ -74,6 +74,8 @@ var rules = []string{
 	"beego.HttpServerTimeOut", "beego.BConfig.Listen.ServerTimeOut",
 	"beego.AutoRender", "beego.BConfig.WebConfig.AutoRender",
 	"beego.ViewsPath", "beego.BConfig.WebConfig.ViewsPath",
+	"beego.StaticDir", "beego.BConfig.WebConfig.StaticDir",
+	"beego.StaticExtensionsToGzip", "beego.BConfig.WebConfig.StaticExtensionsToGzip",
 	"beego.DirectoryIndex", "beego.BConfig.WebConfig.DirectoryIndex",
 	"beego.FlashName", "beego.BConfig.WebConfig.FlashName",
 	"beego.FlashSeperator", "beego.BConfig.WebConfig.FlashSeperator",
