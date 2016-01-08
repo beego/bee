@@ -135,7 +135,7 @@ func fixFile(file string) error {
 	pareg = regexp.MustCompile(`Input.Params\)`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Params())")
 	// replace the v.Apis in docs.go
-	if strings.Contains("docs.go") {
+	if strings.Contains(file, "docs.go") {
 		strings.Replace(fixed, "v.Apis", "v.APIs", -1)
 	}
 	err = os.Truncate(file, 0)
