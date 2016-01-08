@@ -120,7 +120,7 @@ var rules = []string{
 	"swagger.Api", "swagger.API",
 	"swagger.ApiRef", "swagger.APIRef",
 	"toolbox.UrlMap", "toolbox.URLMap",
-	"log.LoggerInterface", "log.Logger",
+	"logs.LoggerInterface", "logs.Logger",
 }
 
 func fixFile(file string) error {
