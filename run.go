@@ -134,7 +134,7 @@ func readAppDirectories(directory string, paths *[]string) {
 			continue
 		}
 
-		if isExcluded(fileInfo) {
+		if isExcluded(path.Join(directory, fileInfo.Name())) {
 			continue
 		}
 
@@ -157,10 +157,20 @@ func readAppDirectories(directory string, paths *[]string) {
 }
 
 // If a file is excluded
-func isExcluded(fileInfo os.FileInfo) bool {
+func isExcluded(filePath string) bool {
 	for _, p := range excludedPaths {
-		if strings.HasSuffix(fileInfo.Name(), p) {
-			ColorLog("[INFO] Excluding from watching [ %s ]\n", fileInfo.Name())
+		absP, err := path.Abs(p)
+		if err != nil {
+			ColorLog("[ERROR] Can not get absolute path of [ %s ]\n", p)
+			continue
+		}
+		absFilePath, err := path.Abs(filePath)
+		if err != nil {
+			ColorLog("[ERROR] Can not get absolute path of [ %s ]\n", filePath)
+			break
+		}
+		if strings.HasPrefix(absFilePath, absP) {
+			ColorLog("[INFO] Excluding from watching [ %s ]\n", filePath)
 			return true
 		}
 	}
