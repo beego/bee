@@ -162,6 +162,8 @@ func fixFile(file string) error {
 	fixed = pareg.ReplaceAllString(fixed, "Input.Param(\"$2\")")
 	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])(\s)(=)(\s)(.*)`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.SetData(\"$2\", $7)")
+	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])`)
+	fixed = pareg.ReplaceAllString(fixed, "Input.Data(\"$2\")")
 	// replace the v.Apis in docs.go
 	if strings.Contains(file, "docs.go") {
 		fixed = strings.Replace(fixed, "v.Apis", "v.APIs", -1)
