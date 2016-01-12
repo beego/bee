@@ -168,6 +168,18 @@ func fixFile(file string) error {
 	if strings.Contains(file, "docs.go") {
 		fixed = strings.Replace(fixed, "v.Apis", "v.APIs", -1)
 	}
+	// replace the config file
+	if strings.HasSuffix(file, ".conf") {
+		fixed = strings.Replace(fixed, "HttpCertFile", "HTTPSCertFile", -1)
+		fixed = strings.Replace(fixed, "HttpKeyFile", "HTTPSKeyFile", -1)
+		fixed = strings.Replace(fixed, "EnableHttpListen", "HTTPEnable", -1)
+		fixed = strings.Replace(fixed, "EnableHttpTLS", "EnableHTTPS", -1)
+		fixed = strings.Replace(fixed, "EnableHttpTLS", "EnableHTTPS", -1)
+		fixed = strings.Replace(fixed, "BeegoServerName", "ServerName", -1)
+		fixed = strings.Replace(fixed, "AdminHttpAddr", "AdminAddr", -1)
+		fixed = strings.Replace(fixed, "AdminHttpPort", "AdminPort", -1)
+		fixed = strings.Replace(fixed, "HttpServerTimeOut", "ServerTimeOut", -1)
+	}
 
 	err = os.Truncate(file, 0)
 	if err != nil {
