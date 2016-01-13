@@ -1,6 +1,8 @@
 package main
 
 import (
+	"go/parser"
+	"go/token"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -164,6 +166,27 @@ func fixFile(file string) error {
 	fixed = pareg.ReplaceAllString(fixed, "Input.SetData(\"$2\", $7)")
 	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Data(\"$2\")")
+	// fix the cache object Put method
+	pareg = regexp.MustCompile(`(\.Put\(\")(.*)(\",)(\s)(.*)(,\s*)([^\*.]*)(\))`)
+	if pareg.MatchString(fixed) && strings.HasSuffix(file, ".go") {
+		fixed = pareg.ReplaceAllString(fixed, ".Put(\"$2\", $5, $7*time.Second)")
+		fset := token.NewFileSet() // positions are relative to fset
+		f, err := parser.ParseFile(fset, file, nil, parser.ImportsOnly)
+		if err != nil {
+			panic(err)
+		}
+		// Print the imports from the file's AST.
+		hasTimepkg := false
+		for _, s := range f.Imports {
+			if s.Path.Value == `"time"` {
+				hasTimepkg = true
+				break
+			}
+		}
+		if !hasTimepkg {
+			fixed = strings.Replace(fixed, "import (", "import (\n\t\"time\"", 1)
+		}
+	}
 	// replace the v.Apis in docs.go
 	if strings.Contains(file, "docs.go") {
 		fixed = strings.Replace(fixed, "v.Apis", "v.APIs", -1)
@@ -180,7 +203,6 @@ func fixFile(file string) error {
 		fixed = strings.Replace(fixed, "AdminHttpPort", "AdminPort", -1)
 		fixed = strings.Replace(fixed, "HttpServerTimeOut", "ServerTimeOut", -1)
 	}
-
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
