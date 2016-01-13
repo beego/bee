@@ -48,8 +48,8 @@ This eases the deployment by extracting the zip file to a server.
 -be=[]        additional ENV Variables of go build. eg: GOARCH=arm
 -o            compressed file output dir. default use current path
 -f=""         format: tar.gz, zip (default: tar.gz)
--exp=""       relpath exclude prefix (default: .).
--exs=""       relpath exclude suffix (default: .go:.DS_Store:.tmp).
+-exp=""       relpath exclude prefix (default: .). use : as separator
+-exs=""       relpath exclude suffix (default: .go:.DS_Store:.tmp). use : as separator
               all path use : as separator
 -exr=[]       file/directory name exclude by Regexp (default: ^).
 -fs=false     follow symlink (default: false).
