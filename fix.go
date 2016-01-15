@@ -80,7 +80,7 @@ var rules = []string{
 	"beego.StaticExtensionsToGzip", "beego.BConfig.WebConfig.StaticExtensionsToGzip",
 	"beego.DirectoryIndex", "beego.BConfig.WebConfig.DirectoryIndex",
 	"beego.FlashName", "beego.BConfig.WebConfig.FlashName",
-	"beego.FlashSeperator", "beego.BConfig.WebConfig.FlashSeperator",
+	"beego.FlashSeperator", "beego.BConfig.WebConfig.FlashSeparator",
 	"beego.EnableDocs", "beego.BConfig.WebConfig.EnableDocs",
 	"beego.XSRFKEY", "beego.BConfig.WebConfig.XSRFKEY",
 	"beego.EnableXSRF", "beego.BConfig.WebConfig.EnableXSRF",
