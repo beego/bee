@@ -126,7 +126,7 @@ func generateDocs(curpath string) {
 		os.Exit(2)
 	}
 
-	rootapi.Infos = swagger.Infomation{}
+	rootapi.Info = swagger.Information{}
 	rootapi.SwaggerVersion = swagger.SwaggerVersion
 	//analysis API comments
 	if f.Comments != nil {
@@ -135,17 +135,17 @@ func generateDocs(curpath string) {
 				if strings.HasPrefix(s, "@APIVersion") {
 					rootapi.APIVersion = strings.TrimSpace(s[len("@APIVersion"):])
 				} else if strings.HasPrefix(s, "@Title") {
-					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
+					rootapi.Info.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
+					rootapi.Info.Description = strings.TrimSpace(s[len("@Description"):])
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Infos.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
+					rootapi.Info.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
-					rootapi.Infos.Contact = strings.TrimSpace(s[len("@Contact"):])
+					rootapi.Info.Contact = strings.TrimSpace(s[len("@Contact"):])
 				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Infos.License = strings.TrimSpace(s[len("@License"):])
+					rootapi.Info.License = strings.TrimSpace(s[len("@License"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.LicenseURL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					rootapi.Info.LicenseURL = strings.TrimSpace(s[len("@LicenseUrl"):])
 				}
 			}
 		}
