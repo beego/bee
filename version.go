@@ -43,7 +43,7 @@ func versionCmd(cmd *Command, args []string) int {
 
 func getbeegoVersion() string {
 	gopath := os.Getenv("GOPATH")
-	re, err := regexp.Compile(`const VERSION = "([0-9.]+)"`)
+	re, err := regexp.Compile(`VERSION = "([0-9.]+)"`)
 	if err != nil {
 		return ""
 	}
