@@ -39,6 +39,9 @@ func runFix(cmd *Command, args []string) int {
 		if err != nil {
 			return err
 		}
+		if strings.HasSuffix(info.Name(), ".exe") {
+			return nil
+		}
 		ColorLog("%s\n", path)
 		err = fixFile(path)
 		if err != nil {
@@ -146,6 +149,7 @@ var rules = []string{
 	"OperatorSql", "OperatorSQL",
 	"orm.Debug_Queries", "orm.DebugQueries",
 	"orm.COMMA_SPACE", "orm.CommaSpace",
+	".SendOut()", ".DoRequest()",
 }
 
 func fixFile(file string) error {
