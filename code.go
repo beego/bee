@@ -251,7 +251,6 @@ func commentAnnotations(src string) []Annotation {
 			annotations = append(annotations, Annotation{Kind: CommentAnnotation, Pos: int16(p), End: int16(e)})
 		}
 	}
-	return nil
 }
 
 type sliceWriter struct{ p *[]byte }

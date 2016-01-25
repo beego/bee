@@ -119,7 +119,6 @@ func runApp(cmd *Command, args []string) int {
 			runtime.Goexit()
 		}
 	}
-	return 0
 }
 
 func readAppDirectories(directory string, paths *[]string) {
