@@ -102,6 +102,7 @@ var rules = []string{
 	".UrlFor(", ".URLFor(",
 	".ServeJson(", ".ServeJSON(",
 	".ServeXml(", ".ServeXML(",
+	".ServeJsonp(", ".ServeJSONP(",
 	".XsrfToken(", ".XSRFToken(",
 	".CheckXsrfCookie(", ".CheckXSRFCookie(",
 	".XsrfFormHtml(", ".XSRFFormHTML(",
@@ -150,6 +151,7 @@ var rules = []string{
 	"orm.Debug_Queries", "orm.DebugQueries",
 	"orm.COMMA_SPACE", "orm.CommaSpace",
 	".SendOut()", ".DoRequest()",
+	"validation.ValidationError", "validation.Error",
 }
 
 func fixFile(file string) error {
