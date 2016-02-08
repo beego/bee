@@ -643,25 +643,48 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Model, realType
 }
 
 func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
-	if arr, ok := f.Type.(*ast.ArrayType); ok {
+	return recursiveTypeAnalyser(f.Type)
+}
+func recursiveTypeAnalyser(f ast.Expr) (isSlice bool, realType string) {
+	if arr, ok := f.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
 			return false, fmt.Sprintf("[]%v", arr.Elt)
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
-			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value)
+			_, key := recursiveTypeAnalyser(mp.Key)
+			_, value := recursiveTypeAnalyser(mp.Value)
+			return false, fmt.Sprintf("map[%v][%v]", key, value)
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
-			return true, fmt.Sprint(star.X)
+			_, x := recursiveTypeAnalyser(star.X)
+			return true, fmt.Sprint(x)
 		} else {
-			return true, fmt.Sprint(arr.Elt)
+			_, elt := recursiveTypeAnalyser(arr.Elt)
+			return true, fmt.Sprint(elt)
 		}
 	} else {
-		switch t := f.Type.(type) {
+		switch t := f.(type) {
 		case *ast.StarExpr:
-			return false, fmt.Sprint(t.X)
+			isSlice, x := recursiveTypeAnalyser(t.X)
+			return isSlice, fmt.Sprint(x)
 		}
-		return false, fmt.Sprint(f.Type)
+
+		if ident, ok := f.(*ast.Ident); ok {
+			if ident.Obj != nil {
+				if typeSpec, ok := ident.Obj.Decl.(*ast.TypeSpec); ok {
+
+					if _, ok := typeSpec.Type.(*ast.StructType); ok {
+						return true, typeSpec.Name.Name
+					}
+					return recursiveTypeAnalyser(typeSpec.Type)
+				}
+			}
+
+		}
+
+		return false, fmt.Sprint(f)
 	}
+
 }
 
 func isBasicType(Type string) bool {
