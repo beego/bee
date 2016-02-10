@@ -170,6 +170,9 @@ func Autobuild(files []string, isgenerate bool) {
 
 		args := []string{"build"}
 		args = append(args, "-o", appName)
+		if buildTags != "" {
+			args = append(args, "-tags", buildTags)
+		}
 		args = append(args, files...)
 
 		bcmd := exec.Command(cmdName, args...)
