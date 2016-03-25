@@ -25,13 +25,14 @@ import (
 //
 func generateController(cname, crupath string) {
 	p, f := path.Split(cname)
+	fileName := strings.Title(f) + "_controllers"
 	controllerName := strings.Title(f)
 	packageName := "controllers"
 	if p != "" {
 		i := strings.LastIndex(p[:len(p)-1], "/")
 		packageName = p[i+1 : len(p)-1]
 	}
-	ColorLog("[INFO] Using '%s' as controller name\n", controllerName)
+	ColorLog("[INFO] Using '%s' as controller name\n", fileName)
 	ColorLog("[INFO] Using '%s' as package name\n", packageName)
 	fp := path.Join(crupath, "controllers", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
@@ -41,7 +42,7 @@ func generateController(cname, crupath string) {
 			os.Exit(2)
 		}
 	}
-	fpath := path.Join(fp, strings.ToLower(controllerName)+".go")
+	fpath := path.Join(fp, strings.ToLower(fileName)+".go")
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
 		modelPath := path.Join(crupath, "models", strings.ToLower(controllerName)+".go")
