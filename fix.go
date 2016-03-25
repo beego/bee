@@ -280,7 +280,7 @@ func fixLogModule(fixed string) string {
 		}
 	}
 	const gitHubBeego = `"github.com/astaxie/beego"` + "\n"
-	const gitHubLogs = `"github.com/astaxie/beego/logs` + "\n"
+	const gitHubLogs = `"github.com/astaxie/beego/logs"` + "\n"
 	if !needBeego {
 		return strings.Replace(fixed, gitHubBeego, gitHubLogs, -1)
 	}
