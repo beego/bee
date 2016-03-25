@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
@@ -210,9 +211,122 @@ func fixFile(file string) error {
 		fixed = strings.Replace(fixed, "AdminHttpPort", "AdminPort", -1)
 		fixed = strings.Replace(fixed, "HttpServerTimeOut", "ServerTimeOut", -1)
 	}
+	fixed = fixLogModule(fixed)
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
 	}
 	return ioutil.WriteFile(file, []byte(fixed), 0666)
+}
+
+func fixLogModule(fixed string) string {
+	logReplacer := []string{
+		"beego.LevelEmergency", "logs.LevelEmergency",
+		"beego.LevelAlert", "logs.LevelAlert",
+		"beego.LevelCritical", "logs.LevelCritical",
+		"beego.LevelError", "logs.LevelError",
+		"beego.LevelWarning", "logs.LevelWarning",
+		"beego.LevelNotice", "logs.LevelNotice",
+		"beego.LevelInformational", "logs.LevelInformational",
+		"beego.LevelDebug", "logs.LevelDebug",
+		"beego.SetLevel(", "logs.SetLevel(",
+		"beego.SetLogFuncCall(", "logs.SetLogFuncCall(",
+		"beego.SetLogger(", "logs.SetLogger(",
+		"beego.Emergency(", "logs.Emergency(",
+		"beego.Alert(", "logs.Alert(",
+		"beego.Critical(", "logs.Critical(",
+		"beego.Error(", "logs.Error(",
+		"beego.Warning(", "logs.Warn(",
+		"beego.Warn(", "logs.Warn(",
+		"beego.Notice(", "logs.Notice(",
+		"beego.Informational(", "logs.Info(",
+		"beego.Info(", "logs.Info(",
+		"beego.Debug(", "logs.Debug(",
+		"beego.Trace(", "logs.Debug(",
+	}
+	isLogger := false
+	for i := 0; i < len(logReplacer); i += 2 {
+		if strings.Contains(fixed, logReplacer[i]) {
+			isLogger = true
+			break
+		}
+	}
+	if !isLogger {
+		return fixed
+	}
+	fixed = strings.NewReplacer(logReplacer...).Replace(fixed)
+	//import "github.com/astaxie/beego/logs"
+	needBeego := false
+	slash := false
+	for _, line := range strings.Split(fixed, "\n") {
+		if strings.HasPrefix(line, "//") {
+			continue
+		}
+		if strings.HasPrefix(line, "/*") {
+			if strings.Contains(line, "*/") {
+				continue
+			}
+			slash = true
+		}
+		if slash {
+			if strings.Contains(line, "*/") {
+				continue
+				slash = false
+			}
+		}
+		if strings.Contains(line, "beego.") {
+			needBeego = true
+			break
+		}
+	}
+	const gitHubBeego = `"github.com/astaxie/beego"` + "\n"
+	const gitHubLogs = `"github.com/astaxie/beego/logs` + "\n"
+	if !needBeego {
+		return strings.Replace(fixed, gitHubBeego, gitHubLogs, -1)
+	}
+	slash = false
+	newFixed := ""
+	startImport := false
+	lines := strings.Split(fixed, "\n")
+	for num, line := range lines {
+		if num == len(lines)-1 && (line == "" || line == "\n") {
+			continue
+		}
+		newFixed += line + "\n"
+		if strings.HasPrefix(line, "import") {
+			if strings.HasPrefix(line, "import (") {
+				slash = true
+				startImport = true
+			} else {
+				if strings.Contains(line, gitHubBeego) {
+					newFixed += `import "github.com/astaxie/beego/logs"` + "\n"
+				}
+			}
+		}
+		if !startImport {
+			continue
+		}
+		if slash {
+			if strings.Contains(line, ")") {
+				slash = false
+				continue
+			}
+			l1 := strings.TrimSpace(line)
+			if !strings.Contains(l1, "github.com/astaxie/beego") {
+				continue
+			}
+			l2 := strings.TrimSpace(lines[num+1])
+
+			if strings.Compare(l1, gitHubLogs) > 0 {
+				newFixed += fmt.Sprintf("\t" + `"github.com/astaxie/beego/logs"` + "\n")
+				continue
+			}
+			if strings.Compare(l1, gitHubLogs) < 0 && strings.Compare(l2, gitHubLogs) > 0 {
+				newFixed += fmt.Sprintf("\t" + `"github.com/astaxie/beego/logs"` + "\n")
+				continue
+			}
+		}
+		startImport = strings.HasPrefix(line, "import")
+	}
+	return newFixed
 }
