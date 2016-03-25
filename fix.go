@@ -220,6 +220,11 @@ func fixFile(file string) error {
 }
 
 func fixLogModule(fixed string) string {
+	const gitHubBeego = `"github.com/astaxie/beego"` + "\n"
+	const gitHubLogs = `"github.com/astaxie/beego/logs"` + "\n"
+	if strings.Contains(fixed, gitHubLogs) {
+		return fixed
+	}
 	logReplacer := []string{
 		"beego.LevelEmergency", "logs.LevelEmergency",
 		"beego.LevelAlert", "logs.LevelAlert",
@@ -279,20 +284,22 @@ func fixLogModule(fixed string) string {
 			break
 		}
 	}
-	const gitHubBeego = `"github.com/astaxie/beego"` + "\n"
-	const gitHubLogs = `"github.com/astaxie/beego/logs"` + "\n"
 	if !needBeego {
 		return strings.Replace(fixed, gitHubBeego, gitHubLogs, -1)
 	}
 	slash = false
 	newFixed := ""
 	startImport := false
+	inserted := false
 	lines := strings.Split(fixed, "\n")
 	for num, line := range lines {
 		if num == len(lines)-1 && (line == "" || line == "\n") {
 			continue
 		}
 		newFixed += line + "\n"
+		if inserted {
+			continue
+		}
 		if strings.HasPrefix(line, "import") {
 			if strings.HasPrefix(line, "import (") {
 				slash = true
@@ -300,12 +307,14 @@ func fixLogModule(fixed string) string {
 			} else {
 				if strings.Contains(line, gitHubBeego) {
 					newFixed += `import "github.com/astaxie/beego/logs"` + "\n"
+					inserted = true
 				}
 			}
 		}
 		if !startImport {
 			continue
 		}
+
 		if slash {
 			if strings.Contains(line, ")") {
 				slash = false
@@ -319,12 +328,16 @@ func fixLogModule(fixed string) string {
 
 			if strings.Compare(l1, gitHubLogs) > 0 {
 				newFixed += fmt.Sprintf("\t" + `"github.com/astaxie/beego/logs"` + "\n")
+				inserted = true
 				continue
 			}
+
 			if strings.Compare(l1, gitHubLogs) < 0 && strings.Compare(l2, gitHubLogs) > 0 {
 				newFixed += fmt.Sprintf("\t" + `"github.com/astaxie/beego/logs"` + "\n")
+				inserted = true
 				continue
 			}
+			continue
 		}
 		startImport = strings.HasPrefix(line, "import")
 	}
