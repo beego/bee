@@ -211,7 +211,9 @@ func fixFile(file string) error {
 		fixed = strings.Replace(fixed, "AdminHttpPort", "AdminPort", -1)
 		fixed = strings.Replace(fixed, "HttpServerTimeOut", "ServerTimeOut", -1)
 	}
-	fixed = fixLogModule(fixed)
+	if strings.HasSuffix(file, ".go") {
+		fixed = fixLogModule(fixed)
+	}
 	err = os.Truncate(file, 0)
 	if err != nil {
 		return err
@@ -264,6 +266,7 @@ func fixLogModule(fixed string) string {
 	needBeego := false
 	slash := false
 	for _, line := range strings.Split(fixed, "\n") {
+		line = strings.TrimSpace(line)
 		if strings.HasPrefix(line, "//") {
 			continue
 		}
