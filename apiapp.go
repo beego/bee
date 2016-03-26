@@ -148,41 +148,36 @@ func init() {
 var apiModels = `package models
 
 import (
+	"{{.Appname}}/structures"
 	"errors"
 	"strconv"
 	"time"
 )
 
 var (
-	Objects map[string]*Object
+	Objects map[string]*structures.Object
 )
 
-type Object struct {
-	ObjectId   string
-	Score      int64
-	PlayerName string
-}
-
 func init() {
-	Objects = make(map[string]*Object)
-	Objects["hjkhsbnmn123"] = &Object{"hjkhsbnmn123", 100, "astaxie"}
-	Objects["mjjkxsxsaa23"] = &Object{"mjjkxsxsaa23", 101, "someone"}
+	Objects = make(map[string]*structures.Object)
+	Objects["hjkhsbnmn123"] = &structures.Object{"hjkhsbnmn123", 100, "astaxie"}
+	Objects["mjjkxsxsaa23"] = &structures.Object{"mjjkxsxsaa23", 101, "someone"}
 }
 
-func AddOne(object Object) (ObjectId string) {
+func AddOne(object structures.Object) (ObjectId string) {
 	object.ObjectId = "astaxie" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	Objects[object.ObjectId] = &object
 	return object.ObjectId
 }
 
-func GetOne(ObjectId string) (object *Object, err error) {
+func GetOne(ObjectId string) (object *structures.Object, err error) {
 	if v, ok := Objects[ObjectId]; ok {
 		return v, nil
 	}
 	return nil, errors.New("ObjectId Not Exist")
 }
 
-func GetAll() map[string]*Object {
+func GetAll() map[string]*structures.Object {
 	return Objects
 }
 
@@ -279,6 +274,7 @@ var apiControllers = `package controllers
 
 import (
 	"{{.Appname}}/models"
+	"{{.Appname}}/structures"
 	"encoding/json"
 
 	"github.com/astaxie/beego"
@@ -296,7 +292,7 @@ type ObjectController struct {
 // @Failure 403 body is empty
 // @router / [post]
 func (o *ObjectController) Post() {
-	var ob models.Object
+	var ob structures.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	objectid := models.AddOne(ob)
 	o.Data["json"] = map[string]string{"ObjectId": objectid}
@@ -342,7 +338,7 @@ func (o *ObjectController) GetAll() {
 // @router /:objectId [put]
 func (o *ObjectController) Put() {
 	objectId := o.Ctx.Input.Param(":objectId")
-	var ob models.Object
+	var ob structures.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 
 	err := models.Update(objectId, ob.Score)
@@ -368,10 +364,12 @@ func (o *ObjectController) Delete() {
 }
 
 `
+
 var apiControllers2 = `package controllers
 
 import (
 	"{{.Appname}}/models"
+	"{{.Appname}}/structures"
 	"encoding/json"
 
 	"github.com/astaxie/beego"
@@ -389,7 +387,7 @@ type UserController struct {
 // @Failure 403 body is empty
 // @router / [post]
 func (u *UserController) Post() {
-	var user models.User
+	var user structures.User
 	json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 	uid := models.AddUser(user)
 	u.Data["json"] = map[string]string{"uid": uid}
@@ -435,7 +433,7 @@ func (u *UserController) Get() {
 func (u *UserController) Put() {
 	uid := u.GetString(":uid")
 	if uid != "" {
-		var user models.User
+		var user structures.User
 		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 		uu, err := models.UpdateUser(uid, &user)
 		if err != nil {
@@ -546,6 +544,16 @@ type Profile struct {
 }
 
 `
+
+var apistructures2  = `package structures
+
+type Object struct {
+	ObjectId   string
+	Score      int64
+	PlayerName string
+}
+
+`
 func init() {
 	cmdApiapp.Run = createapi
 	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
@@ -635,7 +643,8 @@ func createapi(cmd *Command, args []string) int {
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		writetofile(path.Join(apppath, "models", "object.go"),
+			strings.Replace(apiModels, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
 		writetofile(path.Join(apppath, "models", "user.go"),
@@ -643,6 +652,15 @@ func createapi(cmd *Command, args []string) int {
 
 		fmt.Println("create structures user_structure.go:", path.Join(apppath, "structures", "user_structure.go"))
 		writetofile(path.Join(apppath, "structures", "user_structure.go"), apistructures)
+
+		fmt.Println("create structures object_structure.go:", path.Join(apppath, "structures", "object_structure.go"))
+		writetofile(path.Join(apppath, "structures", "object_structure.go"), apistructures2)
+
+		fmt.Println("create helpers user_helper.go:", path.Join(apppath, "helpers", "user_helper.go"))
+		writetofile(path.Join(apppath, "helpers", "user_helper.go"), "package helpers")
+
+		fmt.Println("create helpers object_helper.go:", path.Join(apppath, "helpers", "object_helper.go"))
+		writetofile(path.Join(apppath, "helpers", "object_helper.go"), "package helpers")
 
 		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
 		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
