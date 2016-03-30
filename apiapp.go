@@ -56,7 +56,7 @@ the following files/directories structure:
 	│   └── user.go
 	├── routers
 	│   └── router.go
-	├── structure
+	├── structures
 	└── tests
 	    └── default_test.go
 
@@ -592,7 +592,7 @@ func createapi(cmd *Command, args []string) int {
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
 	os.Mkdir(path.Join(apppath, "helpers"), 0755)
-	fmt.Println("create structure:", path.Join(apppath, "helpers"))
+	fmt.Println("create helpers:", path.Join(apppath, "helpers"))
 
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
@@ -625,7 +625,7 @@ func createapi(cmd *Command, args []string) int {
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
 		fmt.Println("create routers:", path.Join(apppath, "routers"))
 		os.Mkdir(path.Join(apppath, "structures"), 0755)
-		fmt.Println("create structure:", path.Join(apppath, "structures"))
+		fmt.Println("create structures:", path.Join(apppath, "structures"))
 
 		fmt.Println("create controllers object_controller.go:", path.Join(apppath, "controllers", "object_controller.go"))
 		writetofile(path.Join(apppath, "controllers", "object_controller.go"),

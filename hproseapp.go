@@ -45,11 +45,15 @@ In the current path, will create a folder named [appname]
 In the appname folder has the follow struct:
 
 	├── conf
-	│   └── app.conf
+	│   └── app.conf
+	├── helpers
 	├── main.go
-	└── models
-	    └── object.go
-	    └── user.go
+	├── models
+	│   ├── object.go
+	│   └── user.go
+	└── structures
+	    ├── object_structure.go
+	    └── user_structure.go
 `,
 }
 
@@ -276,6 +280,8 @@ func createhprose(cmd *Command, args []string) int {
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
+	os.Mkdir(path.Join(apppath, "helpers"), 0755)
+	fmt.Println("create helpers:", path.Join(apppath, "helpers"))
 
 	if conn != "" {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
@@ -300,14 +306,25 @@ func createhprose(cmd *Command, args []string) int {
 			),
 		)
 	} else {
+		os.Mkdir(path.Join(apppath, "structures"), 0755)
+		fmt.Println("create structures:", path.Join(apppath, "structures"))
+
+		fmt.Println("create structures user_structure.go:", path.Join(apppath, "structures", "user_structure.go"))
+		writetofile(path.Join(apppath, "structures", "user_structure.go"), apistructures)
+
+		fmt.Println("create structures object_structure.go:", path.Join(apppath, "structures", "object_structure.go"))
+		writetofile(path.Join(apppath, "structures", "object_structure.go"), apistructures2)
+
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		writetofile(path.Join(apppath, "models", "object.go"),
+			strings.Replace(apiModels, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		writetofile(path.Join(apppath, "models", "user.go"),
+			strings.Replace(apiModels2, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
 		writetofile(path.Join(apppath, "main.go"),

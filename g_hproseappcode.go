@@ -31,7 +31,7 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = O_MODEL | O_STRUCTURE
 	case "2":
 		mode = O_MODEL | O_CONTROLLER
 	case "3":
@@ -77,6 +77,7 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
 		mvcPath.ModelPath = path.Join(currpath, "models")
+		mvcPath.StructurePath = path.Join(currpath, "structures")
 		createPaths(mode, mvcPath)
 		pkgPath := getPackagePath(currpath)
 		writeHproseSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
@@ -92,12 +93,16 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
 	if (O_MODEL & mode) == O_MODEL {
 		ColorLog("[INFO] Creating model files...\n")
-		writeHproseModelFiles(tables, paths.ModelPath, selectedTables)
+		writeHproseModelFiles(tables, paths.ModelPath, selectedTables, pkgPath)
+	}
+	if (O_MODEL & mode) == O_MODEL {
+		ColorLog("[INFO] Creating structure files...\n")
+		writeHproseStructureFiles(tables, paths.StructurePath, selectedTables)
 	}
 }
 
 // writeHproseModelFiles generates model files
-func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[string]bool, pkgPath string) {
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -135,8 +140,9 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 			template = HPROSE_MODEL_TPL
 			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb.Name), -1))
 		}
-		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
+		fileStr := strings.Replace(template, "{{pkgPath}}", pkgPath, -1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
+		fileStr = strings.Replace(fileStr, "{{tableName}}", tb.Name, -1)
 		// if table contains time field, import time.Time package
 		timePkg := ""
 		importTimePkg := ""
@@ -156,6 +162,59 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 	}
 }
 
+// writeHproseStructureFiles generates structure files
+func writeHproseStructureFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	for _, tb := range tables {
+		// if selectedTables map is not nil and this table is not selected, ignore it
+		if selectedTables != nil {
+			if _, selected := selectedTables[tb.Name]; !selected {
+				continue
+			}
+		}
+		filename := getFileName(tb.Name)
+		fpath := path.Join(mPath, filename+"_structure.go")
+		var f *os.File
+		var err error
+		if isExist(fpath) {
+			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			if askForConfirmation() {
+				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
+				if err != nil {
+					ColorLog("[WARN] %v\n", err)
+					continue
+				}
+			} else {
+				ColorLog("[WARN] skip create file\n")
+				continue
+			}
+		} else {
+			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
+			if err != nil {
+				ColorLog("[WARN] %v\n", err)
+				continue
+			}
+		}
+		template := HPROSE_STRUCT_TPL
+		fileStr := strings.Replace(template, "{{Struct}}", tb.String(), 1)
+		// if table contains time field, import time.Time package
+		timePkg := ""
+		importTimePkg := ""
+		if tb.ImportTimePkg {
+			timePkg = "\"time\"\n"
+			importTimePkg = "import \"time\"\n"
+		}
+		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
+		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
+		if _, err := f.WriteString(fileStr); err != nil {
+			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
+			os.Exit(2)
+		}
+		f.Close()
+		ColorLog("[INFO] structure => %s\n", fpath)
+		formatSourceCode(fpath)
+	}
+}
+
 const (
 	HPROSE_ADDFUNCTION = `
 	// publish about {{modelName}} function
@@ -167,13 +226,16 @@ const (
 
 `
 	HPROSE_STRUCT_MODEL_TPL = `package models
+`
+	HPROSE_STRUCT_TPL = `package structures
 {{importTimePkg}}
-{{modelStruct}}
+{{Struct}}
 `
 
 	HPROSE_MODEL_TPL = `package models
 
 import (
+	"{{pkgPath}}/structures"
 	"errors"
 	"fmt"
 	"reflect"
@@ -182,15 +244,13 @@ import (
 	"github.com/astaxie/beego/orm"
 )
 
-{{modelStruct}}
-
 func init() {
-	orm.RegisterModel(new({{modelName}}))
+	orm.RegisterModel(new(structures.{{modelName}}))
 }
 
 // Add{{modelName}} insert a new {{modelName}} into database and returns
 // last inserted Id on success.
-func Add{{modelName}}(m *{{modelName}}) (id int64, err error) {
+func Add{{modelName}}(m *structures.{{modelName}}) (id int64, err error) {
 	o := orm.NewOrm()
 	id, err = o.Insert(m)
 	return
@@ -198,9 +258,9 @@ func Add{{modelName}}(m *{{modelName}}) (id int64, err error) {
 
 // Get{{modelName}}ById retrieves {{modelName}} by Id. Returns error if
 // Id doesn't exist
-func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
+func Get{{modelName}}ById(id int) (v *structures.{{modelName}}, err error) {
 	o := orm.NewOrm()
-	v = &{{modelName}}{Id: id}
+	v = &structures.{{modelName}}{Id: id}
 	if err = o.Read(v); err == nil {
 		return v, nil
 	}
@@ -212,7 +272,7 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 func GetAll{{modelName}}(query map[string]string, fields []string, sortby []string, order []string,
 	offset int64, limit int64) (ml []interface{}, err error) {
 	o := orm.NewOrm()
-	qs := o.QueryTable(new({{modelName}}))
+	qs := o.QueryTable(new(structures.{{modelName}}))
 	// query k=v
 	for k, v := range query {
 		// rewrite dot-notation to Object__Attribute
@@ -258,7 +318,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 		}
 	}
 
-	var l []{{modelName}}
+	var l []structures.{{modelName}}
 	qs = qs.OrderBy(sortFields...)
 	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
@@ -283,9 +343,9 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 // Update{{modelName}} updates {{modelName}} by Id and returns error if
 // the record to be updated doesn't exist
-func Update{{modelName}}ById(m *{{modelName}}) (err error) {
+func Update{{modelName}}ById(m *structures.{{modelName}}) (err error) {
 	o := orm.NewOrm()
-	v := {{modelName}}{Id: m.Id}
+	v := structures.{{modelName}}{Id: m.Id}
 	// ascertain id exists in the database
 	if err = o.Read(&v); err == nil {
 		var num int64
@@ -300,11 +360,11 @@ func Update{{modelName}}ById(m *{{modelName}}) (err error) {
 // the record to be deleted doesn't exist
 func Delete{{modelName}}(id int) (err error) {
 	o := orm.NewOrm()
-	v := {{modelName}}{Id: id}
+	v := structures.{{modelName}}{Id: id}
 	// ascertain id exists in the database
 	if err = o.Read(&v); err == nil {
 		var num int64
-		if num, err = o.Delete(&{{modelName}}{Id: id}); err == nil {
+		if num, err = o.Delete(&structures.{{modelName}}{Id: id}); err == nil {
 			fmt.Println("Number of records deleted in database:", num)
 		}
 	}

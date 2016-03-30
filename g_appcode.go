@@ -795,7 +795,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 	}
 }
 
-// writeModelFiles generates model files
+// writeStructureFiles generates structure files
 func writeStructureFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
