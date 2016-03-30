@@ -61,7 +61,7 @@ type MvcPath struct {
 	ModelPath      string
 	ControllerPath string
 	RouterPath     string
-	StructurePath	string
+	StructurePath  string
 }
 
 // typeMapping maps SQL data type to corresponding Go data type
@@ -805,7 +805,7 @@ func writeStructureFiles(tables []*Table, mPath string, selectedTables map[strin
 			}
 		}
 		filename := getFileName(tb.Name)
-		fpath := path.Join(mPath, filename + "_structure.go")
+		fpath := path.Join(mPath, filename+"_structure.go")
 		var f *os.File
 		var err error
 		if isExist(fpath) {
@@ -863,7 +863,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 			continue
 		}
 		filename := getFileName(tb.Name)
-		fpath := path.Join(cPath, filename+".go")
+		fpath := path.Join(cPath, filename+"_controller.go")
 		var f *os.File
 		var err error
 		if isExist(fpath) {
