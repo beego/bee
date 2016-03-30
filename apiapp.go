@@ -545,7 +545,7 @@ type Profile struct {
 
 `
 
-var apistructures2  = `package structures
+var apistructures2 = `package structures
 
 type Object struct {
 	ObjectId   string
@@ -554,6 +554,7 @@ type Object struct {
 }
 
 `
+
 func init() {
 	cmdApiapp.Run = createapi
 	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
@@ -591,7 +592,7 @@ func createapi(cmd *Command, args []string) int {
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
 	os.Mkdir(path.Join(apppath, "helpers"), 0755)
-	fmt.Println("create structure:",path.Join(apppath, "helpers"))
+	fmt.Println("create structure:", path.Join(apppath, "helpers"))
 
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
@@ -622,9 +623,9 @@ func createapi(cmd *Command, args []string) int {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println("create routers:",path.Join(apppath, "routers"))
+		fmt.Println("create routers:", path.Join(apppath, "routers"))
 		os.Mkdir(path.Join(apppath, "structures"), 0755)
-		fmt.Println("create structure:",path.Join(apppath, "structures"))
+		fmt.Println("create structure:", path.Join(apppath, "structures"))
 
 		fmt.Println("create controllers object_controller.go:", path.Join(apppath, "controllers", "object_controller.go"))
 		writetofile(path.Join(apppath, "controllers", "object_controller.go"),
