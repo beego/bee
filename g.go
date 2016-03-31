@@ -31,6 +31,10 @@ bee generate model [modelname] [-fields=""]
     generate RESTFul model based on fields
     -fields: a list of table fields. Format: field:type, ...
 
+bee generate structure [structurefile] [-fields=""]
+    generate struct based
+    -fields: a list of table fields. Format: field:type, ...
+
 bee generate controller [controllerfile]
     generate RESTFul controllers             
 
@@ -178,6 +182,27 @@ func generateCode(cmd *Command, args []string) int {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate controller [controllername]\n")
 			os.Exit(2)
+		}
+	case "structure":
+		sname := args[1]
+		switch len(args) {
+		case 2:
+			generateStructure(sname, "", curpath)
+		case 3:
+			cmd.Flag.Parse(args[2:])
+			if fields == "" {
+				ColorLog("[ERRO] Wrong number of arguments\n")
+				ColorLog("[HINT] Usage: bee generate structure [structurename] [-fields=\"title:string,body:text\"]\n")
+				os.Exit(2)
+			}
+			sname := args[1]
+			ColorLog("[INFO] Using '%s' as structure name\n", sname)
+			generateStructure(sname, fields.String(), curpath)
+		default:
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate structure [structurename] [-fields=\"title:string,body:text\"]\n")
+			os.Exit(2)
+
 		}
 	case "model":
 		if len(args) < 2 {
