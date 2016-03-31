@@ -50,16 +50,16 @@ func generateStructure(cname, fields, crupath string) {
 				ColorLog("[ERRO] Could not genrate struct: %s\n", err)
 				os.Exit(2)
 			}
-			content = strings.Replace(INIT_STRUCTURE_TPL, "{{packageName}}", packageName, -1)
+			content = strings.Replace(STRUCTURE_TPL, "{{packageName}}", packageName, -1)
 			content = strings.Replace(content, "{{structStruct}}", structStruct, -1)
 			if hastime {
-				content = strings.Replace(content, "{{timePkg}}", `"time"`, -1)
+				content = strings.Replace(content, "{{timePkg}}", `import("time")`, -1)
 			} else {
 				content = strings.Replace(content, "{{timePkg}}", "", -1)
 			}
 
 		} else {
-			content = strings.Replace(STRUCTURE_TPL, "{{packageName}}", packageName, -1)
+			content = strings.Replace(BAST_STRUCTURE_TPL, "{{packageName}}", packageName, -1)
 		}
 		content = strings.Replace(content, "{{structureName}}", structureName, -1)
 		f.WriteString(content)
@@ -136,14 +136,16 @@ func getType(ktype string) (kt, tag string, hasTime bool) {
 }
 
 const (
-	STRUCTURE_TPL = `package {{packageName}}
+	BAST_STRUCTURE_TPL = `package {{packageName}}
 
 	type {{structureName}}Struct struct {
 
 	}
 	`
 
-	INIT_STRUCTURE_TPL = `package {{packageName}}
+	STRUCTURE_TPL = `package {{packageName}}
+
+	{{timePkg}}
 
 	{{structStruct}}
 

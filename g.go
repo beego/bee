@@ -27,12 +27,18 @@ bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     example: bee generate scaffold post -fields="title:string,body:text"
 
-bee generate model [modelname] [-fields=""]
-    generate RESTFul model based on fields
+bee generate structure [structurename]
+    generate struct based
+
+bee generate structure [structurename] [-fields=""]
+    generate struct based on fields
     -fields: a list of table fields. Format: field:type, ...
 
-bee generate structure [structurefile] [-fields=""]
-    generate struct based
+bee generate model [modelname]
+    generate RESTFul model based
+
+bee generate model [modelname] [-fields=""]
+    generate RESTFul model based on fields
     -fields: a list of table fields. Format: field:type, ...
 
 bee generate controller [controllerfile]
@@ -205,24 +211,28 @@ func generateCode(cmd *Command, args []string) int {
 
 		}
 	case "model":
-		if len(args) < 2 {
+		mname := args[1]
+		switch len(args) {
+		case 2:
+			generateModel(mname, "", curpath)
+		case 3:
+			cmd.Flag.Parse(args[2:])
+			if fields == "" {
+				ColorLog("[ERRO] Wrong number of arguments\n")
+				ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"title:string,body:text\"]\n")
+				os.Exit(2)
+			}
+			ColorLog("[INFO] Using '%s' as model name\n", mname)
+			generateModel(mname, fields.String(), curpath)
+		default:
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"\"]\n")
 			os.Exit(2)
 		}
-		cmd.Flag.Parse(args[2:])
-		if fields == "" {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"title:string,body:text\"]\n")
-			os.Exit(2)
-		}
-		sname := args[1]
-		ColorLog("[INFO] Using '%s' as model name\n", sname)
-		generateModel(sname, fields.String(), curpath)
 	case "view":
 		if len(args) == 2 {
-			cname := args[1]
-			generateView(cname, curpath)
+			vname := args[1]
+			generateView(vname, curpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate view [viewpath]\n")
