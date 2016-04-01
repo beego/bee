@@ -42,19 +42,23 @@ on the existing database.
 The command 'api' creates a folder named [appname] and inside the folder deploy
 the following files/directories structure:
 
+	.
 	├── conf
-	│   └── app.conf
+	│   └── app.conf
 	├── controllers
-	│   └── object.go
-	│   └── user.go
-	├── routers
-	│   └── router.go
-	├── tests
-	│   └── default_test.go
+	│   ├── object_controller.go
+	│   └── user_controller.go
+	├── docs
+	│   └── doc.go
 	├── main.go
-	└── models
-	    └── object.go
-	    └── user.go
+	├── models
+	│   ├── object.go
+	│   └── user.go
+	├── routers
+	│   └── router.go
+	├── structures
+	└── tests
+	    └── default_test.go
 
 `,
 }
@@ -144,41 +148,36 @@ func init() {
 var apiModels = `package models
 
 import (
+	"{{.Appname}}/structures"
 	"errors"
 	"strconv"
 	"time"
 )
 
 var (
-	Objects map[string]*Object
+	Objects map[string]*structures.Object
 )
 
-type Object struct {
-	ObjectId   string
-	Score      int64
-	PlayerName string
-}
-
 func init() {
-	Objects = make(map[string]*Object)
-	Objects["hjkhsbnmn123"] = &Object{"hjkhsbnmn123", 100, "astaxie"}
-	Objects["mjjkxsxsaa23"] = &Object{"mjjkxsxsaa23", 101, "someone"}
+	Objects = make(map[string]*structures.Object)
+	Objects["hjkhsbnmn123"] = &structures.Object{"hjkhsbnmn123", 100, "astaxie"}
+	Objects["mjjkxsxsaa23"] = &structures.Object{"mjjkxsxsaa23", 101, "someone"}
 }
 
-func AddOne(object Object) (ObjectId string) {
+func AddOne(object structures.Object) (ObjectId string) {
 	object.ObjectId = "astaxie" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	Objects[object.ObjectId] = &object
 	return object.ObjectId
 }
 
-func GetOne(ObjectId string) (object *Object, err error) {
+func GetOne(ObjectId string) (object *structures.Object, err error) {
 	if v, ok := Objects[ObjectId]; ok {
 		return v, nil
 	}
 	return nil, errors.New("ObjectId Not Exist")
 }
 
-func GetAll() map[string]*Object {
+func GetAll() map[string]*structures.Object {
 	return Objects
 }
 
@@ -199,53 +198,40 @@ func Delete(ObjectId string) {
 var apiModels2 = `package models
 
 import (
+	"{{.Appname}}/structures"
 	"errors"
 	"strconv"
 	"time"
 )
 
 var (
-	UserList map[string]*User
+	UserList map[string]*structures.User
 )
 
 func init() {
-	UserList = make(map[string]*User)
-	u := User{"user_11111", "astaxie", "11111", Profile{"male", 20, "Singapore", "astaxie@gmail.com"}}
+	UserList = make(map[string]*structures.User)
+	u := structures.User{"user_11111", "astaxie", "11111", structures.Profile{"male", 20, "Singapore", "astaxie@gmail.com"}}
 	UserList["user_11111"] = &u
 }
 
-type User struct {
-	Id       string
-	Username string
-	Password string
-	Profile  Profile
-}
-
-type Profile struct {
-	Gender  string
-	Age     int
-	Address string
-	Email   string
-}
-
-func AddUser(u User) string {
+func AddUser(u structures.User) string {
 	u.Id = "user_" + strconv.FormatInt(time.Now().UnixNano(), 10)
 	UserList[u.Id] = &u
 	return u.Id
 }
 
-func GetUser(uid string) (u *User, err error) {
+func GetUser(uid string) (u *structures.User, err error) {
 	if u, ok := UserList[uid]; ok {
 		return u, nil
 	}
 	return nil, errors.New("User not exists")
 }
 
-func GetAllUsers() map[string]*User {
+func GetAllUsers() map[string]*structures.User {
 	return UserList
 }
 
-func UpdateUser(uid string, uu *User) (a *User, err error) {
+func UpdateUser(uid string, uu *structures.User) (a *structures.User, err error) {
 	if u, ok := UserList[uid]; ok {
 		if uu.Username != "" {
 			u.Username = uu.Username
@@ -288,6 +274,7 @@ var apiControllers = `package controllers
 
 import (
 	"{{.Appname}}/models"
+	"{{.Appname}}/structures"
 	"encoding/json"
 
 	"github.com/astaxie/beego"
@@ -305,7 +292,7 @@ type ObjectController struct {
 // @Failure 403 body is empty
 // @router / [post]
 func (o *ObjectController) Post() {
-	var ob models.Object
+	var ob structures.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	objectid := models.AddOne(ob)
 	o.Data["json"] = map[string]string{"ObjectId": objectid}
@@ -351,7 +338,7 @@ func (o *ObjectController) GetAll() {
 // @router /:objectId [put]
 func (o *ObjectController) Put() {
 	objectId := o.Ctx.Input.Param(":objectId")
-	var ob models.Object
+	var ob structures.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 
 	err := models.Update(objectId, ob.Score)
@@ -377,10 +364,12 @@ func (o *ObjectController) Delete() {
 }
 
 `
+
 var apiControllers2 = `package controllers
 
 import (
 	"{{.Appname}}/models"
+	"{{.Appname}}/structures"
 	"encoding/json"
 
 	"github.com/astaxie/beego"
@@ -398,7 +387,7 @@ type UserController struct {
 // @Failure 403 body is empty
 // @router / [post]
 func (u *UserController) Post() {
-	var user models.User
+	var user structures.User
 	json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 	uid := models.AddUser(user)
 	u.Data["json"] = map[string]string{"uid": uid}
@@ -444,7 +433,7 @@ func (u *UserController) Get() {
 func (u *UserController) Put() {
 	uid := u.GetString(":uid")
 	if uid != "" {
-		var user models.User
+		var user structures.User
 		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 		uu, err := models.UpdateUser(uid, &user)
 		if err != nil {
@@ -538,6 +527,34 @@ func TestGet(t *testing.T) {
 
 `
 
+var apistructures = `package structures
+
+type User struct {
+	Id       string
+	Username string
+	Password string
+	Profile  Profile
+}
+
+type Profile struct {
+	Gender  string
+	Age     int
+	Address string
+	Email   string
+}
+
+`
+
+var apistructures2 = `package structures
+
+type Object struct {
+	ObjectId   string
+	Score      int64
+	PlayerName string
+}
+
+`
+
 func init() {
 	cmdApiapp.Run = createapi
 	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
@@ -574,6 +591,8 @@ func createapi(cmd *Command, args []string) int {
 	fmt.Println("create docs:", path.Join(apppath, "docs"))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
+	os.Mkdir(path.Join(apppath, "helpers"), 0755)
+	fmt.Println("create helpers:", path.Join(apppath, "helpers"))
 
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"),
@@ -604,14 +623,16 @@ func createapi(cmd *Command, args []string) int {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+		fmt.Println("create routers:", path.Join(apppath, "routers"))
+		os.Mkdir(path.Join(apppath, "structures"), 0755)
+		fmt.Println("create structures:", path.Join(apppath, "structures"))
 
-		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
-		writetofile(path.Join(apppath, "controllers", "object.go"),
+		fmt.Println("create controllers object_controller.go:", path.Join(apppath, "controllers", "object_controller.go"))
+		writetofile(path.Join(apppath, "controllers", "object_controller.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
-		writetofile(path.Join(apppath, "controllers", "user.go"),
+		fmt.Println("create controllers user_controller.go:", path.Join(apppath, "controllers", "user_controller.go"))
+		writetofile(path.Join(apppath, "controllers", "user_controller.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
@@ -623,10 +644,24 @@ func createapi(cmd *Command, args []string) int {
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		writetofile(path.Join(apppath, "models", "object.go"),
+			strings.Replace(apiModels, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		writetofile(path.Join(apppath, "models", "user.go"),
+			strings.Replace(apiModels2, "{{.Appname}}", packpath, -1))
+
+		fmt.Println("create structures user_structure.go:", path.Join(apppath, "structures", "user_structure.go"))
+		writetofile(path.Join(apppath, "structures", "user_structure.go"), apistructures)
+
+		fmt.Println("create structures object_structure.go:", path.Join(apppath, "structures", "object_structure.go"))
+		writetofile(path.Join(apppath, "structures", "object_structure.go"), apistructures2)
+
+		fmt.Println("create helpers user_helper.go:", path.Join(apppath, "helpers", "user_helper.go"))
+		writetofile(path.Join(apppath, "helpers", "user_helper.go"), "package helpers")
+
+		fmt.Println("create helpers object_helper.go:", path.Join(apppath, "helpers", "object_helper.go"))
+		writetofile(path.Join(apppath, "helpers", "object_helper.go"), "package helpers")
 
 		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
 		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")

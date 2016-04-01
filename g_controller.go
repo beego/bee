@@ -41,7 +41,7 @@ func generateController(cname, crupath string) {
 			os.Exit(2)
 		}
 	}
-	fpath := path.Join(fp, strings.ToLower(controllerName)+".go")
+	fpath := path.Join(fp, strings.ToLower(controllerName)+"_controller.go")
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
 		modelPath := path.Join(crupath, "models", strings.ToLower(controllerName)+".go")
@@ -146,6 +146,7 @@ var controllerModelTpl = `package {{packageName}}
 
 import (
 	"{{pkgPath}}/models"
+	"{{pkgPath}}/structures"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -174,7 +175,7 @@ func (c *{{controllerName}}Controller) URLMapping() {
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
-	var v models.{{controllerName}}
+	var v structures.{{controllerName}}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if _, err := models.Add{{controllerName}}(&v); err == nil {
 		c.Ctx.Output.SetStatus(201)
@@ -275,7 +276,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 func (c *{{controllerName}}Controller) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
-	v := models.{{controllerName}}{Id: id}
+	v := structures.{{controllerName}}{Id: id}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if err := models.Update{{controllerName}}ById(&v); err == nil {
 		c.Data["json"] = "OK"

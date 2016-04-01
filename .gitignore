@@ -28,3 +28,6 @@ _testmain.go
 bee
 *.exe~
 .goxc.local.json
+
+#IDEA
+.idea
