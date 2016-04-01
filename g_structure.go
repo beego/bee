@@ -53,7 +53,7 @@ func generateStructure(cname, fields, crupath string) {
 			content = strings.Replace(STRUCTURE_TPL, "{{packageName}}", packageName, -1)
 			content = strings.Replace(content, "{{structStruct}}", structStruct, -1)
 			if hastime {
-				content = strings.Replace(content, "{{timePkg}}", `import("time")`, -1)
+				content = strings.Replace(content, "{{timePkg}}", `"time"`, -1)
 			} else {
 				content = strings.Replace(content, "{{timePkg}}", "", -1)
 			}
@@ -138,14 +138,18 @@ func getType(ktype string) (kt, tag string, hasTime bool) {
 const (
 	BAST_STRUCTURE_TPL = `package {{packageName}}
 
-	type {{structureName}}Struct struct {
+	type {{structureName}} struct {
 
 	}
 	`
 
 	STRUCTURE_TPL = `package {{packageName}}
 
+	import(
+	"github.com/astaxie/beego/orm"
+
 	{{timePkg}}
+	)
 
 	{{structStruct}}
 
