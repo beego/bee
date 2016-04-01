@@ -146,6 +146,7 @@ var controllerModelTpl = `package {{packageName}}
 
 import (
 	"{{pkgPath}}/models"
+	"{{pkgPath}}/structures"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -174,7 +175,7 @@ func (c *{{controllerName}}Controller) URLMapping() {
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
-	var v models.{{controllerName}}
+	var v structures.{{controllerName}}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if _, err := models.Add{{controllerName}}(&v); err == nil {
 		c.Ctx.Output.SetStatus(201)
@@ -275,7 +276,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 func (c *{{controllerName}}Controller) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
-	v := models.{{controllerName}}{Id: id}
+	v := structures.{{controllerName}}{Id: id}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if err := models.Update{{controllerName}}ById(&v); err == nil {
 		c.Data["json"] = "OK"
