@@ -28,17 +28,13 @@ bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@
     example: bee generate scaffold post -fields="title:string,body:text"
 
 bee generate structure [structurename]
-    generate struct based
-
 bee generate structure [structurename] [-fields=""]
-    generate struct based on fields
+    generate struct based
     -fields: a list of table fields. Format: field:type, ...
 
 bee generate model [modelname]
-    generate RESTFul model based
-
 bee generate model [modelname] [-fields=""]
-    generate RESTFul model based on fields
+    generate RESTFul model based
     -fields: a list of table fields. Format: field:type, ...
 
 bee generate controller [controllerfile]
@@ -53,6 +49,9 @@ bee generate migration [migrationfile] [-fields=""]
 	
 bee generate docs
     generate swagger doc file
+
+bee generate helper [filename]
+    generate helper file
 
 bee generate test [routerfile]
     generate testcase
@@ -180,6 +179,15 @@ func generateCode(cmd *Command, args []string) int {
 			downsql = `m.SQL("DROP TABLE ` + "`" + mname + "`" + `")`
 		}
 		generateMigration(mname, upsql, downsql, curpath)
+	case "helper":
+		if len(args) == 2 {
+			cname := args[1]
+			generateHelper(cname, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate helper [helpername]\n")
+			os.Exit(2)
+		}
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]
@@ -206,6 +214,7 @@ func generateCode(cmd *Command, args []string) int {
 			generateStructure(sname, fields.String(), curpath)
 		default:
 			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate structure [structurename]\n")
 			ColorLog("[HINT] Usage: bee generate structure [structurename] [-fields=\"title:string,body:text\"]\n")
 			os.Exit(2)
 
@@ -226,6 +235,7 @@ func generateCode(cmd *Command, args []string) int {
 			generateModel(mname, fields.String(), curpath)
 		default:
 			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate model [modelname]\n")
 			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"\"]\n")
 			os.Exit(2)
 		}
