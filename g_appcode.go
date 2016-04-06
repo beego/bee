@@ -519,7 +519,9 @@ func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 func (*PostgresDB) GetTableNames(db *sql.DB) (tables []string) {
 	rows, err := db.Query(`
 		SELECT table_name FROM information_schema.tables
-		WHERE table_catalog = current_database() and table_schema = 'public'`)
+		WHERE table_catalog = current_database() AND
+		table_type = 'BASE TABLE' AND
+		table_schema NOT IN ('pg_catalog', 'information_schema')`)
 	if err != nil {
 		ColorLog("[ERRO] Could not show tables: %s\n", err)
 		ColorLog("[HINT] Check your connection string\n")
@@ -554,8 +556,10 @@ func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string
 		INNER JOIN
 			information_schema.constraint_column_usage cu ON cu.constraint_name =  c.constraint_name
 		WHERE
-			c.table_catalog = current_database() AND c.table_schema = 'public' AND c.table_name = $1
-			AND u.table_catalog = current_database() AND u.table_schema = 'public' AND u.table_name = $2`,
+			c.table_catalog = current_database() AND c.table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND c.table_name = $1
+			AND u.table_catalog = current_database() AND u.table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND u.table_name = $2`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
 		ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for PK/UK/FK information: %s\n", err)
@@ -611,7 +615,8 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 		FROM
 			information_schema.columns
 		WHERE
-			table_catalog = current_database() AND table_schema = 'public' AND table_name = $1`,
+			table_catalog = current_database() AND table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND table_name = $1`,
 		table.Name)
 	defer colDefRows.Close()
 	for colDefRows.Next() {
