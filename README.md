@@ -21,7 +21,7 @@ go get github.com/beego/bee
 Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
 
 ```bash
-export PATH=$PATH:<your_main_gopath>/bin/bee
+export PATH=$PATH:<your_main_gopath>/bin
 ```
 
 > If you already have `bee` installed, updating `bee` is simple:
