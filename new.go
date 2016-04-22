@@ -30,22 +30,25 @@ Creates a Beego application for the given app name in the current directory.
 The command 'new' creates a folder named [appname] and inside the folder deploy
 the following files/directories structure:
 
-    |- main.go
-    |- conf
-        |-  app.conf
-    |- controllers
-         |- default.go
-    |- models
-    |- routers
-         |- router.go
-    |- tests
-         |- default_test.go
-	|- static
-         |- js
-         |- css
-         |- img
-    |- views
-        index.tpl
+	.
+	├── conf
+	│   └── app.conf
+	├── controllers
+	│   └── index_controller.go
+	├── helpers
+	├── main.go
+	├── models
+	├── routers
+	│   └── router.go
+	├── static
+	│   ├── css
+	│   ├── img
+	│   └── js
+	├── structure
+	├── tests
+	│   └── default_test.go
+	└── views
+	    └── index.tpl
 
 `,
 }
@@ -116,12 +119,16 @@ func createApp(cmd *Command, args []string) int {
 	fmt.Println(path.Join(apppath, "conf") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
 	fmt.Println(path.Join(apppath, "controllers") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "helpers"), 0755)
+	fmt.Println(path.Join(apppath, "helpers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
 	fmt.Println(path.Join(apppath, "models") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "routers"), 0755)
 	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Println(path.Join(apppath, "tests") + string(path.Separator))
+	os.Mkdir(path.Join(apppath, "structures"), 0755)
+	fmt.Println(path.Join(apppath, "structures") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static"), 0755)
 	fmt.Println(path.Join(apppath, "static") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
@@ -135,8 +142,8 @@ func createApp(cmd *Command, args []string) int {
 	fmt.Println(path.Join(apppath, "conf", "app.conf"))
 	writetofile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", args[0], -1))
 
-	fmt.Println(path.Join(apppath, "controllers", "default.go"))
-	writetofile(path.Join(apppath, "controllers", "default.go"), controllers)
+	fmt.Println(path.Join(apppath, "controllers", "index_controller.go"))
+	writetofile(path.Join(apppath, "controllers", "index_controller.go"), controllers)
 
 	fmt.Println(path.Join(apppath, "views", "index.tpl"))
 	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)

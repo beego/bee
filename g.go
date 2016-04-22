@@ -27,8 +27,14 @@ bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
     example: bee generate scaffold post -fields="title:string,body:text"
 
+bee generate structure [structurename]
+bee generate structure [structurename] [-fields=""]
+    generate struct based
+    -fields: a list of table fields. Format: field:type, ...
+
+bee generate model [modelname]
 bee generate model [modelname] [-fields=""]
-    generate RESTFul model based on fields
+    generate RESTFul model based
     -fields: a list of table fields. Format: field:type, ...
 
 bee generate controller [controllerfile]
@@ -43,6 +49,9 @@ bee generate migration [migrationfile] [-fields=""]
 	
 bee generate docs
     generate swagger doc file
+
+bee generate helper [filename]
+    generate helper file
 
 bee generate test [routerfile]
     generate testcase
@@ -170,6 +179,15 @@ func generateCode(cmd *Command, args []string) int {
 			downsql = `m.SQL("DROP TABLE ` + "`" + mname + "`" + `")`
 		}
 		generateMigration(mname, upsql, downsql, curpath)
+	case "helper":
+		if len(args) == 2 {
+			cname := args[1]
+			generateHelper(cname, curpath)
+		} else {
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate helper [helpername]\n")
+			os.Exit(2)
+		}
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]
@@ -179,25 +197,52 @@ func generateCode(cmd *Command, args []string) int {
 			ColorLog("[HINT] Usage: bee generate controller [controllername]\n")
 			os.Exit(2)
 		}
-	case "model":
-		if len(args) < 2 {
+	case "structure":
+		sname := args[1]
+		switch len(args) {
+		case 2:
+			generateStructure(sname, "", curpath)
+		case 3:
+			cmd.Flag.Parse(args[2:])
+			if fields == "" {
+				ColorLog("[ERRO] Wrong number of arguments\n")
+				ColorLog("[HINT] Usage: bee generate structure [structurename] [-fields=\"title:string,body:text\"]\n")
+				os.Exit(2)
+			}
+			sname := args[1]
+			ColorLog("[INFO] Using '%s' as structure name\n", sname)
+			generateStructure(sname, fields.String(), curpath)
+		default:
 			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate structure [structurename]\n")
+			ColorLog("[HINT] Usage: bee generate structure [structurename] [-fields=\"title:string,body:text\"]\n")
+			os.Exit(2)
+
+		}
+	case "model":
+		mname := args[1]
+		switch len(args) {
+		case 2:
+			generateModel(mname, "", curpath)
+		case 3:
+			cmd.Flag.Parse(args[2:])
+			if fields == "" {
+				ColorLog("[ERRO] Wrong number of arguments\n")
+				ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"title:string,body:text\"]\n")
+				os.Exit(2)
+			}
+			ColorLog("[INFO] Using '%s' as model name\n", mname)
+			generateModel(mname, fields.String(), curpath)
+		default:
+			ColorLog("[ERRO] Wrong number of arguments\n")
+			ColorLog("[HINT] Usage: bee generate model [modelname]\n")
 			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"\"]\n")
 			os.Exit(2)
 		}
-		cmd.Flag.Parse(args[2:])
-		if fields == "" {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"title:string,body:text\"]\n")
-			os.Exit(2)
-		}
-		sname := args[1]
-		ColorLog("[INFO] Using '%s' as model name\n", sname)
-		generateModel(sname, fields.String(), curpath)
 	case "view":
 		if len(args) == 2 {
-			cname := args[1]
-			generateView(cname, curpath)
+			vname := args[1]
+			generateView(vname, curpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate view [viewpath]\n")
