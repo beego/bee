@@ -50,6 +50,9 @@ the following files/directories structure:
 	│   └── user_controller.go
 	├── docs
 	│   └── doc.go
+	├── helpers
+	│   ├── object_helper.go
+	│   └── user_helper.go
 	├── main.go
 	├── models
 	│   ├── object.go
@@ -57,6 +60,8 @@ the following files/directories structure:
 	├── routers
 	│   └── router.go
 	├── structures
+	│   ├── object_structure.go
+	│   └── user_structure.go
 	└── tests
 	    └── default_test.go
 
