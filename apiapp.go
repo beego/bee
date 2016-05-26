@@ -546,14 +546,15 @@ func init() {
 }
 
 func createapi(cmd *Command, args []string) int {
-	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
+
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
 	}
+
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
 		fmt.Println(err)
@@ -576,8 +577,8 @@ func createapi(cmd *Command, args []string) int {
 	fmt.Println("create tests:", path.Join(apppath, "tests"))
 
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"),
-		strings.Replace(apiconf, "{{.Appname}}", args[0], -1))
+	WriteToFile(path.Join(apppath, "conf", "app.conf"),
+		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if conn != "" {
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
@@ -588,7 +589,7 @@ func createapi(cmd *Command, args []string) int {
 		} else if driver == "postgres" {
 			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
 		}
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(
 				maingoContent,
 				"{{.conn}}",
@@ -599,7 +600,7 @@ func createapi(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, args[0]))
+		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(apppath, args[0]))
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("create models:", path.Join(apppath, "models"))
@@ -607,43 +608,38 @@ func createapi(cmd *Command, args []string) int {
 		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
 
 		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
-		writetofile(path.Join(apppath, "controllers", "object.go"),
+		WriteToFile(path.Join(apppath, "controllers", "object.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
-		writetofile(path.Join(apppath, "controllers", "user.go"),
+		WriteToFile(path.Join(apppath, "controllers", "user.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
-		writetofile(path.Join(apppath, "tests", "default_test.go"),
+		WriteToFile(path.Join(apppath, "tests", "default_test.go"),
 			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
-		writetofile(path.Join(apppath, "routers", "router.go"),
+		WriteToFile(path.Join(apppath, "routers", "router.go"),
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
 		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
-		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
+		WriteToFile(path.Join(apppath, "docs", "doc.go"), "package docs")
 
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
 	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
-	curpath, err := os.Getwd()
-	if err != nil {
-		return
-	}
-
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
@@ -651,38 +647,14 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 		return
 	}
 
-	appsrcpath := ""
-	haspath := false
-	wgopath := path.SplitList(gopath)
-	for _, wg := range wgopath {
-		wg = path.Join(wg, "src")
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
-		}
-
-		wg, _ = path.EvalSymlinks(wg)
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
-		}
-	}
-
-	if !haspath {
-		err = fmt.Errorf("can't create application outside of GOPATH `%s`\n"+
-			"you first should `cd $GOPATH%ssrc` then use create\n", gopath, string(path.Separator))
-		return
-	}
-	apppath = path.Join(curpath, appname)
+	gosrcpath := path.Join(gopath, "src")
+	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
 		err = fmt.Errorf("path `%s` exists, can not create app without remove it\n", apppath)
 		return
 	}
-	packpath = strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/")
+	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")
+
 	return
 }

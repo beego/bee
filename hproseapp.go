@@ -274,7 +274,7 @@ func createhprose(cmd *Command, args []string) int {
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
 	fmt.Println("create conf:", path.Join(apppath, "conf"))
 	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"),
+	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
 
 	if conn != "" {
@@ -291,7 +291,7 @@ func createhprose(cmd *Command, args []string) int {
 		} else if driver == "postgres" {
 			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
 		}
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(
 				maingoContent,
 				"{{.conn}}",
@@ -304,13 +304,13 @@ func createhprose(cmd *Command, args []string) int {
 		fmt.Println("create models:", path.Join(apppath, "models"))
 
 		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
 		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
 		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(hproseMaingo, "{{.Appname}}", packpath, -1))
 	}
 	return 0
