@@ -15,11 +15,8 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
 	path "path/filepath"
 	"runtime"
 	"strings"
@@ -58,13 +55,7 @@ func init() {
 var appname string
 
 func runApp(cmd *Command, args []string) int {
-	fmt.Println("bee   :" + version)
-	fmt.Println("beego :" + getbeegoVersion())
-	goversion, err := exec.Command("go", "version").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Go    :" + string(goversion))
+	ShowShortVersionBanner()
 
 	exit := make(chan bool)
 	crupath, _ := os.Getwd()
@@ -85,7 +76,7 @@ func runApp(cmd *Command, args []string) int {
 	}
 	Debugf("current path:%s\n", crupath)
 
-	err = loadConfig()
+	err := loadConfig()
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
 	}

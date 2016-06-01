@@ -18,6 +18,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"fmt"
 )
 
 // article
@@ -58,7 +59,7 @@ func generateController(cname, crupath string) {
 		f.WriteString(content)
 		// gofmt generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] controller file generated: %s\n", fpath)
+		fmt.Println("\tcreate\t", fpath)
 	} else {
 		// error creating file
 		ColorLog("[ERRO] Could not create controller file: %s\n", err)

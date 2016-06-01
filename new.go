@@ -55,6 +55,8 @@ func init() {
 }
 
 func createApp(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	if len(args) != 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
@@ -79,46 +81,46 @@ func createApp(cmd *Command, args []string) int {
 		}
 	}
 
-	fmt.Println("[INFO] Creating application...")
+	ColorLog("[INFO] Creating application...\n")
 
 	os.MkdirAll(apppath, 0755)
-	fmt.Println(apppath + string(path.Separator))
+	fmt.Println("\tcreate\t", apppath + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println(path.Join(apppath, "conf") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "conf") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println(path.Join(apppath, "controllers") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "controllers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "models"), 0755)
-	fmt.Println(path.Join(apppath, "models") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "models") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "routers"), 0755)
-	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "routers") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println(path.Join(apppath, "tests") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "tests") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static"), 0755)
-	fmt.Println(path.Join(apppath, "static") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
-	fmt.Println(path.Join(apppath, "static", "js") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "js") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static", "css"), 0755)
-	fmt.Println(path.Join(apppath, "static", "css") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "css") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "static", "img"), 0755)
-	fmt.Println(path.Join(apppath, "static", "img") + string(path.Separator))
-	fmt.Println(path.Join(apppath, "views") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "img") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "views") + string(path.Separator))
 	os.Mkdir(path.Join(apppath, "views"), 0755)
-	fmt.Println(path.Join(apppath, "conf", "app.conf"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "conf", "app.conf"))
 	WriteToFile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", path.Base(args[0]), -1))
 
-	fmt.Println(path.Join(apppath, "controllers", "default.go"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "default.go"))
 	WriteToFile(path.Join(apppath, "controllers", "default.go"), controllers)
 
-	fmt.Println(path.Join(apppath, "views", "index.tpl"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "views", "index.tpl"))
 	WriteToFile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
-	fmt.Println(path.Join(apppath, "routers", "router.go"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "routers", "router.go"))
 	WriteToFile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
 
-	fmt.Println(path.Join(apppath, "tests", "default_test.go"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "tests", "default_test.go"))
 	WriteToFile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
 
-	fmt.Println(path.Join(apppath, "main.go"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "main.go"))
 	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
 
 	ColorLog("[SUCC] New application successfully created!\n")

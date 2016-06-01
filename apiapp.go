@@ -546,6 +546,8 @@ func init() {
 }
 
 func createapi(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	if len(args) < 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
@@ -565,23 +567,25 @@ func createapi(cmd *Command, args []string) int {
 	}
 	if conn == "" {
 	}
-	os.MkdirAll(apppath, 0755)
-	fmt.Println("create app folder:", apppath)
-	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println("create conf:", path.Join(apppath, "conf"))
-	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
-	os.Mkdir(path.Join(apppath, "docs"), 0755)
-	fmt.Println("create docs:", path.Join(apppath, "docs"))
-	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println("create tests:", path.Join(apppath, "tests"))
 
-	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
+	ColorLog("[INFO] Creating API...\n")
+
+	os.MkdirAll(apppath, 0755)
+	fmt.Println("\tcreate\t", apppath)
+	os.Mkdir(path.Join(apppath, "conf"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "conf"))
+	os.Mkdir(path.Join(apppath, "controllers"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "controllers"))
+	os.Mkdir(path.Join(apppath, "docs"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "docs"))
+	os.Mkdir(path.Join(apppath, "tests"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "tests"))
+	fmt.Println("\tcreate\t", path.Join(apppath, "conf", "app.conf"))
 	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if conn != "" {
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "main.go"))
 		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
 		if driver == "mysql" {
@@ -603,39 +607,40 @@ func createapi(cmd *Command, args []string) int {
 		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(apppath, args[0]))
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Println("create models:", path.Join(apppath, "models"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "models"))
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+		fmt.Println("\tcreate\t", path.Join(apppath, "routers") + string(path.Separator))
 
-		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "object.go"))
 		WriteToFile(path.Join(apppath, "controllers", "object.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "user.go"))
 		WriteToFile(path.Join(apppath, "controllers", "user.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "tests", "default_test.go"))
 		WriteToFile(path.Join(apppath, "tests", "default_test.go"),
 			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "routers", "router.go"))
 		WriteToFile(path.Join(apppath, "routers", "router.go"),
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "models", "object.go"))
 		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
-		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "models", "user.go"))
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "docs", "doc.go"))
 		WriteToFile(path.Join(apppath, "docs", "doc.go"), "package docs")
 
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "main.go"))
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
+	ColorLog("[SUCC] New API successfully created!\n")
 	return 0
 }
 
@@ -651,10 +656,10 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
-		err = fmt.Errorf("path `%s` exists, can not create app without remove it\n", apppath)
+		err = fmt.Errorf("Cannot create application without removing `%s` first.", apppath)
+		ColorLog("[ERRO] Path `%s` already exists\n", apppath)
 		return
 	}
 	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")
-
 	return
 }
