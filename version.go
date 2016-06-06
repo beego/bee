@@ -4,11 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"log"
 	"os"
-	"os/exec"
 	path "path/filepath"
 	"regexp"
+	"bytes"
 )
 
 var cmdVersion = &Command{
@@ -25,30 +24,59 @@ bee version
 `,
 }
 
+const verboseVersionBanner =
+`______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v{{ .BeeVersion }}
+
+Beego     : {{ .BeegoVersion }}
+GoVersion : {{ .GoVersion }}
+GOOS      : {{ .GOOS }}
+GOARCH    : {{ .GOARCH }}
+NumCPU    : {{ .NumCPU }}
+GOPATH    : {{ .GOPATH }}
+GOROOT    : {{ .GOROOT }}
+Compiler  : {{ .Compiler }}
+Date      : {{ Now "Monday, 2 Jan 2006" }}
+`
+
+const shortVersionBanner =
+`______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v{{ .BeeVersion }}
+`
+
 func init() {
 	cmdVersion.Run = versionCmd
 }
 
 func versionCmd(cmd *Command, args []string) int {
-	fmt.Println("bee   :" + version)
-	fmt.Println("beego :" + getbeegoVersion())
-	//fmt.Println("Go    :" + runtime.Version())
-	goversion, err := exec.Command("go", "version").Output()
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("Go    :" + string(goversion))
+	ShowVerboseVersionBanner()
 	return 0
 }
 
-func getbeegoVersion() string {
+func ShowVerboseVersionBanner() {
+	InitBanner(os.Stdout, bytes.NewBufferString(verboseVersionBanner))
+}
+
+func ShowShortVersionBanner() {
+	InitBanner(os.Stdout, bytes.NewBufferString(shortVersionBanner))
+}
+
+func getBeegoVersion() string {
 	gopath := os.Getenv("GOPATH")
 	re, err := regexp.Compile(`VERSION = "([0-9.]+)"`)
 	if err != nil {
 		return ""
 	}
 	if gopath == "" {
-		err = fmt.Errorf("you should set GOPATH in the env")
+		err = fmt.Errorf("You should set GOPATH env variable")
 		return ""
 	}
 	wgopath := path.SplitList(gopath)
@@ -60,11 +88,11 @@ func getbeegoVersion() string {
 			if os.IsNotExist(err) {
 				continue
 			}
-			ColorLog("[ERRO] get beego.go has error\n")
+			ColorLog("[ERRO] Get `beego.go` has error\n")
 		}
 		fd, err := os.Open(filename)
 		if err != nil {
-			ColorLog("[ERRO] open beego.go has error\n")
+			ColorLog("[ERRO] Open `beego.go` has error\n")
 			continue
 		}
 		reader := bufio.NewReader(fd)
@@ -84,5 +112,5 @@ func getbeegoVersion() string {
 		}
 
 	}
-	return "you don't install beego,install first: github.com/astaxie/beego"
+	return "Beego not installed. Please install it first: https://github.com/astaxie/beego"
 }
