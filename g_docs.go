@@ -70,7 +70,7 @@ func init() {
 				a.Path = urlReplace(k + a.Path)
 				v.APIs[i] = a
 			}
-			v.BasePath = BasePath
+			//v.BasePath = BasePath
 			beego.GlobalDocAPI[strings.Trim(k, "/")] = v
 		}
 	}
@@ -106,6 +106,7 @@ var apilist map[string]*swagger.APIDeclaration
 var controllerList map[string][]swagger.API
 var modelsList map[string]map[string]swagger.Model
 var rootapi swagger.ResourceListing
+var basepath string
 
 func init() {
 	pkgCache = make(map[string]bool)
@@ -114,6 +115,7 @@ func init() {
 	apilist = make(map[string]*swagger.APIDeclaration)
 	controllerList = make(map[string][]swagger.API)
 	modelsList = make(map[string]map[string]swagger.Model)
+	basepath = "/"
 }
 
 func generateDocs(curpath string) {
@@ -166,7 +168,8 @@ func generateDocs(curpath string) {
 					for _, l := range smtp.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
 							f, params := analisysNewNamespace(v)
-							globalDocsTemplate = strings.Replace(globalDocsTemplate, "{{.version}}", f, -1)
+							//globalDocsTemplate = strings.Replace(globalDocsTemplate, "{{.version}}", f, -1)
+							basepath = f
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
@@ -240,6 +243,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	a.Produces = []string{"application/json", "application/xml", "text/plain", "text/html"}
 	a.APIs = make([]swagger.API, 0)
 	a.Models = make(map[string]swagger.Model)
+	a.BasePath = basepath
 	for _, p := range ce.Args {
 		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
 		if v, ok := importlist[fmt.Sprint(x.X)]; ok {
