@@ -965,6 +965,7 @@ func getFileName(tbName string) (filename string) {
 }
 
 func getPackagePath(curpath string) (packpath string) {
+        curpath, _ = filepath.EvalSymlinks(curpath)
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
