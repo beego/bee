@@ -643,7 +643,8 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	if err != nil {
 		return
 	}
-
+        curpath, _ = path.EvalSymlinks(curpath)
+        
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
