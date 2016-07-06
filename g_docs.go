@@ -446,6 +446,23 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					para.Description = p[3]
 				}
 				opts.Parameters = append(opts.Parameters, para)
+				//bug parase datatype in params begin
+				if para.ParamType == "body" {
+					if para.DataType == "" {
+						panic(controllerName + " " + funcName + " has no object")
+					}
+					cmpath, _, mod, realTypes := getModel(p[2])
+					//ll := strings.Split(st[2], ".")
+					//opts.Type = ll[len(ll)-1]
+					//rs.ResponseModel = m
+
+					if _, ok := modelsList[pkgpath+controllerName]; !ok {
+						modelsList[pkgpath+controllerName] = make(map[string]swagger.Model, 0)
+					}
+					modelsList[pkgpath+controllerName][para.DataType] = mod
+					appendModels(cmpath, pkgpath, controllerName, realTypes)
+				}
+				//bug parase datatype in params end
 			} else if strings.HasPrefix(t, "@Failure") {
 				rs := swagger.ResponseMessage{}
 				st := strings.TrimSpace(t[len("@Failure"):])
