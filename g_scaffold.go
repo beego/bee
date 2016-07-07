@@ -51,25 +51,46 @@ func generateSQLFromFields(fields string) string {
 			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
 			return ""
 		}
-		typ, tag := getSqlType(kv[1])
+		typ, tag := "", ""
+		switch driver {
+		case "mysql":
+			typ, tag = getSqlTypeMysql(kv[1])
+		case "postgres":
+			typ, tag = getSqlTypePostgresql(kv[1])
+		default:
+			typ, tag = getSqlTypeMysql(kv[1])
+		}
 		if typ == "" {
 			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
-			sql = sql + "`id` int(11) NOT NULL AUTO_INCREMENT,"
-			tags = tags + "PRIMARY KEY (`id`),"
+			switch driver {
+			case "mysql":
+				sql = sql + "`id` int(11) NOT NULL AUTO_INCREMENT,"
+				tags = tags + "PRIMARY KEY (`id`),"
+			case "postgres":
+				sql = sql + "id interger serial primary key,"
+			default:
+				sql = sql + "`id` int(11) NOT NULL AUTO_INCREMENT,"
+				tags = tags + "PRIMARY KEY (`id`),"
+			}
 		}
+
 		sql = sql + "`" + snakeString(kv[0]) + "` " + typ + ","
 		if tag != "" {
 			tags = tags + fmt.Sprintf(tag, "`"+snakeString(kv[0])+"`") + ","
 		}
 	}
+	if driver == "postgres" {
+		sql = strings.Replace(sql, "`", "", -1)
+		tags = strings.Replace(tags, "`", "", -1)
+	}
 	sql = strings.TrimRight(sql+tags, ",")
 	return sql
 }
 
-func getSqlType(ktype string) (tp, tag string) {
+func getSqlTypeMysql(ktype string) (tp, tag string) {
 	kv := strings.SplitN(ktype, ":", 2)
 	switch kv[0] {
 	case "string":
@@ -96,6 +117,33 @@ func getSqlType(ktype string) (tp, tag string) {
 		return "float NOT NULL", ""
 	case "float":
 		return "float NOT NULL", ""
+	}
+	return "", ""
+}
+
+func getSqlTypePostgresql(ktype string) (tp, tag string) {
+	kv := strings.SplitN(ktype, ":", 2)
+	switch kv[0] {
+	case "string":
+		if len(kv) == 2 {
+			return "char(" + kv[1] + ") NOT NULL", ""
+		} else {
+			return "TEXT NOT NULL", ""
+		}
+	case "text":
+		return "TEXT NOT NULL", ""
+	case "auto", "pk":
+		return "serial primary key", ""
+	case "datetime":
+		return "TIMESTAMP WITHOUT TIME ZONE NOT NULL", ""
+	case "int", "int8", "int16", "int32", "int64":
+		fallthrough
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return "integer DEFAULT NULL", ""
+	case "bool":
+		return "boolean NOT NULL", ""
+	case "float32", "float64", "float":
+		return "numeric NOT NULL", ""
 	}
 	return "", ""
 }
