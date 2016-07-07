@@ -136,6 +136,7 @@ func Autobuild(files []string, isgenerate bool) {
 		icmd := exec.Command("go", "list", "./...")
 		buf := bytes.NewBuffer([]byte(""))
 		icmd.Stdout = buf
+		icmd.Env = append(os.Environ(), "GOGC=off")
 		err = icmd.Run()
 		if err == nil {
 			list := strings.Split(buf.String(), "\n")[1:]
@@ -146,6 +147,7 @@ func Autobuild(files []string, isgenerate bool) {
 				icmd = exec.Command(cmdName, "install", pkg)
 				icmd.Stdout = os.Stdout
 				icmd.Stderr = os.Stderr
+				icmd.Env = append(os.Environ(), "GOGC=off")
 				err = icmd.Run()
 				if err != nil {
 					break
@@ -156,6 +158,7 @@ func Autobuild(files []string, isgenerate bool) {
 
 	if isgenerate {
 		icmd := exec.Command("bee", "generate", "docs")
+		icmd.Env = append(os.Environ(), "GOGC=off")
 		icmd.Stdout = os.Stdout
 		icmd.Stderr = os.Stderr
 		icmd.Run()
@@ -170,9 +173,13 @@ func Autobuild(files []string, isgenerate bool) {
 
 		args := []string{"build"}
 		args = append(args, "-o", appName)
+		if buildTags != "" {
+			args = append(args, "-tags", buildTags)
+		}
 		args = append(args, files...)
 
 		bcmd := exec.Command(cmdName, args...)
+		bcmd.Env = append(os.Environ(), "GOGC=off")
 		bcmd.Stdout = os.Stdout
 		bcmd.Stderr = os.Stderr
 		err = bcmd.Run()

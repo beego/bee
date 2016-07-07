@@ -7,23 +7,23 @@ import (
 
 func generateScaffold(sname, fields, crupath, driver, conn string) {
 	// generate model
-	ColorLog("[INFO] Do you want me to create a %v model? [yes|no]]  ", sname)
+	ColorLog("[INFO] Do you want to create a %v model? [yes|no]]  ", sname)
 	if askForConfirmation() {
 		generateModel(sname, fields, crupath)
 	}
 
 	// generate controller
-	ColorLog("[INFO] Do you want me to create a %v controller? [yes|no]]  ", sname)
+	ColorLog("[INFO] Do you want to create a %v controller? [yes|no]]  ", sname)
 	if askForConfirmation() {
 		generateController(sname, crupath)
 	}
 	// generate view
-	ColorLog("[INFO] Do you want me to create views for this %v resource? [yes|no]]  ", sname)
+	ColorLog("[INFO] Do you want to create views for this %v resource? [yes|no]]  ", sname)
 	if askForConfirmation() {
 		generateView(sname, crupath)
 	}
 	// generate migration
-	ColorLog("[INFO] Do you want me to create a %v migration and schema for this resource? [yes|no]]  ", sname)
+	ColorLog("[INFO] Do you want to create a %v migration and schema for this resource? [yes|no]]  ", sname)
 	if askForConfirmation() {
 		upsql := ""
 		downsql := ""
@@ -34,7 +34,7 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 		generateMigration(sname, upsql, downsql, crupath)
 	}
 	// run migration
-	ColorLog("[INFO] Do you want to go ahead and migrate the database? [yes|no]]  ")
+	ColorLog("[INFO] Do you want to migrate the database? [yes|no]]  ")
 	if askForConfirmation() {
 		migrateUpdate(crupath, driver, conn)
 	}
@@ -48,12 +48,12 @@ func generateSQLFromFields(fields string) string {
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
 			return ""
 		}
 		typ, tag := getSqlType(kv[1])
 		if typ == "" {
-			ColorLog("[ERRO] the fields format is wrong. should key:type,key:type " + v + "\n")
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
