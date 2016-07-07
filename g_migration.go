@@ -51,7 +51,7 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 		f.WriteString(content)
 		// gofmt generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] Migration file generated: %s\n", fpath)
+		fmt.Println("\tcreate\t", fpath)
 	} else {
 		// error creating file
 		ColorLog("[ERRO] Could not create migration file: %s\n", err)
