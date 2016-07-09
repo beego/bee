@@ -46,6 +46,8 @@ func init() {
 }
 
 func runBale(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	err := loadConfig()
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
@@ -60,7 +62,7 @@ func runBale(cmd *Command, args []string) int {
 			ColorLog("[WARN] Skipped directory( %s )\n", p)
 			continue
 		}
-		ColorLog("[INFO] Packing directory( %s )\n", p)
+		ColorLog("[INFO] Packaging directory( %s )\n", p)
 		filepath.Walk(p, walkFn)
 	}
 

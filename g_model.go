@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"fmt"
 )
 
 func generateModel(mname, fields, crupath string) {
@@ -44,7 +45,7 @@ func generateModel(mname, fields, crupath string) {
 		f.WriteString(content)
 		// gofmt generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] model file generated: %s\n", fpath)
+		fmt.Println("\tcreate\t", fpath)
 	} else {
 		// error creating file
 		ColorLog("[ERRO] Could not create model file: %s\n", err)

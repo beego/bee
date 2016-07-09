@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"fmt"
 )
 
 var cmdFix = &Command{
@@ -25,9 +26,12 @@ func init() {
 }
 
 func runFix(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
+	ColorLog("[INFO] Upgrading the application...\n")
 	dir, err := os.Getwd()
 	if err != nil {
-		ColorLog("GetCurrent Path:%s\n", err)
+		ColorLog("[ERRO] GetCurrent Path:%s\n", err)
 	}
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
@@ -42,13 +46,14 @@ func runFix(cmd *Command, args []string) int {
 		if strings.HasSuffix(info.Name(), ".exe") {
 			return nil
 		}
-		ColorLog("%s\n", path)
 		err = fixFile(path)
+		fmt.Println("\tfix\t", path)
 		if err != nil {
-			ColorLog("fixFile:%s\n", err)
+			ColorLog("[ERRO] Could not fix file: %s\n", err)
 		}
 		return err
 	})
+	ColorLog("[INFO] Upgrade done!\n")
 	return 0
 }
 
