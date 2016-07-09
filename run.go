@@ -17,7 +17,6 @@ package main
 import (
 	"bytes"
 	"io/ioutil"
-	"log"
 	"net"
 	"os"
 	path "path/filepath"
