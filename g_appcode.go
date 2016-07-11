@@ -294,7 +294,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
+func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, apppath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
@@ -306,12 +306,12 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, cu
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
-		mvcPath.ModelPath = path.Join(currpath, "models")
-		mvcPath.ControllerPath = path.Join(currpath, "controllers")
-		mvcPath.RouterPath = path.Join(currpath, "routers")
-		mvcPath.StructurePath = path.Join(currpath, "structures")
+		mvcPath.ModelPath = path.Join(apppath, "models")
+		mvcPath.ControllerPath = path.Join(apppath, "controllers")
+		mvcPath.RouterPath = path.Join(apppath, "routers")
+		mvcPath.StructurePath = path.Join(apppath, "structures")
 		createPaths(mode, mvcPath)
-		pkgPath := getPackagePath(currpath)
+		pkgPath := getPackagePath(apppath)
 		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
 		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)

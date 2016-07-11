@@ -14,7 +14,10 @@
 
 package main
 
-import "os"
+import (
+	"os"
+	"strings"
+)
 
 var cmdGenerate = &Command{
 	UsageLine: "generate [Command]",
@@ -83,6 +86,8 @@ func init() {
 }
 
 func generateCode(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	curpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
@@ -128,7 +133,6 @@ func generateCode(cmd *Command, args []string) int {
 			os.Exit(2)
 		}
 		sname := args[1]
-		ColorLog("[INFO] Using '%s' as scaffold name\n", sname)
 		generateScaffold(sname, fields.String(), curpath, driver.String(), conn.String())
 	case "docs":
 		generateDocs(curpath)
@@ -251,6 +255,6 @@ func generateCode(cmd *Command, args []string) int {
 	default:
 		ColorLog("[ERRO] command is missing\n")
 	}
-	ColorLog("[SUCC] generate successfully created!\n")
+	ColorLog("[SUCC] %s successfully generated!\n", strings.Title(gcmd))
 	return 0
 }

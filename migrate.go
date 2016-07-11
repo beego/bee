@@ -62,6 +62,8 @@ func init() {
 
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	crupath, _ := os.Getwd()
 
 	gopath := os.Getenv("GOPATH")
