@@ -632,16 +632,18 @@ func createapi(cmd *Command, args []string) int {
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Println("\tcreate\t", path.Join(apppath, "models"))
-		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println("create routers:", path.Join(apppath, "routers"))
-		os.Mkdir(path.Join(apppath, "structures"), 0755)
-		fmt.Println("create structures:", path.Join(apppath, "structures"))
 
-		fmt.Println("create controllers object_controller.go:", path.Join(apppath, "controllers", "object_controller.go"))
+		os.Mkdir(path.Join(apppath, "routers"), 0755)
+		fmt.Println("\tcreate\t", path.Join(apppath, "routers"))
+
+		os.Mkdir(path.Join(apppath, "structures"), 0755)
+		fmt.Println("\tcreate\t", path.Join(apppath, "structures"))
+
+		fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "object_controller.go"))
 		WriteToFile(path.Join(apppath, "controllers", "object_controller.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create controllers user_controller.go:", path.Join(apppath, "controllers", "user_controller.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "user_controller.go"))
 		WriteToFile(path.Join(apppath, "controllers", "user_controller.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
@@ -653,24 +655,24 @@ func createapi(cmd *Command, args []string) int {
 		WriteToFile(path.Join(apppath, "routers", "router.go"),
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "models", "object.go"))
 		WriteToFile(path.Join(apppath, "models", "object.go"),
 			strings.Replace(apiModels, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "models", "user.go"))
 		WriteToFile(path.Join(apppath, "models", "user.go"),
 			strings.Replace(apiModels2, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create structures user_structure.go:", path.Join(apppath, "structures", "user_structure.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "structures", "user_structure.go"))
 		WriteToFile(path.Join(apppath, "structures", "user_structure.go"), apistructures)
 
-		fmt.Println("create structures object_structure.go:", path.Join(apppath, "structures", "object_structure.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "structures", "object_structure.go"))
 		WriteToFile(path.Join(apppath, "structures", "object_structure.go"), apistructures2)
 
-		fmt.Println("create helpers user_helper.go:", path.Join(apppath, "helpers", "user_helper.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "helpers", "user_helper.go"))
 		WriteToFile(path.Join(apppath, "helpers", "user_helper.go"), "package helpers")
 
-		fmt.Println("create helpers object_helper.go:", path.Join(apppath, "helpers", "object_helper.go"))
+		fmt.Println("\tcreate\t", path.Join(apppath, "helpers", "object_helper.go"))
 		WriteToFile(path.Join(apppath, "helpers", "object_helper.go"), "package helpers")
 
 		fmt.Println("\tcreate\t", path.Join(apppath, "docs", "doc.go"))
@@ -685,9 +687,16 @@ func createapi(cmd *Command, args []string) int {
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
+	gopaths := GetGOPATHs()
+	Debugf("gopath:%s", gopaths)
+	gopath := ""
+
+	switch len(gopaths) {
+	case 1:
+		gopath = gopaths[0]
+	case 2:
+		gopath = gopaths[1]
+	default:
 		err = fmt.Errorf("you should set GOPATH in the env")
 		return
 	}

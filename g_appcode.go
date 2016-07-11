@@ -1030,10 +1030,18 @@ func getFileName(tbName string) (filename string) {
 }
 
 func getPackagePath(curpath string) (packpath string) {
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] you should set GOPATH in the env")
+	gopaths := GetGOPATHs()
+	Debugf("gopath:%s", gopaths)
+	gopath := ""
+
+	switch len(gopaths) {
+	case 1:
+		gopath = gopaths[0]
+	case 2:
+		gopath = gopaths[1]
+	default:
+		ColorLog("[ERRO] $GOPATH not found\n")
+		ColorLog("[HINT] Set $GOPATH in your environment variables\n")
 		os.Exit(2)
 	}
 

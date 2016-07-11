@@ -1,10 +1,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
-	"fmt"
 )
 
 func generateModel(mname, fields, crupath string) {
@@ -30,7 +30,7 @@ func generateModel(mname, fields, crupath string) {
 		defer f.Close()
 		var content string
 		if fields != "" {
-			generateStructure(modelName,fields,crupath)
+			generateStructure(modelName, fields, crupath)
 			content = strings.Replace(CRUD_MODEL_TPL, "{{packageName}}", packageName, -1)
 			pkgPath := getPackagePath(crupath)
 			content = strings.Replace(content, "{{pkgPath}}", pkgPath, -1)
