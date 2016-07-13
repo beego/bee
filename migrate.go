@@ -246,7 +246,7 @@ func selectMigrationsTableSql(driver string) string {
 	case "mysql":
 		return "DESC migrations"
 	case "postgres":
-		return "SELECT * FROM migrations ORDER BY id_migration;"
+		return "SELECT * FROM migrations WHERE false ORDER BY id_migration;"
 	default:
 		return "DESC migrations"
 	}

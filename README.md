@@ -21,7 +21,7 @@ go get github.com/beego/bee
 Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
 
 ```bash
-export PATH=$PATH:<your_main_gopath>/bin/bee
+export PATH=$PATH:<your_main_gopath>/bin
 ```
 
 > If you already have `bee` installed, updating `bee` is simple:
@@ -199,17 +199,17 @@ usage: bee migrate [Command]
 
 bee migrate [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     run all outstanding migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate rollback [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback the last migration operation
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate reset [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres| sqlite], the default is mysql
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate refresh [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
