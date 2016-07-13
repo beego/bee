@@ -15,7 +15,9 @@
 package main
 
 import (
+	"bytes"
 	"io/ioutil"
+	"net"
 	"os"
 	path "path/filepath"
 	"runtime"
@@ -23,7 +25,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]  [-e=Godeps -e=folderToExclude]  [-tags=goBuildTags]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]  [-e=Godeps -e=folderToExclude]  [-tags=goBuildTags] [-rip=serverIp] [-rpassword=serverPassword]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the beego project using inotify,
@@ -43,6 +45,10 @@ var excludedPaths strFlags
 // Pass through to -tags arg of "go build"
 var buildTags string
 
+// Info about restart notifications server
+var rnsAddress string
+var rnsPassword string
+
 func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
@@ -50,6 +56,8 @@ func init() {
 	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
+	cmdRun.Flag.StringVar(&rnsAddress, "rip", "", "Address of server which receive signal to restart application")
+	cmdRun.Flag.StringVar(&rnsPassword, "rpassword", "", "Password which should be passed to server to restart application")
 }
 
 var appname string
@@ -104,13 +112,14 @@ func runApp(cmd *Command, args []string) int {
 		}
 	}
 
-	if gendoc == "true" {
-		NewWatcher(paths, files, true)
-		Autobuild(files, true)
-	} else {
-		NewWatcher(paths, files, false)
-		Autobuild(files, false)
+	isgenerate := gendoc == "true"
+
+	if rnsAddress != "" {
+		NewRestartNotificationServer(rnsAddress, []byte(rnsPassword), files, isgenerate)
 	}
+	NewWatcher(paths, files, isgenerate)
+	Autobuild(files, isgenerate)
+
 	if downdoc == "true" {
 		if _, err := os.Stat(path.Join(crupath, "swagger")); err != nil {
 			if os.IsNotExist(err) {
@@ -180,4 +189,40 @@ func isExcluded(filePath string) bool {
 		}
 	}
 	return false
+}
+
+// NewRestartNotificationServer Creates tcp server which receive signal to restart app
+func NewRestartNotificationServer(addr string, password []byte, files []string, isgenerate bool) error {
+	ColorLog("[INFO] Starting restart notification server on addres %s\n", addr)
+	ln, err := net.Listen("tcp", addr)
+	if err != nil {
+		ColorLog("[ERRO] Failt to start restart notification server [%s]\n", err)
+		return err
+	}
+	go func() {
+		for {
+			client, err := ln.Accept()
+			if err != nil {
+				ColorLog("[ERRO] Fail to accept client[ %s ]\n", err)
+				continue
+			}
+			if len(password) == 0 {
+				Autobuild(files, isgenerate)
+				client.Close()
+				continue
+			}
+			data, err := ioutil.ReadAll(client)
+			if err != nil {
+				ColorLog("[ERRO] Fail to read data from client[ %s ]\n", err)
+			}
+			data = bytes.TrimSpace(data)
+			if bytes.Compare(data, password) != 0 {
+				ColorLog("[ERRO] Invalid password to restart app: %v\n", string(data))
+				continue
+			}
+			Autobuild(files, isgenerate)
+			client.Close()
+		}
+	}()
+	return nil
 }
