@@ -2,12 +2,12 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	path "path/filepath"
 	"regexp"
-	"bytes"
 )
 
 var cmdVersion = &Command{
@@ -24,8 +24,7 @@ bee version
 `,
 }
 
-const verboseVersionBanner =
-`______
+const verboseVersionBanner = `______
 | ___ \
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
@@ -43,8 +42,7 @@ Compiler  : {{ .Compiler }}
 Date      : {{ Now "Monday, 2 Jan 2006" }}
 `
 
-const shortVersionBanner =
-`______
+const shortVersionBanner = `______
 | ___ \
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \

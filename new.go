@@ -30,22 +30,25 @@ Creates a Beego application for the given app name in the current directory.
 The command 'new' creates a folder named [appname] and inside the folder deploy
 the following files/directories structure:
 
-    |- main.go
-    |- conf
-        |-  app.conf
-    |- controllers
-         |- default.go
-    |- models
-    |- routers
-         |- router.go
-    |- tests
-         |- default_test.go
-	|- static
-         |- js
-         |- css
-         |- img
-    |- views
-        index.tpl
+	.
+	├── conf
+	│   └── app.conf
+	├── controllers
+	│   └── index_controller.go
+	├── helpers
+	├── main.go
+	├── models
+	├── routers
+	│   └── router.go
+	├── static
+	│   ├── css
+	│   ├── img
+	│   └── js
+	├── structure
+	├── tests
+	│   └── default_test.go
+	└── views
+	    └── index.tpl
 
 `,
 }
@@ -62,9 +65,16 @@ func createApp(cmd *Command, args []string) int {
 		os.Exit(2)
 	}
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
+	gopaths := GetGOPATHs()
+	Debugf("gopath:%s", gopaths)
+	gopath := ""
+
+	switch len(gopaths) {
+	case 1:
+		gopath = gopaths[0]
+	case 2:
+		gopath = gopaths[1]
+	default:
 		ColorLog("[ERRO] $GOPATH not found\n")
 		ColorLog("[HINT] Set $GOPATH in your environment variables\n")
 		os.Exit(2)
@@ -84,32 +94,49 @@ func createApp(cmd *Command, args []string) int {
 	ColorLog("[INFO] Creating application...\n")
 
 	os.MkdirAll(apppath, 0755)
-	fmt.Println("\tcreate\t", apppath + string(path.Separator))
+	fmt.Println("\tcreate\t", apppath+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "conf") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "conf")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "controllers") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "controllers")+string(path.Separator))
+
+	os.Mkdir(path.Join(apppath, "helpers"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "helpers")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "models"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "models") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "models")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "routers"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "routers") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "routers")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "tests") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "tests")+string(path.Separator))
+
+	os.Mkdir(path.Join(apppath, "structures"), 0755)
+	fmt.Println("\tcreate\t", path.Join(apppath, "structures")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "static"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "static") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "static", "js") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "js")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "static", "css"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "static", "css") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "css")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "static", "img"), 0755)
-	fmt.Println("\tcreate\t", path.Join(apppath, "static", "img") + string(path.Separator))
-	fmt.Println("\tcreate\t", path.Join(apppath, "views") + string(path.Separator))
+	fmt.Println("\tcreate\t", path.Join(apppath, "static", "img")+string(path.Separator))
+
+	fmt.Println("\tcreate\t", path.Join(apppath, "views")+string(path.Separator))
+
 	os.Mkdir(path.Join(apppath, "views"), 0755)
 	fmt.Println("\tcreate\t", path.Join(apppath, "conf", "app.conf"))
 	WriteToFile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", path.Base(args[0]), -1))
 
-	fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "default.go"))
-	WriteToFile(path.Join(apppath, "controllers", "default.go"), controllers)
+	fmt.Println("\tcreate\t", path.Join(apppath, "controllers", "index_controller.go"))
+	WriteToFile(path.Join(apppath, "controllers", "index_controller.go"), controllers)
 
 	fmt.Println("\tcreate\t", path.Join(apppath, "views", "index.tpl"))
 	WriteToFile(path.Join(apppath, "views", "index.tpl"), indextpl)

@@ -15,10 +15,10 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
-	"fmt"
 )
 
 // article
@@ -42,7 +42,7 @@ func generateController(cname, crupath string) {
 			os.Exit(2)
 		}
 	}
-	fpath := path.Join(fp, strings.ToLower(controllerName)+".go")
+	fpath := path.Join(fp, strings.ToLower(controllerName)+"_controller.go")
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
 		modelPath := path.Join(crupath, "models", strings.ToLower(controllerName)+".go")
@@ -88,8 +88,8 @@ func (c *{{controllerName}}Controller) URLMapping() {
 
 // @Title Post
 // @Description create {{controllerName}}
-// @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 201 {object} models.{{controllerName}}
+// @Param	body		body 	structures.{{controllerName}}	true		"body for {{controllerName}} content"
+// @Success 201 {object} structures.{{controllerName}}
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
@@ -99,7 +99,7 @@ func (c *{{controllerName}}Controller) Post() {
 // @Title Get
 // @Description get {{controllerName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403 :id is empty
 // @router /:id [get]
 func (c *{{controllerName}}Controller) GetOne() {
@@ -114,7 +114,7 @@ func (c *{{controllerName}}Controller) GetOne() {
 // @Param	order	query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403
 // @router / [get]
 func (c *{{controllerName}}Controller) GetAll() {
@@ -125,7 +125,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 // @Description update the {{controllerName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403 :id is not int
 // @router /:id [put]
 func (c *{{controllerName}}Controller) Put() {
@@ -147,6 +147,7 @@ var controllerModelTpl = `package {{packageName}}
 
 import (
 	"{{pkgPath}}/models"
+	"{{pkgPath}}/structures"
 	"encoding/json"
 	"errors"
 	"strconv"
@@ -170,12 +171,12 @@ func (c *{{controllerName}}Controller) URLMapping() {
 
 // @Title Post
 // @Description create {{controllerName}}
-// @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 201 {int} models.{{controllerName}}
+// @Param	body		body 	structures.{{controllerName}}	true		"body for {{controllerName}} content"
+// @Success 201 {int} structures.{{controllerName}}
 // @Failure 403 body is empty
 // @router / [post]
 func (c *{{controllerName}}Controller) Post() {
-	var v models.{{controllerName}}
+	var v structures.{{controllerName}}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if _, err := models.Add{{controllerName}}(&v); err == nil {
 		c.Ctx.Output.SetStatus(201)
@@ -189,7 +190,7 @@ func (c *{{controllerName}}Controller) Post() {
 // @Title Get
 // @Description get {{controllerName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403 :id is empty
 // @router /:id [get]
 func (c *{{controllerName}}Controller) GetOne() {
@@ -212,7 +213,7 @@ func (c *{{controllerName}}Controller) GetOne() {
 // @Param	order	query	string	false	"Order corresponding to each sortby field, if single value, apply to all sortby fields. e.g. desc,asc ..."
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403
 // @router / [get]
 func (c *{{controllerName}}Controller) GetAll() {
@@ -270,13 +271,13 @@ func (c *{{controllerName}}Controller) GetAll() {
 // @Description update the {{controllerName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
-// @Success 200 {object} models.{{controllerName}}
+// @Success 200 {object} structures.{{controllerName}}
 // @Failure 403 :id is not int
 // @router /:id [put]
 func (c *{{controllerName}}Controller) Put() {
 	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.ParseInt(idStr, 0, 64)
-	v := models.{{controllerName}}{Id: id}
+	v := structures.{{controllerName}}{Id: id}
 	json.Unmarshal(c.Ctx.Input.RequestBody, &v)
 	if err := models.Update{{controllerName}}ById(&v); err == nil {
 		c.Data["json"] = "OK"

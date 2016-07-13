@@ -276,10 +276,22 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	if pkgpath == "github.com/astaxie/beego" {
 		return
 	}
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		panic("please set gopath")
+
+	gopaths := GetGOPATHs()
+	Debugf("gopath:%s", gopaths)
+	gopath := ""
+
+	switch len(gopaths) {
+	case 1:
+		gopath = gopaths[0]
+	case 2:
+		gopath = gopaths[1]
+	default:
+		ColorLog("[ERRO] $GOPATH not found\n")
+		ColorLog("[HINT] Set $GOPATH in your environment variables\n")
+		os.Exit(2)
 	}
+
 	pkgRealpath := ""
 
 	wgopath := filepath.SplitList(gopath)

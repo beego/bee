@@ -66,13 +66,15 @@ func runMigration(cmd *Command, args []string) int {
 
 	crupath, _ := os.Getwd()
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
+	gopaths := GetGOPATHs()
+	Debugf("gopath:%s", gopaths)
+
+	if len(gopaths) == 0 {
 		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+		ColorLog("[HINT] Set $GOPATH in your environment variables\n")
 		os.Exit(2)
 	}
+
 	// load config
 	err := loadConfig()
 	if err != nil {

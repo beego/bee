@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
@@ -8,7 +9,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"fmt"
 )
 
 var cmdFix = &Command{
