@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]  [-e=Godeps -e=folderToExclude]  [-tags=goBuildTags]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the beego project using inotify,
@@ -43,12 +43,15 @@ var excludedPaths strFlags
 // Pass through to -tags arg of "go build"
 var buildTags string
 
+var vendorWatch bool
+
 func init() {
 	cmdRun.Run = runApp
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
 	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
 	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
+	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Watch vendor folder")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
 }
 
@@ -136,6 +139,10 @@ func readAppDirectories(directory string, paths *[]string) {
 	useDirectory := false
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), "docs") {
+			continue
+		}
+
+		if !vendorWatch && strings.HasSuffix(fileInfo.Name(), "vendor") {
 			continue
 		}
 
