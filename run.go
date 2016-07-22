@@ -20,11 +20,12 @@ import (
 	path "path/filepath"
 	"runtime"
 	"strings"
+	"fmt"
 )
 
 var cmdRun = &Command{
 	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]  [-e=Godeps -e=folderToExclude]  [-tags=goBuildTags]",
-	Short:     "run the app and start a Web server for development",
+	Short:     "Run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the beego project using inotify,
 it will recompile and restart the app after any modifications.
@@ -45,36 +46,55 @@ var buildTags string
 
 func init() {
 	cmdRun.Run = runApp
-	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
-	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
-	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
+	cmdRun.Flag.Var(&mainFiles, "main", "Specify main go files")
+	cmdRun.Flag.Var(&gendoc, "gendoc", "Auto generate the docs")
+	cmdRun.Flag.Var(&downdoc, "downdoc", "Auto download Swagger file when does not exist")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
 }
 
-var appname string
+var (
+	currpath 	= ""
+	appname		= ""
+	exit 		= make(chan bool)
+)
 
 func runApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 
-	exit := make(chan bool)
-	crupath, _ := os.Getwd()
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
+		os.Exit(2)
+	}
+	gopath := gps[0]
 
 	if len(args) == 0 || args[0] == "watchall" {
-		appname = path.Base(crupath)
+		currpath, _ = os.Getwd()
+		appname = path.Base(currpath)
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	} else {
-		appname = args[0]
+		gopathsrc := path.Join(gopath, "src")
+		currpath = path.Join(gopathsrc, args[0])
+		appname = path.Base(currpath)
+
+		// Check if passed Bee application path/name exists
+		// in $GOPATH/src workspace
+		if !isExist(currpath) {
+			panic(fmt.Sprintf("No Beego application '%s' found in GOPATH: %s", args[0], gopathsrc))
+		}
+
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
-		if strings.HasSuffix(appname, ".go") && isExist(path.Join(crupath, appname)) {
-			ColorLog("[WARN] The appname has conflic with crupath's file, do you want to build appname as %s\n", appname)
+		if strings.HasSuffix(appname, ".go") && isExist(currpath) {
+			ColorLog("[WARN] The appname is in conflict with currpath's file, do you want to build appname as %s\n", appname)
 			ColorLog("[INFO] Do you want to overwrite it? [yes|no]]  ")
 			if !askForConfirmation() {
 				return 0
 			}
 		}
 	}
-	Debugf("current path:%s\n", crupath)
+
+	Debugf("current path:%s\n", currpath)
 
 	err := loadConfig()
 	if err != nil {
@@ -82,17 +102,10 @@ func runApp(cmd *Command, args []string) int {
 	}
 
 	var paths []string
-
-	readAppDirectories(crupath, &paths)
+	readAppDirectories(currpath, &paths)
 
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
-	gps := GetGOPATHs()
-	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
-		os.Exit(2)
-	}
-	gopath := gps[0]
 	for _, p := range conf.DirStruct.Others {
 		paths = append(paths, strings.Replace(p, "$GOPATH", gopath, -1))
 	}
@@ -112,7 +125,7 @@ func runApp(cmd *Command, args []string) int {
 		Autobuild(files, false)
 	}
 	if downdoc == "true" {
-		if _, err := os.Stat(path.Join(crupath, "swagger")); err != nil {
+		if _, err := os.Stat(path.Join(currpath, "swagger")); err != nil {
 			if os.IsNotExist(err) {
 				downloadFromUrl(swaggerlink, "swagger.zip")
 				unzipAndDelete("swagger.zip", "swagger")
@@ -157,7 +170,6 @@ func readAppDirectories(directory string, paths *[]string) {
 			useDirectory = true
 		}
 	}
-
 	return
 }
 
