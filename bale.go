@@ -68,7 +68,7 @@ func runBale(cmd *Command, args []string) int {
 
 	// Generate auto-uncompress function.
 	buf := new(bytes.Buffer)
-	buf.WriteString(fmt.Sprintf(_BALE_HEADER, conf.Bale.Import,
+	buf.WriteString(fmt.Sprintf(BaleHeader, conf.Bale.Import,
 		strings.Join(resFiles, "\",\n\t\t\""),
 		strings.Join(resFiles, ",\n\t\tbale.R")))
 
@@ -90,7 +90,7 @@ func runBale(cmd *Command, args []string) int {
 }
 
 const (
-	_BALE_HEADER = `package main
+	BaleHeader = `package main
 
 import(
 	"os"
@@ -178,7 +178,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	defer fw.Close()
 
 	// Write header.
-	fmt.Fprintf(fw, _HEADER, resPath)
+	fmt.Fprintf(fw, Header, resPath)
 
 	// Copy and compress data.
 	gz := gzip.NewWriter(&ByteWriter{Writer: fw})
@@ -186,7 +186,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	gz.Close()
 
 	// Write footer.
-	fmt.Fprint(fw, _FOOTER)
+	fmt.Fprint(fw, Footer)
 
 	resFiles = append(resFiles, resPath)
 	return nil
@@ -202,7 +202,7 @@ func filterSuffix(name string) bool {
 }
 
 const (
-	_HEADER = `package bale
+	Header = `package bale
 
 import(
 	"bytes"
@@ -212,7 +212,7 @@ import(
 
 func R%s() []byte {
 	gz, err := gzip.NewReader(bytes.NewBuffer([]byte{`
-	_FOOTER = `
+	Footer = `
 	}))
 
 	if err != nil {

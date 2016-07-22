@@ -246,9 +246,8 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 		}
 		wft.allfiles[name] = true
 		return err
-	} else {
-		return err
 	}
+	return err
 }
 
 func (wft *walkFileTree) iterDirectory(fpath string, fi os.FileInfo) error {

@@ -19,7 +19,7 @@ import (
 	"os"
 )
 
-const CONF_VER = 0
+const ConfVer = 0
 
 var defaultConf = `{
 	"version": 0,
@@ -91,7 +91,7 @@ func loadConfig() error {
 	}
 
 	// Check format version.
-	if conf.Version != CONF_VER {
+	if conf.Version != ConfVer {
 		ColorLog("[WARN] Your bee.json is out-of-date, please update!\n")
 		ColorLog("[HINT] Compare bee.json under bee source code path and yours\n")
 	}
