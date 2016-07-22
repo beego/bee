@@ -16,7 +16,10 @@ package main
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
+
+	"gopkg.in/yaml.v2"
 )
 
 const CONF_VER = 0
@@ -50,20 +53,20 @@ var conf struct {
 		Install bool
 	}
 	// Indicates whether execute "go install" before "go build".
-	GoInstall bool     `json:"go_install"`
-	WatchExt  []string `json:"watch_ext"`
+	GoInstall bool     `json:"go_install" yaml:"go_install"`
+	WatchExt  []string `json:"watch_ext" yaml:"watch_ext"`
 	DirStruct struct {
-		WatchAll    bool `json:"watch_all"`
+		WatchAll    bool `json:"watch_all" yaml:"watch_all"`
 		Controllers string
 		Models      string
 		Others      []string // Other directories.
-	} `json:"dir_structure"`
-	CmdArgs []string `json:"cmd_args"`
+	} `json:"dir_structure" yaml:"dir_structure"`
+	CmdArgs []string `json:"cmd_args" yaml:"cmd_args"`
 	Envs    []string
 	Bale    struct {
 		Import string
 		Dirs   []string
-		IngExt []string `json:"ignore_ext"`
+		IngExt []string `json:"ignore_ext" yaml:"ignore_ext"`
 	}
 	Database struct {
 		Driver string
@@ -73,14 +76,9 @@ var conf struct {
 
 // loadConfig loads customized configuration.
 func loadConfig() error {
+	foundConf := false
 	f, err := os.Open("bee.json")
-	if err != nil {
-		// Use default.
-		err = json.Unmarshal([]byte(defaultConf), &conf)
-		if err != nil {
-			return err
-		}
-	} else {
+	if err == nil {
 		defer f.Close()
 		ColorLog("[INFO] Detected bee.json\n")
 		d := json.NewDecoder(f)
@@ -88,8 +86,24 @@ func loadConfig() error {
 		if err != nil {
 			return err
 		}
+		foundConf = true
 	}
-
+	byml, erryml := ioutil.ReadFile("Beefile")
+	if erryml == nil {
+		ColorLog("[INFO] Detected Beefile\n")
+		err = yaml.Unmarshal(byml, &conf)
+		if err != nil {
+			return err
+		}
+		foundConf = true
+	}
+	if !foundConf {
+		// Use default.
+		err = json.Unmarshal([]byte(defaultConf), &conf)
+		if err != nil {
+			return err
+		}
+	}
 	// Check format version.
 	if conf.Version != CONF_VER {
 		ColorLog("[WARN] Your bee.json is out-of-date, please update!\n")
