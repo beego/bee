@@ -172,6 +172,9 @@ func generateCode(cmd *Command, args []string) int {
 		if fields != "" {
 			upsql = `m.SQL("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
 			downsql = `m.SQL("DROP TABLE ` + "`" + mname + "`" + `")`
+			if driver == "postgres" {
+				downsql = strings.Replace(downsql, "`", "", -1)
+			}
 		}
 		generateMigration(mname, upsql, downsql, curpath)
 	case "controller":

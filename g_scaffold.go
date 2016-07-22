@@ -30,6 +30,9 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 		if fields != "" {
 			upsql = `m.SQL("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
 			downsql = `m.SQL("DROP TABLE ` + "`" + sname + "`" + `")`
+			if driver == "" {
+				downsql = strings.Replace(downsql, "`", "", -1)
+			}
 		}
 		generateMigration(sname, upsql, downsql, crupath)
 	}
