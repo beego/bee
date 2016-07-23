@@ -393,7 +393,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						if j == 0 || j == 1 {
 							st[j] = string(tmp)
 							tmp = make([]rune, 0)
-							j += 1
+							j++
 							start = false
 							if j == 1 {
 								continue
@@ -655,16 +655,14 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
 			return true, fmt.Sprint(star.X)
-		} else {
-			return true, fmt.Sprint(arr.Elt)
 		}
-	} else {
-		switch t := f.Type.(type) {
-		case *ast.StarExpr:
-			return false, fmt.Sprint(t.X)
-		}
-		return false, fmt.Sprint(f.Type)
+		return true, fmt.Sprint(arr.Elt)
 	}
+	switch t := f.Type.(type) {
+	case *ast.StarExpr:
+		return false, fmt.Sprint(t.X)
+	}
+	return false, fmt.Sprint(f.Type)
 }
 
 func isBasicType(Type string) bool {
@@ -688,7 +686,7 @@ var basicTypes = []string{
 }
 
 // regexp get json tag
-func grepJsonTag(tag string) string {
+func grepJSONTag(tag string) string {
 	r, _ := regexp.Compile(`json:"([^"]*)"`)
 	matches := r.FindAllStringSubmatch(tag, -1)
 	if len(matches) > 0 {

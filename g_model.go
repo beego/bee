@@ -2,10 +2,10 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"strings"
-	"fmt"
 )
 
 func generateModel(mname, fields, crupath string) {
@@ -16,7 +16,7 @@ func generateModel(mname, fields, crupath string) {
 		i := strings.LastIndex(p[:len(p)-1], "/")
 		packageName = p[i+1 : len(p)-1]
 	}
-	modelStruct, err, hastime := getStruct(modelName, fields)
+	modelStruct, hastime, err := getStruct(modelName, fields)
 	if err != nil {
 		ColorLog("[ERRO] Could not genrate models struct: %s\n", err)
 		os.Exit(2)
@@ -53,9 +53,9 @@ func generateModel(mname, fields, crupath string) {
 	}
 }
 
-func getStruct(structname, fields string) (string, error, bool) {
+func getStruct(structname, fields string) (string, bool, error) {
 	if fields == "" {
-		return "", errors.New("fields can't empty"), false
+		return "", false, errors.New("fields can't empty")
 	}
 	hastime := false
 	structStr := "type " + structname + " struct{\n"
@@ -63,11 +63,11 @@ func getStruct(structname, fields string) (string, error, bool) {
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			return "", errors.New("the filds format is wrong. should key:type,key:type " + v), false
+			return "", false, errors.New("the filds format is wrong. should key:type,key:type " + v)
 		}
 		typ, tag, hastimeinner := getType(kv[1])
 		if typ == "" {
-			return "", errors.New("the filds format is wrong. should key:type,key:type " + v), false
+			return "", false, errors.New("the filds format is wrong. should key:type,key:type " + v)
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
 			structStr = structStr + "Id     int64     `orm:\"auto\"`\n"
@@ -78,7 +78,7 @@ func getStruct(structname, fields string) (string, error, bool) {
 		structStr = structStr + camelString(kv[0]) + "       " + typ + "     " + tag + "\n"
 	}
 	structStr += "}\n"
-	return structStr, nil, hastime
+	return structStr, hastime, nil
 }
 
 // fields support type
@@ -89,9 +89,8 @@ func getType(ktype string) (kt, tag string, hasTime bool) {
 	case "string":
 		if len(kv) == 2 {
 			return "string", "`orm:\"size(" + kv[1] + ")\"`", false
-		} else {
-			return "string", "`orm:\"size(128)\"`", false
 		}
+		return "string", "`orm:\"size(128)\"`", false
 	case "text":
 		return "string", "`orm:\"type(longtext)\"`", false
 	case "auto":

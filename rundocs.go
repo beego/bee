@@ -59,7 +59,7 @@ func init() {
 
 func runDocs(cmd *Command, args []string) int {
 	if isDownload == "true" {
-		downloadFromUrl(swaggerlink, "swagger.zip")
+		downloadFromURL(swaggerlink, "swagger.zip")
 		err := unzipAndDelete("swagger.zip", "swagger")
 		if err != nil {
 			fmt.Println("has err exet unzipAndDelete", err)
@@ -77,7 +77,7 @@ func runDocs(cmd *Command, args []string) int {
 	return 0
 }
 
-func downloadFromUrl(url, fileName string) {
+func downloadFromURL(url, fileName string) {
 	fmt.Println("Downloading", url, "to", fileName)
 
 	output, err := os.Create(fileName)
