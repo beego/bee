@@ -15,12 +15,12 @@
 package main
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	path "path/filepath"
 	"runtime"
 	"strings"
+	"fmt"
 )
 
 var cmdRun = &Command{
@@ -33,21 +33,16 @@ it will recompile and restart the app after any modifications.
 `,
 }
 
-var (
-	mainFiles ListOpts
-	downdoc   docValue
-	gendoc    docValue
-	// The flags list of the paths excluded from watching
-	excludedPaths strFlags
-	// Pass through to -tags arg of "go build"
-	buildTags string
-	// Application path
-	currpath string
-	// Application name
-	appname string
-	// Channel to signal an Exit
-	exit chan bool
-)
+var mainFiles ListOpts
+
+var downdoc docValue
+var gendoc docValue
+
+// The flags list of the paths excluded from watching
+var excludedPaths strFlags
+
+// Pass through to -tags arg of "go build"
+var buildTags string
 
 func init() {
 	cmdRun.Run = runApp
@@ -56,8 +51,13 @@ func init() {
 	cmdRun.Flag.Var(&downdoc, "downdoc", "Auto download Swagger file when does not exist")
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
-	exit = make(chan bool)
 }
+
+var (
+	currpath 	= ""
+	appname		= ""
+	exit 		= make(chan bool)
+)
 
 func runApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
