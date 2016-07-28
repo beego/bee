@@ -30,6 +30,9 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 		if fields != "" {
 			upsql = `m.SQL("CREATE TABLE ` + sname + "(" + generateSQLFromFields(fields) + `)");`
 			downsql = `m.SQL("DROP TABLE ` + "`" + sname + "`" + `")`
+			if driver == "" {
+				downsql = strings.Replace(downsql, "`", "", -1)
+			}
 		}
 		generateMigration(sname, upsql, downsql, crupath)
 	}
@@ -54,11 +57,11 @@ func generateSQLFromFields(fields string) string {
 		typ, tag := "", ""
 		switch driver {
 		case "mysql":
-			typ, tag = getSqlTypeMysql(kv[1])
+			typ, tag = getSQLTypeMysql(kv[1])
 		case "postgres":
-			typ, tag = getSqlTypePostgresql(kv[1])
+			typ, tag = getSQLTypePostgresql(kv[1])
 		default:
-			typ, tag = getSqlTypeMysql(kv[1])
+			typ, tag = getSQLTypeMysql(kv[1])
 		}
 		if typ == "" {
 			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
@@ -90,15 +93,14 @@ func generateSQLFromFields(fields string) string {
 	return sql
 }
 
-func getSqlTypeMysql(ktype string) (tp, tag string) {
+func getSQLTypeMysql(ktype string) (tp, tag string) {
 	kv := strings.SplitN(ktype, ":", 2)
 	switch kv[0] {
 	case "string":
 		if len(kv) == 2 {
 			return "varchar(" + kv[1] + ") NOT NULL", ""
-		} else {
-			return "varchar(128) NOT NULL", ""
 		}
+		return "varchar(128) NOT NULL", ""
 	case "text":
 		return "longtext  NOT NULL", ""
 	case "auto":
@@ -121,15 +123,14 @@ func getSqlTypeMysql(ktype string) (tp, tag string) {
 	return "", ""
 }
 
-func getSqlTypePostgresql(ktype string) (tp, tag string) {
+func getSQLTypePostgresql(ktype string) (tp, tag string) {
 	kv := strings.SplitN(ktype, ":", 2)
 	switch kv[0] {
 	case "string":
 		if len(kv) == 2 {
 			return "char(" + kv[1] + ") NOT NULL", ""
-		} else {
-			return "TEXT NOT NULL", ""
 		}
+		return "TEXT NOT NULL", ""
 	case "text":
 		return "TEXT NOT NULL", ""
 	case "auto", "pk":
