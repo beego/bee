@@ -49,6 +49,8 @@ var (
 	exit chan bool
 	// Flag to watch the vendor folder
 	vendorWatch bool
+	// Current user workspace
+	currentGoPath string
 )
 
 func init() {
@@ -65,26 +67,24 @@ func init() {
 func runApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 
-	gps := GetGOPATHs()
-	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "$GOPATH is not set or empty")
-		os.Exit(2)
-	}
-	gopath := gps[0]
-
 	if len(args) == 0 || args[0] == "watchall" {
 		currpath, _ = os.Getwd()
+
+		if !isBeegoProject(currpath) {
+			exitPrint(fmt.Sprintf("Bee does not support non Beego project: %s", currpath))
+		}
+
+		_, currentGoPath, _ = SearchGOPATHs(currpath)
 		appname = path.Base(currpath)
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
 	} else {
-		gopathsrc := path.Join(gopath, "src")
-		currpath = path.Join(gopathsrc, args[0])
-		appname = path.Base(currpath)
-
-		// Check if passed Bee application path/name exists
-		// in $GOPATH/src workspace
-		if !isExist(currpath) {
-			panic(fmt.Sprintf("No Beego application '%s' found in GOPATH: %s", args[0], gopathsrc))
+		// Check if passed Bee application path/name exists in the GOPATH(s)
+		if ok, _gopath, _path := SearchGOPATHs(args[0]); ok {
+			currpath = _path
+			currentGoPath = _gopath
+			appname = path.Base(currpath)
+		} else {
+			panic(fmt.Sprintf("No Beego application '%s' found in your GOPATH", args[0]))
 		}
 
 		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
@@ -110,7 +110,7 @@ func runApp(cmd *Command, args []string) int {
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
 	for _, p := range conf.DirStruct.Others {
-		paths = append(paths, strings.Replace(p, "$GOPATH", gopath, -1))
+		paths = append(paths, strings.Replace(p, "$GOPATH", currentGoPath, -1))
 	}
 
 	files := []string{}

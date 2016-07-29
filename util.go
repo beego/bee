@@ -15,13 +15,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+	"path"
+	"fmt"
 )
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -171,6 +172,34 @@ func GetGOPATHs() []string {
 		paths = strings.Split(gopath, ":")
 	}
 	return paths
+}
+
+func SearchGOPATHs(app string) (bool, string, string) {
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start [ %s ]\n", "GOPATH environment variable is not set or empty")
+		os.Exit(2)
+	}
+
+	// Lookup the application inside the user workspace(s)
+	for _, gopath := range gps {
+		var currentPath string
+
+		if !strings.Contains(app, "src") {
+			gopathsrc := path.Join(gopath, "src")
+			currentPath = path.Join(gopathsrc, app)
+		} else {
+			currentPath = app
+		}
+
+		if isExist(currentPath) {
+			if !isBeegoProject(currentPath) {
+				continue
+			}
+			return true, gopath, currentPath
+		}
+	}
+	return false, "", ""
 }
 
 // askForConfirmation uses Scanln to parse user input. A user must type in "yes" or "no" and
