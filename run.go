@@ -15,12 +15,12 @@
 package main
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	path "path/filepath"
 	"runtime"
 	"strings"
-	"fmt"
 )
 
 var cmdRun = &Command{
@@ -35,8 +35,8 @@ it will recompile and restart the app after any modifications.
 
 var (
 	mainFiles ListOpts
-	downdoc docValue
-	gendoc docValue
+	downdoc   docValue
+	gendoc    docValue
 	// The flags list of the paths excluded from watching
 	excludedPaths strFlags
 	// Pass through to -tags arg of "go build"
@@ -70,16 +70,16 @@ func runApp(cmd *Command, args []string) int {
 	if len(args) == 0 || args[0] == "watchall" {
 		currpath, _ = os.Getwd()
 
-		if !isBeegoProject(currpath) {
+		if found, _gopath, _ := SearchGOPATHs(currpath); found {
+			appname = path.Base(currpath)
+			currentGoPath = _gopath
+		} else {
 			exitPrint(fmt.Sprintf("Bee does not support non Beego project: %s", currpath))
 		}
-
-		_, currentGoPath, _ = SearchGOPATHs(currpath)
-		appname = path.Base(currpath)
-		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+		ColorLog("[INFO] Using '%s' as 'appname'\n", appname)
 	} else {
 		// Check if passed Bee application path/name exists in the GOPATH(s)
-		if ok, _gopath, _path := SearchGOPATHs(args[0]); ok {
+		if found, _gopath, _path := SearchGOPATHs(args[0]); found {
 			currpath = _path
 			currentGoPath = _gopath
 			appname = path.Base(currpath)
@@ -87,7 +87,8 @@ func runApp(cmd *Command, args []string) int {
 			panic(fmt.Sprintf("No Beego application '%s' found in your GOPATH", args[0]))
 		}
 
-		ColorLog("[INFO] Uses '%s' as 'appname'\n", appname)
+		ColorLog("[INFO] Using '%s' as 'appname'\n", appname)
+
 		if strings.HasSuffix(appname, ".go") && isExist(currpath) {
 			ColorLog("[WARN] The appname is in conflict with currpath's file, do you want to build appname as %s\n", appname)
 			ColorLog("[INFO] Do you want to overwrite it? [yes|no]]  ")
