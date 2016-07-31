@@ -21,11 +21,12 @@ type vars struct {
 	BeegoVersion string
 }
 
+// Now returns the current local time in the specified layout
 func Now(layout string) string {
 	return time.Now().Format(layout)
 }
 
-// Init load the banner and prints it to output
+// InitBanner loads the banner and prints it to output
 // All errors are ignored, the application will not
 // print the banner in case of error.
 func InitBanner(out io.Writer, in io.Reader) {
@@ -55,7 +56,7 @@ func show(out io.Writer, content string) {
 		os.Exit(2)
 	}
 
-	t.Execute(out, vars{
+	err = t.Execute(out, vars{
 		runtime.Version(),
 		runtime.GOOS,
 		runtime.GOARCH,
@@ -66,4 +67,7 @@ func show(out io.Writer, content string) {
 		version,
 		getBeegoVersion(),
 	})
+	if err != nil {
+		panic(err)
+	}
 }
