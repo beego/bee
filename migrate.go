@@ -299,7 +299,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 			ColorLog("[ERRO] Could not write to file: %s\n", err)
 			os.Exit(2)
 		}
-		f.Close()
+		CloseFile(f)
 	}
 }
 

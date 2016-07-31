@@ -17,15 +17,14 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
-
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
 )
 
 const (
@@ -499,7 +498,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	}
 }
 
-// getGoDataType maps an SQL data type to Golang data type
+// GetGoDataType maps an SQL data type to Golang data type
 func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 	var typeMapping = map[string]string{}
 	typeMapping = typeMappingMysql
@@ -688,6 +687,8 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 		table.Columns = append(table.Columns, col)
 	}
 }
+
+// GetGoDataType returns the Go type from the mapped Postgres type
 func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
 	if v, ok := typeMappingPostgres[sqlType]; ok {
 		return v
@@ -730,6 +731,8 @@ func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath
 
 // writeModelFiles generates model files
 func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -742,7 +745,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -750,7 +753,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -782,14 +785,16 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] model => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeControllerFiles generates controller files
 func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -805,7 +810,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -813,7 +818,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -829,14 +834,16 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] controller => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeRouterFile generates router file
 func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	var nameSpaces []string
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
@@ -848,7 +855,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		if tb.Pk == "" {
 			continue
 		}
-		// add name spaces
+		// add namespaces
 		nameSpace := strings.Replace(NamespaceTPL, "{{nameSpace}}", tb.Name, -1)
 		nameSpace = strings.Replace(nameSpace, "{{ctrlName}}", camelCase(tb.Name), -1)
 		nameSpaces = append(nameSpaces, nameSpace)
@@ -860,7 +867,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	var f *os.File
 	var err error
 	if isExist(fpath) {
-		ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+		ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 		if askForConfirmation() {
 			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
@@ -868,7 +875,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 				return
 			}
 		} else {
-			ColorLog("[WARN] skip create file\n")
+			ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 			return
 		}
 	} else {
@@ -879,11 +886,11 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		}
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
-		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
+		ColorLog("[ERRO] Could not write router file to '%s'\n", fpath)
 		os.Exit(2)
 	}
-	f.Close()
-	ColorLog("[INFO] router => %s\n", fpath)
+	CloseFile(f)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	formatSourceCode(fpath)
 }
 
@@ -966,7 +973,7 @@ func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
-		ColorLog("[ERRO] you should set GOPATH in the env")
+		ColorLog("[ERRO] You should set GOPATH in the env")
 		os.Exit(2)
 	}
 

@@ -258,3 +258,11 @@ func (s *strFlags) Set(value string) error {
 	*s = append(*s, value)
 	return nil
 }
+
+// CloseFile attempts to close the passed file
+// or panics with the actual error
+func CloseFile(f *os.File) {
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
+}

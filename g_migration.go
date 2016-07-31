@@ -23,7 +23,7 @@ import (
 )
 
 const (
-	MPath = "migrations"
+	MPath       = "migrations"
 	MDateFormat = "20060102_150405"
 )
 
@@ -31,6 +31,8 @@ const (
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
 func generateMigration(mname, upsql, downsql, curpath string) {
+	w := NewColorWriter(os.Stdout)
+
 	migrationFilePath := path.Join(curpath, "database", MPath)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
@@ -43,17 +45,16 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 	today := time.Now().Format(MDateFormat)
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
-		defer f.Close()
+		defer CloseFile(f)
 		content := strings.Replace(MigrationTPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
 		content = strings.Replace(content, "{{DownSQL}}", downsql, -1)
 		f.WriteString(content)
-		// gofmt generated source code
+		// Run 'gofmt' on the generated source code
 		formatSourceCode(fpath)
-		fmt.Println("\tcreate\t", fpath)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		// error creating file
 		ColorLog("[ERRO] Could not create migration file: %s\n", err)
 		os.Exit(2)
 	}

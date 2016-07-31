@@ -35,7 +35,7 @@ bee generate model [modelname] [-fields=""]
     -fields: a list of table fields. Format: field:type, ...
 
 bee generate controller [controllerfile]
-    generate RESTFul controllers             
+    generate RESTful controllers
 
 bee generate view [viewpath]
     generate CRUD view in viewpath
@@ -43,7 +43,7 @@ bee generate view [viewpath]
 bee generate migration [migrationfile] [-fields=""]
     generate migration file for making database schema update
     -fields: a list of table fields. Format: field:type, ...
-	
+
 bee generate docs
     generate swagger doc file
 

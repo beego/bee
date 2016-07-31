@@ -19,12 +19,12 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 	"os"
 	"path"
 	"strings"
-
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
 )
 
 func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
@@ -98,6 +98,8 @@ func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *M
 
 // writeHproseModelFiles generates model files
 func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -110,7 +112,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -118,7 +120,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -147,11 +149,11 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
 		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
+			ColorLog("[ERRO] Could not write model file to '%s'\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] model => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }

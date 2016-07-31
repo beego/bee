@@ -5,25 +5,28 @@ import (
 	"strings"
 )
 
-func generateScaffold(sname, fields, crupath, driver, conn string) {
-	// generate model
-	ColorLog("[INFO] Do you want to create a %v model? [yes|no]]  ", sname)
+func generateScaffold(sname, fields, currpath, driver, conn string) {
+	ColorLog("[INFO] Do you want to create a '%v' model? [Yes|No] ", sname)
+
+	// Generate the model
 	if askForConfirmation() {
-		generateModel(sname, fields, crupath)
+		generateModel(sname, fields, currpath)
 	}
 
-	// generate controller
-	ColorLog("[INFO] Do you want to create a %v controller? [yes|no]]  ", sname)
+	// Generate the controller
+	ColorLog("[INFO] Do you want to create a '%v' controller? [Yes|No] ", sname)
 	if askForConfirmation() {
-		generateController(sname, crupath)
+		generateController(sname, currpath)
 	}
-	// generate view
-	ColorLog("[INFO] Do you want to create views for this %v resource? [yes|no]]  ", sname)
+
+	// Generate the views
+	ColorLog("[INFO] Do you want to create views for this '%v' resource? [Yes|No] ", sname)
 	if askForConfirmation() {
-		generateView(sname, crupath)
+		generateView(sname, currpath)
 	}
-	// generate migration
-	ColorLog("[INFO] Do you want to create a %v migration and schema for this resource? [yes|no]]  ", sname)
+
+	// Generate a migration
+	ColorLog("[INFO] Do you want to create a '%v' migration and schema for this resource? [Yes|No] ", sname)
 	if askForConfirmation() {
 		upsql := ""
 		downsql := ""
@@ -34,12 +37,13 @@ func generateScaffold(sname, fields, crupath, driver, conn string) {
 				downsql = strings.Replace(downsql, "`", "", -1)
 			}
 		}
-		generateMigration(sname, upsql, downsql, crupath)
+		generateMigration(sname, upsql, downsql, currpath)
 	}
-	// run migration
-	ColorLog("[INFO] Do you want to migrate the database? [yes|no]]  ")
+
+	// Run the migration
+	ColorLog("[INFO] Do you want to migrate the database? [Yes|No] ")
 	if askForConfirmation() {
-		migrateUpdate(crupath, driver, conn)
+		migrateUpdate(currpath, driver, conn)
 	}
 	ColorLog("[INFO] All done! Don't forget to add  beego.Router(\"/%v\" ,&controllers.%vController{}) to routers/route.go\n", sname, strings.Title(sname))
 }
