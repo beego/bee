@@ -121,8 +121,8 @@ func Autobuild(files []string, isgenerate bool) {
 	defer state.Unlock()
 
 	ColorLog("[INFO] Start building...\n")
-	path, _ := os.Getwd()
-	os.Chdir(path)
+
+	os.Chdir(currpath)
 
 	cmdName := "go"
 	if conf.Gopm.Enable {
