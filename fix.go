@@ -72,7 +72,7 @@ var rules = []string{
 	"beego.HttpsPort", "beego.BConfig.Listen.HTTPSPort",
 	"beego.HttpCertFile", "beego.BConfig.Listen.HTTPSCertFile",
 	"beego.HttpKeyFile", "beego.BConfig.Listen.HTTPSKeyFile",
-	"beego.EnableAdmin", "beego.BConfig.Listen.AdminEnable",
+	"beego.EnableAdmin", "beego.BConfig.Listen.EnableAdmin",
 	"beego.AdminHttpAddr", "beego.BConfig.Listen.AdminAddr",
 	"beego.AdminHttpPort", "beego.BConfig.Listen.AdminPort",
 	"beego.UseFcgi", "beego.BConfig.Listen.EnableFcgi",

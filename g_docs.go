@@ -35,63 +35,6 @@ import (
 	"github.com/astaxie/beego/utils"
 )
 
-var globalDocsTemplate = `package docs
-
-import (
-	"encoding/json"
-	"strings"
-
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/swagger"
-)
-
-const (
-    Rootinfo string = {{.rootinfo}}
-    Subapi string = {{.subapi}}
-    BasePath string= "{{.version}}"
-)
-
-var rootapi swagger.ResourceListing
-var apilist map[string]*swagger.APIDeclaration
-
-func init() {
-	if beego.BConfig.WebConfig.EnableDocs {
-		err := json.Unmarshal([]byte(Rootinfo), &rootapi)
-		if err != nil {
-			beego.Error(err)
-		}
-		err = json.Unmarshal([]byte(Subapi), &apilist)
-		if err != nil {
-			beego.Error(err)
-		}
-		beego.GlobalDocAPI["Root"] = rootapi
-		for k, v := range apilist {
-			for i, a := range v.APIs {
-				a.Path = urlReplace(k + a.Path)
-				v.APIs[i] = a
-			}
-			v.BasePath = BasePath
-			beego.GlobalDocAPI[strings.Trim(k, "/")] = v
-		}
-	}
-}
-
-
-func urlReplace(src string) string {
-	pt := strings.Split(src, "/")
-	for i, p := range pt {
-		if len(p) > 0 {
-			if p[0] == ':' {
-				pt[i] = "{" + p[1:] + "}"
-			} else if p[0] == '?' && p[1] == ':' {
-				pt[i] = "{" + p[2:] + "}"
-			}
-		}
-	}
-	return strings.Join(pt, "/")
-}
-`
-
 const (
 	ajson  = "application/json"
 	axml   = "application/xml"
@@ -99,21 +42,19 @@ const (
 	ahtml  = "text/html"
 )
 
-var pkgCache map[string]bool //pkg:controller:function:comments comments: key:value
+var pkgCache map[string]struct{} //pkg:controller:function:comments comments: key:value
 var controllerComments map[string]string
 var importlist map[string]string
-var apilist map[string]*swagger.APIDeclaration
-var controllerList map[string][]swagger.API
-var modelsList map[string]map[string]swagger.Model
-var rootapi swagger.ResourceListing
+var controllerList map[string]map[string]swagger.Item //controllername Paths items
+var modelsList map[string]map[string]swagger.Schema
+var rootapi swagger.Swagger
 
 func init() {
-	pkgCache = make(map[string]bool)
+	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
 	importlist = make(map[string]string)
-	apilist = make(map[string]*swagger.APIDeclaration)
-	controllerList = make(map[string][]swagger.API)
-	modelsList = make(map[string]map[string]swagger.Model)
+	controllerList = make(map[string]map[string]swagger.Item)
+	modelsList = make(map[string]map[string]swagger.Schema)
 }
 
 func generateDocs(curpath string) {
@@ -126,26 +67,26 @@ func generateDocs(curpath string) {
 		os.Exit(2)
 	}
 
-	rootapi.Info = swagger.Information{}
-	rootapi.SwaggerVersion = swagger.SwaggerVersion
+	rootapi.Infos = swagger.Information{}
+	rootapi.SwaggerVersion = "2.0"
 	//analysis API comments
 	if f.Comments != nil {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
 				if strings.HasPrefix(s, "@APIVersion") {
-					rootapi.APIVersion = strings.TrimSpace(s[len("@APIVersion"):])
+					rootapi.Infos.Version = strings.TrimSpace(s[len("@APIVersion"):])
 				} else if strings.HasPrefix(s, "@Title") {
-					rootapi.Info.Title = strings.TrimSpace(s[len("@Title"):])
+					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Info.Description = strings.TrimSpace(s[len("@Description"):])
+					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Info.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
+					rootapi.Infos.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
-					rootapi.Info.Contact = strings.TrimSpace(s[len("@Contact"):])
+					rootapi.Infos.Contact.EMail = strings.TrimSpace(s[len("@Contact"):])
 				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Info.License = strings.TrimSpace(s[len("@License"):])
+					rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Info.LicenseURL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
 				}
 			}
 		}
@@ -198,23 +139,17 @@ func generateDocs(curpath string) {
 			}
 		}
 	}
-	apiinfo, err := json.Marshal(rootapi)
-	if err != nil {
-		panic(err)
-	}
-	subapi, err := json.Marshal(apilist)
-	if err != nil {
-		panic(err)
-	}
-	os.Mkdir(path.Join(curpath, "docs"), 0755)
-	fd, err := os.Create(path.Join(curpath, "docs", "docs.go"))
+	os.Mkdir(path.Join(curpath, "swagger"), 0755)
+	fd, err := os.Create(path.Join(curpath, "swagger", "swagger.json"))
 	if err != nil {
 		panic(err)
 	}
 	defer fd.Close()
-	a := strings.Replace(globalDocsTemplate, "{{.rootinfo}}", "`"+string(apiinfo)+"`", -1)
-	a = strings.Replace(a, "{{.subapi}}", "`"+string(subapi)+"`", -1)
-	fd.WriteString(a)
+	encode := json.NewEncoder(fd)
+	err = encode.Encode(rootapi)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
@@ -267,14 +202,14 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	if isSystemPackage(pkgpath) {
 		return
 	}
+	if pkgpath == "github.com/astaxie/beego" {
+		return
+	}
 	if localName != "" {
 		importlist[localName] = pkgpath
 	} else {
 		pps := strings.Split(pkgpath, "/")
 		importlist[pps[len(pps)-1]] = pkgpath
-	}
-	if pkgpath == "github.com/astaxie/beego" {
-		return
 	}
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
@@ -293,6 +228,8 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	if pkgRealpath != "" {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
+		} else {
+			pkgCache[pkgpath] = struct{}{}
 		}
 	} else {
 		ColorLog("[ERRO] the %s pkg not exist in gopath\n", pkgpath)
@@ -315,15 +252,17 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 				case *ast.FuncDecl:
 					if specDecl.Recv != nil && len(specDecl.Recv.List) > 0 {
 						if t, ok := specDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
+							// parse controller method
 							parserComments(specDecl.Doc, specDecl.Name.String(), fmt.Sprint(t.X), pkgpath)
 						}
 					}
 				case *ast.GenDecl:
-					if specDecl.Tok.String() == "type" {
+					if specDecl.Tok == token.TYPE {
 						for _, s := range specDecl.Specs {
 							switch tp := s.(*ast.TypeSpec).Type.(type) {
 							case *ast.StructType:
 								_ = tp.Struct
+								//parse controller definition comments
 								controllerComments[pkgpath+s.(*ast.TypeSpec).Name.String()] = specDecl.Doc.Text()
 							}
 						}
@@ -355,7 +294,7 @@ func isSystemPackage(pkgpath string) bool {
 
 // parse the func comments
 func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpath string) error {
-	innerapi := swagger.API{}
+	innerapi := swagger.Item{}
 	opts := swagger.Operation{}
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
