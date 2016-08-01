@@ -320,15 +320,15 @@ func parseEscapeSequence(command byte, param []byte) parseResult {
 	}
 }
 
-func (cw *ansiColorWriter) flushBuffer() (int, error) {
+func (cw *colorWriter) flushBuffer() (int, error) {
 	return cw.flushTo(cw.w)
 }
 
-func (cw *ansiColorWriter) resetBuffer() (int, error) {
+func (cw *colorWriter) resetBuffer() (int, error) {
 	return cw.flushTo(nil)
 }
 
-func (cw *ansiColorWriter) flushTo(w io.Writer) (int, error) {
+func (cw *colorWriter) flushTo(w io.Writer) (int, error) {
 	var n1, n2 int
 	var err error
 
@@ -359,7 +359,7 @@ func isParameterChar(b byte) bool {
 	return ('0' <= b && b <= '9') || b == separatorChar
 }
 
-func (cw *ansiColorWriter) Write(p []byte) (int, error) {
+func (cw *colorWriter) Write(p []byte) (int, error) {
 	r, nw, first, last := 0, 0, 0, 0
 	if cw.mode != DiscardNonColorEscSeq {
 		cw.state = outsideCsiCode
