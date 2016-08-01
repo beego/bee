@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	O_MODEL byte = 1 << iota
-	O_CONTROLLER
-	O_ROUTER
+	OModel byte = 1 << iota
+	OController
+	ORouter
 )
 
 // DbTransformer has method to reverse engineer a database schema to restful api code
@@ -259,11 +259,11 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = OModel
 	case "2":
-		mode = O_MODEL | O_CONTROLLER
+		mode = OModel | OController
 	case "3":
-		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+		mode = OModel | OController | ORouter
 	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
@@ -292,7 +292,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
+func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, apppath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
@@ -304,11 +304,11 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, cu
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
-		mvcPath.ModelPath = path.Join(currpath, "models")
-		mvcPath.ControllerPath = path.Join(currpath, "controllers")
-		mvcPath.RouterPath = path.Join(currpath, "routers")
+		mvcPath.ModelPath = path.Join(apppath, "models")
+		mvcPath.ControllerPath = path.Join(apppath, "controllers")
+		mvcPath.RouterPath = path.Join(apppath, "routers")
 		createPaths(mode, mvcPath)
-		pkgPath := getPackagePath(currpath)
+		pkgPath := getPackagePath(apppath)
 		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
 		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)
@@ -505,10 +505,9 @@ func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 	typeMapping = typeMappingMysql
 	if v, ok := typeMapping[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
@@ -692,22 +691,21 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
 	if v, ok := typeMappingPostgres[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
 // deleteAndRecreatePaths removes several directories completely
 func createPaths(mode byte, paths *MvcPath) {
-	if (mode & O_MODEL) == O_MODEL {
+	if (mode & OModel) == OModel {
 		os.Mkdir(paths.ModelPath, 0777)
 	}
-	if (mode & O_CONTROLLER) == O_CONTROLLER {
+	if (mode & OController) == OController {
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
-	if (mode & O_ROUTER) == O_ROUTER {
+	if (mode & ORouter) == ORouter {
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
@@ -716,15 +714,15 @@ func createPaths(mode byte, paths *MvcPath) {
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
-	if (O_MODEL & mode) == O_MODEL {
+	if (OModel & mode) == OModel {
 		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
-	if (O_CONTROLLER & mode) == O_CONTROLLER {
+	if (OController & mode) == OController {
 		ColorLog("[INFO] Creating controller files...\n")
 		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
 	}
-	if (O_ROUTER & mode) == O_ROUTER {
+	if (ORouter & mode) == ORouter {
 		ColorLog("[INFO] Creating router files...\n")
 		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
 	}
@@ -764,9 +762,9 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		template := ""
 		if tb.Pk == "" {
-			template = STRUCT_MODEL_TPL
+			template = StructModelTPL
 		} else {
-			template = MODEL_TPL
+			template = ModelTPL
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
@@ -825,7 +823,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 				continue
 			}
 		}
-		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
+		fileStr := strings.Replace(CtrlTPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		fileStr = strings.Replace(fileStr, "{{pkgPath}}", pkgPath, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
@@ -851,13 +849,13 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 			continue
 		}
 		// add name spaces
-		nameSpace := strings.Replace(NAMESPACE_TPL, "{{nameSpace}}", tb.Name, -1)
+		nameSpace := strings.Replace(NamespaceTPL, "{{nameSpace}}", tb.Name, -1)
 		nameSpace = strings.Replace(nameSpace, "{{ctrlName}}", camelCase(tb.Name), -1)
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
-	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
+	routerStr := strings.Replace(RouterTPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File
 	var err error
@@ -1001,12 +999,12 @@ func getPackagePath(curpath string) (packpath string) {
 }
 
 const (
-	STRUCT_MODEL_TPL = `package models
+	StructModelTPL = `package models
 {{importTimePkg}}
 {{modelStruct}}
 `
 
-	MODEL_TPL = `package models
+	ModelTPL = `package models
 
 import (
 	"errors"
@@ -1150,7 +1148,7 @@ func Delete{{modelName}}(id int) (err error) {
 	return
 }
 `
-	CTRL_TPL = `package controllers
+	CtrlTPL = `package controllers
 
 import (
 	"{{pkgPath}}/models"
@@ -1316,7 +1314,7 @@ func (c *{{ctrlName}}Controller) Delete() {
 	c.ServeJSON()
 }
 `
-	ROUTER_TPL = `// @APIVersion 1.0.0
+	RouterTPL = `// @APIVersion 1.0.0
 // @Title beego Test API
 // @Description beego has a very cool tools to autogenerate documents for your API
 // @Contact astaxie@gmail.com
@@ -1338,7 +1336,7 @@ func init() {
 	beego.AddNamespace(ns)
 }
 `
-	NAMESPACE_TPL = `
+	NamespaceTPL = `
 		beego.NSNamespace("/{{nameSpace}}",
 			beego.NSInclude(
 				&controllers.{{ctrlName}}Controller{},

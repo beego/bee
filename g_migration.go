@@ -23,15 +23,15 @@ import (
 )
 
 const (
-	M_PATH        = "migrations"
-	M_DATE_FORMAT = "20060102_150405"
+	MPath = "migrations"
+	MDateFormat = "20060102_150405"
 )
 
 // generateMigration generates migration file template for database schema update.
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
 func generateMigration(mname, upsql, downsql, curpath string) {
-	migrationFilePath := path.Join(curpath, "database", M_PATH)
+	migrationFilePath := path.Join(curpath, "database", MPath)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
 		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
@@ -40,18 +40,18 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 		}
 	}
 	// create file
-	today := time.Now().Format(M_DATE_FORMAT)
+	today := time.Now().Format(MDateFormat)
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer f.Close()
-		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
+		content := strings.Replace(MigrationTPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
 		content = strings.Replace(content, "{{DownSQL}}", downsql, -1)
 		f.WriteString(content)
 		// gofmt generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] Migration file generated: %s\n", fpath)
+		fmt.Println("\tcreate\t", fpath)
 	} else {
 		// error creating file
 		ColorLog("[ERRO] Could not create migration file: %s\n", err)
@@ -59,7 +59,7 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 	}
 }
 
-const MIGRATION_TPL = `package main
+const MigrationTPL = `package main
 
 import (
 	"github.com/astaxie/beego/migration"

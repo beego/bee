@@ -62,6 +62,8 @@ func init() {
 
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	crupath, _ := os.Getwd()
 
 	gopath := os.Getenv("GOPATH")
@@ -165,23 +167,23 @@ func migrate(goal, crupath, driver, connStr string) {
 // checkForSchemaUpdateTable checks the existence of migrations table.
 // It checks for the proper table structures and creates the table using MYSQL_MIGRATION_DDL if it does not exist.
 func checkForSchemaUpdateTable(db *sql.DB, driver string) {
-	showTableSql := showMigrationsTableSql(driver)
-	if rows, err := db.Query(showTableSql); err != nil {
+	showTableSQL := showMigrationsTableSQL(driver)
+	if rows, err := db.Query(showTableSQL); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
 		os.Exit(2)
 	} else if !rows.Next() {
 		// no migrations table, create anew
-		createTableSql := createMigrationsTableSql(driver)
+		createTableSQL := createMigrationsTableSQL(driver)
 		ColorLog("[INFO] Creating 'migrations' table...\n")
-		if _, err := db.Query(createTableSql); err != nil {
+		if _, err := db.Query(createTableSQL); err != nil {
 			ColorLog("[ERRO] Could not create migrations table: %s\n", err)
 			os.Exit(2)
 		}
 	}
 
 	// checking that migrations table schema are expected
-	selectTableSql := selectMigrationsTableSql(driver)
-	if rows, err := db.Query(selectTableSql); err != nil {
+	selectTableSQL := selectMigrationsTableSQL(driver)
+	if rows, err := db.Query(selectTableSQL); err != nil {
 		ColorLog("[ERRO] Could not show columns of migrations table: %s\n", err)
 		os.Exit(2)
 	} else {
@@ -217,7 +219,7 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 	}
 }
 
-func showMigrationsTableSql(driver string) string {
+func showMigrationsTableSQL(driver string) string {
 	switch driver {
 	case "mysql":
 		return "SHOW TABLES LIKE 'migrations'"
@@ -228,23 +230,23 @@ func showMigrationsTableSql(driver string) string {
 	}
 }
 
-func createMigrationsTableSql(driver string) string {
+func createMigrationsTableSQL(driver string) string {
 	switch driver {
 	case "mysql":
-		return MYSQL_MIGRATION_DDL
+		return MYSQLMigrationDDL
 	case "postgres":
-		return POSTGRES_MIGRATION_DDL
+		return POSTGRESMigrationDDL
 	default:
-		return MYSQL_MIGRATION_DDL
+		return MYSQLMigrationDDL
 	}
 }
 
-func selectMigrationsTableSql(driver string) string {
+func selectMigrationsTableSQL(driver string) string {
 	switch driver {
 	case "mysql":
 		return "DESC migrations"
 	case "postgres":
-		return "SELECT * FROM migrations ORDER BY id_migration;"
+		return "SELECT * FROM migrations WHERE false ORDER BY id_migration;"
 	default:
 		return "DESC migrations"
 	}
@@ -288,7 +290,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
 	} else {
-		content := strings.Replace(MIGRATION_MAIN_TPL, "{{DBDriver}}", driver, -1)
+		content := strings.Replace(MigrationMainTPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
 		content = strings.Replace(content, "{{LatestTime}}", strconv.FormatInt(latestTime, 10), -1)
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
@@ -367,7 +369,7 @@ func formatShellOutput(o string) {
 }
 
 const (
-	MIGRATION_MAIN_TPL = `package main
+	MigrationMainTPL = `package main
 
 import(
 	"os"
@@ -406,7 +408,7 @@ func main(){
 }
 
 `
-	MYSQL_MIGRATION_DDL = `
+	MYSQLMigrationDDL = `
 CREATE TABLE migrations (
 	id_migration int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'surrogate key',
 	name varchar(255) DEFAULT NULL COMMENT 'migration name, unique',
@@ -418,7 +420,7 @@ CREATE TABLE migrations (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 `
 
-	POSTGRES_MIGRATION_DDL = `
+	POSTGRESMigrationDDL = `
 CREATE TYPE migrations_status AS ENUM('update', 'rollback');
 
 CREATE TABLE migrations (

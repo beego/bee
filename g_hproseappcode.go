@@ -31,11 +31,11 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = OModel
 	case "2":
-		mode = O_MODEL | O_CONTROLLER
+		mode = OModel | OController
 	case "3":
-		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+		mode = OModel | OController | ORouter
 	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
@@ -90,7 +90,7 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
 func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
-	if (O_MODEL & mode) == O_MODEL {
+	if (OModel & mode) == OModel {
 		ColorLog("[INFO] Creating model files...\n")
 		writeHproseModelFiles(tables, paths.ModelPath, selectedTables)
 	}
@@ -130,10 +130,10 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		}
 		template := ""
 		if tb.Pk == "" {
-			template = HPROSE_STRUCT_MODEL_TPL
+			template = HproseStructModelTPL
 		} else {
-			template = HPROSE_MODEL_TPL
-			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb.Name), -1))
+			template = HproseModelTPL
+			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HproseAddFunction, "{{modelName}}", camelCase(tb.Name), -1))
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
@@ -157,7 +157,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 }
 
 const (
-	HPROSE_ADDFUNCTION = `
+	HproseAddFunction = `
 	// publish about {{modelName}} function
 	service.AddFunction("Add{{modelName}}", models.Add{{modelName}})
 	service.AddFunction("Get{{modelName}}ById", models.Get{{modelName}}ById)
@@ -166,12 +166,12 @@ const (
 	service.AddFunction("Delete{{modelName}}", models.Delete{{modelName}})
 
 `
-	HPROSE_STRUCT_MODEL_TPL = `package models
+	HproseStructModelTPL = `package models
 {{importTimePkg}}
 {{modelStruct}}
 `
 
-	HPROSE_MODEL_TPL = `package models
+	HproseModelTPL = `package models
 
 import (
 	"errors"
