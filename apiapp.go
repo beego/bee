@@ -647,19 +647,22 @@ func createapi(cmd *Command, args []string) int {
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		err = fmt.Errorf("you should set GOPATH in the env")
-		return
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
+		os.Exit(2)
 	}
+	// In case of multiple paths in the GOPATH, by default
+	// we use the first path
+	gopath := gps[0]
+	Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src")
 	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
-		err = fmt.Errorf("Cannot create application without removing `%s` first.", apppath)
-		ColorLog("[ERRO] Path `%s` already exists\n", apppath)
+		err = fmt.Errorf("Cannot create application without removing '%s' first.", apppath)
+		ColorLog("[ERRO] Path '%s' already exists\n", apppath)
 		return
 	}
 	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")

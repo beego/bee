@@ -64,15 +64,16 @@ func init() {
 func runMigration(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 
-	crupath, _ := os.Getwd()
+	currpath, _ := os.Getwd()
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	gopath := gps[0]
+	Debugf("GOPATH: %s", gopath)
+
 	// load config
 	err := loadConfig()
 	if err != nil {
@@ -100,19 +101,19 @@ func runMigration(cmd *Command, args []string) int {
 	if len(args) == 0 {
 		// run all outstanding migrations
 		ColorLog("[INFO] Running all outstanding migrations\n")
-		migrateUpdate(crupath, driverStr, connStr)
+		migrateUpdate(currpath, driverStr, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			ColorLog("[INFO] Rolling back the last migration operation\n")
-			migrateRollback(crupath, driverStr, connStr)
+			migrateRollback(currpath, driverStr, connStr)
 		case "reset":
 			ColorLog("[INFO] Reseting all migrations\n")
-			migrateReset(crupath, driverStr, connStr)
+			migrateReset(currpath, driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateRefresh(crupath, driverStr, connStr)
+			migrateRefresh(currpath, driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
@@ -123,28 +124,28 @@ func runMigration(cmd *Command, args []string) int {
 }
 
 // migrateUpdate does the schema update
-func migrateUpdate(crupath, driver, connStr string) {
-	migrate("upgrade", crupath, driver, connStr)
+func migrateUpdate(currpath, driver, connStr string) {
+	migrate("upgrade", currpath, driver, connStr)
 }
 
 // migrateRollback rolls back the latest migration
-func migrateRollback(crupath, driver, connStr string) {
-	migrate("rollback", crupath, driver, connStr)
+func migrateRollback(currpath, driver, connStr string) {
+	migrate("rollback", currpath, driver, connStr)
 }
 
 // migrateReset rolls back all migrations
-func migrateReset(crupath, driver, connStr string) {
-	migrate("reset", crupath, driver, connStr)
+func migrateReset(currpath, driver, connStr string) {
+	migrate("reset", currpath, driver, connStr)
 }
 
 // migrationRefresh rolls back all migrations and start over again
-func migrateRefresh(crupath, driver, connStr string) {
-	migrate("refresh", crupath, driver, connStr)
+func migrateRefresh(currpath, driver, connStr string) {
+	migrate("refresh", currpath, driver, connStr)
 }
 
 // migrate generates source code, build it, and invoke the binary who does the actual migration
-func migrate(goal, crupath, driver, connStr string) {
-	dir := path.Join(crupath, "database", "migrations")
+func migrate(goal, currpath, driver, connStr string) {
+	dir := path.Join(currpath, "database", "migrations")
 	binary := "m"
 	source := binary + ".go"
 	// connect to database

@@ -79,19 +79,19 @@ func init() {
 func generateCode(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 
-	curpath, _ := os.Getwd()
+	currpath, _ := os.Getwd()
 	if len(args) < 1 {
 		ColorLog("[ERRO] command is missing\n")
 		os.Exit(2)
 	}
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	gopath := gps[0]
+	Debugf("GOPATH: %s", gopath)
 
 	gcmd := args[0]
 	switch gcmd {
@@ -124,9 +124,9 @@ func generateCode(cmd *Command, args []string) int {
 			os.Exit(2)
 		}
 		sname := args[1]
-		generateScaffold(sname, fields.String(), curpath, driver.String(), conn.String())
+		generateScaffold(sname, fields.String(), currpath, driver.String(), conn.String())
 	case "docs":
-		generateDocs(curpath)
+		generateDocs(currpath)
 	case "appcode":
 		// load config
 		err := loadConfig()
@@ -157,7 +157,7 @@ func generateCode(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
 		ColorLog("[INFO] Using '%s' as 'level'\n", level)
-		generateAppcode(driver.String(), conn.String(), level.String(), tables.String(), curpath)
+		generateAppcode(driver.String(), conn.String(), level.String(), tables.String(), currpath)
 	case "migration":
 		if len(args) < 2 {
 			ColorLog("[ERRO] Wrong number of arguments\n")
@@ -176,11 +176,11 @@ func generateCode(cmd *Command, args []string) int {
 				downsql = strings.Replace(downsql, "`", "", -1)
 			}
 		}
-		generateMigration(mname, upsql, downsql, curpath)
+		generateMigration(mname, upsql, downsql, currpath)
 	case "controller":
 		if len(args) == 2 {
 			cname := args[1]
-			generateController(cname, curpath)
+			generateController(cname, currpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate controller [controllername]\n")
@@ -199,18 +199,18 @@ func generateCode(cmd *Command, args []string) int {
 			os.Exit(2)
 		}
 		sname := args[1]
-		generateModel(sname, fields.String(), curpath)
+		generateModel(sname, fields.String(), currpath)
 	case "view":
 		if len(args) == 2 {
 			cname := args[1]
-			generateView(cname, curpath)
+			generateView(cname, currpath)
 		} else {
 			ColorLog("[ERRO] Wrong number of arguments\n")
 			ColorLog("[HINT] Usage: bee generate view [viewpath]\n")
 			os.Exit(2)
 		}
 	default:
-		ColorLog("[ERRO] command is missing\n")
+		ColorLog("[ERRO] Command is missing\n")
 	}
 	ColorLog("[SUCC] %s successfully generated!\n", strings.Title(gcmd))
 	return 0

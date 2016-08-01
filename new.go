@@ -64,13 +64,15 @@ func createApp(cmd *Command, args []string) int {
 		os.Exit(2)
 	}
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment variables\n")
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	// In case of multiple paths in the GOPATH, by default
+	// we use the first path
+	gopath := gps[0]
+	Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src") // User's workspace
 	apppath := path.Join(gosrcpath, args[0])
