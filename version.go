@@ -2,54 +2,47 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	path "path/filepath"
 	"regexp"
-	"bytes"
 )
 
 var cmdVersion = &Command{
 	UsageLine: "version",
-	Short:     "show the Bee, Beego and Go version",
+	Short:     "prints the current Bee version",
 	Long: `
-show the Bee, Beego and Go version
-
-bee version
-    bee   :1.2.3
-    beego :1.4.2
-    Go    :go version go1.3.3 linux/amd64
+Prints the current Bee, Beego and Go version alongside the platform information
 
 `,
 }
 
-const verboseVersionBanner =
-`______
+const verboseVersionBanner string = `%s%s______
 | ___ \
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v{{ .BeeVersion }}
-
-Beego     : {{ .BeegoVersion }}
-GoVersion : {{ .GoVersion }}
-GOOS      : {{ .GOOS }}
-GOARCH    : {{ .GOARCH }}
-NumCPU    : {{ .NumCPU }}
-GOPATH    : {{ .GOPATH }}
-GOROOT    : {{ .GOROOT }}
-Compiler  : {{ .Compiler }}
-Date      : {{ Now "Monday, 2 Jan 2006" }}
+\____/  \___| \___| v{{ .BeeVersion }}%s
+%s%s
+├── Beego     : {{ .BeegoVersion }}
+├── GoVersion : {{ .GoVersion }}
+├── GOOS      : {{ .GOOS }}
+├── GOARCH    : {{ .GOARCH }}
+├── NumCPU    : {{ .NumCPU }}
+├── GOPATH    : {{ .GOPATH }}
+├── GOROOT    : {{ .GOROOT }}
+├── Compiler  : {{ .Compiler }}
+└── Date      : {{ Now "Monday, 2 Jan 2006" }}%s
 `
 
-const shortVersionBanner =
-`______
+const shortVersionBanner = `%s%s______
 | ___ \
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v{{ .BeeVersion }}
+\____/  \___| \___| v{{ .BeeVersion }}%s
 `
 
 func init() {
@@ -61,12 +54,19 @@ func versionCmd(cmd *Command, args []string) int {
 	return 0
 }
 
+// ShowVerboseVersionBanner prints the verbose version banner
 func ShowVerboseVersionBanner() {
-	InitBanner(os.Stdout, bytes.NewBufferString(verboseVersionBanner))
+	w := NewColorWriter(os.Stdout)
+	coloredBanner := fmt.Sprintf(verboseVersionBanner, "\x1b[35m", "\x1b[1m", "\x1b[0m",
+		"\x1b[32m", "\x1b[1m", "\x1b[0m")
+	InitBanner(w, bytes.NewBufferString(coloredBanner))
 }
 
+// ShowShortVersionBanner prints the short version banner
 func ShowShortVersionBanner() {
-	InitBanner(os.Stdout, bytes.NewBufferString(shortVersionBanner))
+	w := NewColorWriter(os.Stdout)
+	coloredBanner := fmt.Sprintf(shortVersionBanner, "\x1b[35m", "\x1b[1m", "\x1b[0m")
+	InitBanner(w, bytes.NewBufferString(coloredBanner))
 }
 
 func getBeegoVersion() string {
