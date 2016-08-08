@@ -213,6 +213,9 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 				if item.Options != nil {
 					item.Options.Tags = []string{tag}
 				}
+				if len(rootapi.Paths) == 0 {
+					rootapi.Paths = make(map[string]*swagger.Item)
+				}
 				rootapi.Paths[rt] = item
 			}
 		}
@@ -320,7 +323,9 @@ func isSystemPackage(pkgpath string) bool {
 func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpath string) error {
 	var routerPath string
 	var HTTPMethod string
-	opts := swagger.Operation{}
+	opts := swagger.Operation{
+		Responses: make(map[string]swagger.Response),
+	}
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
