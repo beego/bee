@@ -80,7 +80,7 @@ func generateDocs(curpath string) {
 				} else if strings.HasPrefix(s, "@Description") {
 					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
-					rootapi.Infos.TermsOfServiceURL = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
+					rootapi.Infos.TermsOfService = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
 					rootapi.Infos.Contact.EMail = strings.TrimSpace(s[len("@Contact"):])
 				} else if strings.HasPrefix(s, "@License") {
@@ -154,8 +154,11 @@ func generateDocs(curpath string) {
 		panic(err)
 	}
 	defer fd.Close()
-	encode := json.NewEncoder(fd)
-	err = encode.Encode(rootapi)
+	dt, err := json.MarshalIndent(rootapi, "", "    ")
+	if err != nil {
+		panic(err)
+	}
+	_, err = fd.Write(dt)
 	if err != nil {
 		panic(err)
 	}
@@ -187,7 +190,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 			for rt, item := range apis {
 				tag := ""
 				if baseurl != "" {
-					rt = "/" + baseurl + rt
+					rt = baseurl + rt
 					tag = baseurl
 				} else {
 					tag = cname
@@ -388,7 +391,9 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					cmpath, m, mod, realTypes := getModel(st[2])
 					//ll := strings.Split(st[2], ".")
 					//opts.Type = ll[len(ll)-1]
-					rs.Ref = "#/definitions/" + m
+					rs.Schema = &swagger.Schema{
+						Ref: "#/definitions/" + m,
+					}
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
 						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 					}
@@ -405,13 +410,22 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				para.Name = p[0]
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
-				//@TODO models.Objects need to ref
-				para.Type = pp[len(pp)-1]
+				typ := pp[len(pp)-1]
+				if len(pp) >= 2 {
+					para.Schema = &swagger.Schema{
+						Ref: "#/definitions/" + typ,
+					}
+				} else {
+					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
+						typ == "array" || typ == "file" {
+						para.Type = typ
+					}
+				}
 				if len(p) > 4 {
 					para.Required, _ = strconv.ParseBool(p[3])
-					para.Description = p[4]
+					para.Description = strings.Trim(p[4], `" `)
 				} else {
-					para.Description = p[3]
+					para.Description = strings.Trim(p[3], `" `)
 				}
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
@@ -478,7 +492,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			item.Patch = &opts
 		case "DELETE":
 			item.Delete = &opts
-		case "Head":
+		case "HEAD":
 			item.Head = &opts
 		case "OPTIONS":
 			item.Options = &opts
@@ -535,7 +549,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 		ColorLog("[ERRO] the model %s parser.ParseDir error\n", str)
 		os.Exit(1)
 	}
-
+	m.Type = "object"
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for k, d := range fl.Scope.Objects {
@@ -625,7 +639,6 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 							}
 						}
 					}
-					return
 				}
 			}
 		}
@@ -633,6 +646,9 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 	if m.Title == "" {
 		ColorLog("can't find the object: %v", str)
 		os.Exit(1)
+	}
+	if len(rootapi.Definitions) == 0 {
+		rootapi.Definitions = make(map[string]swagger.Schema)
 	}
 	rootapi.Definitions[objectname] = m
 	return
@@ -668,14 +684,15 @@ func isBasicType(Type string) bool {
 }
 
 // refer to builtin.go
-var basicTypes = []string{
-	"bool",
-	"uint", "uint8", "uint16", "uint32", "uint64",
-	"int", "int8", "int16", "int32", "int64",
-	"float32", "float64",
-	"string",
-	"complex64", "complex128",
-	"byte", "rune", "uintptr",
+var basicTypes = map[string]string{
+	"bool": "boolean:",
+	"uint": "integer:int32", "uint8": "integer:int32", "uint16": "integer:int32", "uint32": "integer:int32", "uint64": "integer:int64",
+	"int": "integer:int64", "int8": "integer:int32", "int16:int32": "integer:int32", "int32": "integer:int32", "int64": "integer:int64",
+	"uintptr": "integer:int64",
+	"float32": "number:float", "float64": "number:double",
+	"string":    "string:",
+	"complex64": "number:float", "complex128": "number:double",
+	"byte": "string:byte", "rune": "string:byte",
 }
 
 // regexp get json tag
