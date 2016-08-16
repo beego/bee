@@ -298,7 +298,7 @@ type ObjectController struct {
 	beego.Controller
 }
 
-// @Title create
+// @Title Create
 // @Description create object
 // @Param	body		body 	models.Object	true		"The object content"
 // @Success 200 {string} models.Object.Id
@@ -342,7 +342,7 @@ func (o *ObjectController) GetAll() {
 	o.ServeJSON()
 }
 
-// @Title update
+// @Title Update
 // @Description update the object
 // @Param	objectId		path 	string	true		"The objectid you want to update"
 // @Param	body		body 	models.Object	true		"The body"
@@ -363,7 +363,7 @@ func (o *ObjectController) Put() {
 	o.ServeJSON()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the object
 // @Param	objectId		path 	string	true		"The objectId you want to delete"
 // @Success 200 {string} delete success!
@@ -391,7 +391,7 @@ type UserController struct {
 	beego.Controller
 }
 
-// @Title createUser
+// @Title CreateUser
 // @Description create users
 // @Param	body		body 	models.User	true		"body for user content"
 // @Success 200 {int} models.User.Id
@@ -405,7 +405,7 @@ func (u *UserController) Post() {
 	u.ServeJSON()
 }
 
-// @Title Get
+// @Title GetAll
 // @Description get all Users
 // @Success 200 {object} models.User
 // @router / [get]
@@ -434,7 +434,7 @@ func (u *UserController) Get() {
 	u.ServeJSON()
 }
 
-// @Title update
+// @Title Update
 // @Description update the user
 // @Param	uid		path 	string	true		"The uid you want to update"
 // @Param	body		body 	models.User	true		"body for user content"
@@ -456,7 +456,7 @@ func (u *UserController) Put() {
 	u.ServeJSON()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the user
 // @Param	uid		path 	string	true		"The uid you want to delete"
 // @Success 200 {string} delete success!
@@ -469,7 +469,7 @@ func (u *UserController) Delete() {
 	u.ServeJSON()
 }
 
-// @Title login
+// @Title Login
 // @Description Logs user into the system
 // @Param	username		query 	string	true		"The username for login"
 // @Param	password		query 	string	true		"The password for login"

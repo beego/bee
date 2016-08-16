@@ -123,7 +123,7 @@ func generateDocs(curpath string) {
 													controllerName = analisysNSInclude(s, pp)
 													if v, ok := controllerComments[controllerName]; ok {
 														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
-															Name:        s,
+															Name:        strings.Trim(s, "/"),
 															Description: v,
 														})
 													}
@@ -191,7 +191,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 				tag := ""
 				if baseurl != "" {
 					rt = baseurl + rt
-					tag = baseurl
+					tag = strings.Trim(baseurl, "/")
 				} else {
 					tag = cname
 				}
@@ -338,7 +338,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				if len(e1) < 1 {
 					return errors.New("you should has router infomation")
 				}
-				routerPath = e1[0]
+				routerPath = urlReplace(e1[0])
 				if len(e1) == 2 && e1[1] != "" {
 					e1 = strings.SplitN(e1[1], " ", 2)
 					HTTPMethod = strings.ToUpper(strings.Trim(e1[0], "[]"))
@@ -570,7 +570,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 					if st.Fields.List != nil {
 						m.Properties = make(map[string]swagger.Propertie)
 						for _, field := range st.Fields.List {
-							isSlice, realType := typeAnalyser(field)
+							isSlice, realType, sType := typeAnalyser(field)
 							realTypes = append(realTypes, realType)
 							mp := swagger.Propertie{}
 							// add type slice
@@ -578,8 +578,10 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 								mp.Type = "array"
 								mp.Properties = make(map[string]swagger.Propertie)
 								if isBasicType(realType) {
+									typeFormat := strings.Split(sType, ":")
 									mp.Properties["items"] = swagger.Propertie{
-										Type: realType,
+										Type:   typeFormat[0],
+										Format: typeFormat[1],
 									}
 								} else {
 									mp.Properties["items"] = swagger.Propertie{
@@ -587,7 +589,13 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 									}
 								}
 							} else {
-								mp.Type = realType
+								if isBasicType(realType) {
+									typeFormat := strings.Split(sType, ":")
+									mp.Type = typeFormat[0]
+									mp.Format = typeFormat[1]
+								} else if sType == "object" {
+									mp.Ref = "#/definitions/" + realType
+								}
 							}
 
 							// dont add property if anonymous field
@@ -644,7 +652,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 		}
 	}
 	if m.Title == "" {
-		ColorLog("can't find the object: %v", str)
+		ColorLog("can't find the object: %s", str)
 		os.Exit(1)
 	}
 	if len(rootapi.Definitions) == 0 {
@@ -654,31 +662,34 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 	return
 }
 
-func typeAnalyser(f *ast.Field) (isSlice bool, realType string) {
+func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt)
+			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
-			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value)
+			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
-			return true, fmt.Sprint(star.X)
+			return true, fmt.Sprint(star.X), "object"
 		}
-		return true, fmt.Sprint(arr.Elt)
+		return true, fmt.Sprint(arr.Elt), "object"
 	}
 	switch t := f.Type.(type) {
 	case *ast.StarExpr:
-		return false, fmt.Sprint(t.X)
+		return false, fmt.Sprint(t.X), "object"
+	case *ast.MapType:
+		return false, fmt.Sprint(t.Value), "object"
 	}
-	return false, fmt.Sprint(f.Type)
+	if k, ok := basicTypes[fmt.Sprint(f.Type)]; ok {
+		return false, fmt.Sprint(f.Type), k
+	}
+	return false, fmt.Sprint(f.Type), "object"
 }
 
 func isBasicType(Type string) bool {
-	for _, v := range basicTypes {
-		if v == Type {
-			return true
-		}
+	if _, ok := basicTypes[Type]; ok {
+		return true
 	}
 	return false
 }
@@ -725,4 +736,18 @@ func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
 			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
 		}
 	}
+}
+
+func urlReplace(src string) string {
+	pt := strings.Split(src, "/")
+	for i, p := range pt {
+		if len(p) > 0 {
+			if p[0] == ':' {
+				pt[i] = "{" + p[1:] + "}"
+			} else if p[0] == '?' && p[1] == ':' {
+				pt[i] = "{" + p[2:] + "}"
+			}
+		}
+	}
+	return strings.Join(pt, "/")
 }

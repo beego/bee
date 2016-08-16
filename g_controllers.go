@@ -95,7 +95,7 @@ func (c *{{controllerName}}Controller) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
-// @Title Post
+// @Title Create
 // @Description create {{controllerName}}
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
 // @Success 201 {object} models.{{controllerName}}
@@ -105,7 +105,7 @@ func (c *{{controllerName}}Controller) Post() {
 
 }
 
-// @Title Get
+// @Title GetOne
 // @Description get {{controllerName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{controllerName}}
@@ -115,7 +115,7 @@ func (c *{{controllerName}}Controller) GetOne() {
 
 }
 
-// @Title Get All
+// @Title GetAll
 // @Description get {{controllerName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
 // @Param	fields	query	string	false	"Fields returned. e.g. col1,col2 ..."
