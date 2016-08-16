@@ -120,7 +120,14 @@ func runApp(cmd *Command, args []string) int {
 			files = append(files, arg)
 		}
 	}
-
+	if downdoc == "true" {
+		if _, err := os.Stat(path.Join(currpath, "swagger", "index.html")); err != nil {
+			if os.IsNotExist(err) {
+				downloadFromURL(swaggerlink, "swagger.zip")
+				unzipAndDelete("swagger.zip")
+			}
+		}
+	}
 	if gendoc == "true" {
 		NewWatcher(paths, files, true)
 		Autobuild(files, true)
@@ -128,14 +135,7 @@ func runApp(cmd *Command, args []string) int {
 		NewWatcher(paths, files, false)
 		Autobuild(files, false)
 	}
-	if downdoc == "true" {
-		if _, err := os.Stat(path.Join(currpath, "swagger")); err != nil {
-			if os.IsNotExist(err) {
-				downloadFromURL(swaggerlink, "swagger.zip")
-				unzipAndDelete("swagger.zip", "swagger")
-			}
-		}
-	}
+
 	for {
 		select {
 		case <-exit:
@@ -153,6 +153,9 @@ func readAppDirectories(directory string, paths *[]string) {
 	useDirectory := false
 	for _, fileInfo := range fileInfos {
 		if strings.HasSuffix(fileInfo.Name(), "docs") {
+			continue
+		}
+		if strings.HasSuffix(fileInfo.Name(), "swagger") {
 			continue
 		}
 

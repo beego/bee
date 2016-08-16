@@ -20,7 +20,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"path/filepath"
 )
 
 var cmdRundocs = &Command{
@@ -33,8 +32,9 @@ var cmdRundocs = &Command{
 `,
 }
 
-const (
-	swaggerlink = "https://github.com/beego/swagger/archive/v1.zip"
+var (
+	swaggerVersion = "2"
+	swaggerlink    = "https://github.com/beego/swagger/archive/v" + swaggerVersion + ".zip"
 )
 
 type docValue string
@@ -60,7 +60,7 @@ func init() {
 func runDocs(cmd *Command, args []string) int {
 	if isDownload == "true" {
 		downloadFromURL(swaggerlink, "swagger.zip")
-		err := unzipAndDelete("swagger.zip", "swagger")
+		err := unzipAndDelete("swagger.zip")
 		if err != nil {
 			fmt.Println("has err exet unzipAndDelete", err)
 		}
@@ -78,33 +78,42 @@ func runDocs(cmd *Command, args []string) int {
 }
 
 func downloadFromURL(url, fileName string) {
-	fmt.Println("Downloading", url, "to", fileName)
-
-	output, err := os.Create(fileName)
-	if err != nil {
-		fmt.Println("Error while creating", fileName, "-", err)
+	var down bool
+	if fd, err := os.Stat(fileName); err != nil && os.IsNotExist(err) {
+		down = true
+	} else if fd.Size() == int64(0) {
+		down = true
+	} else {
+		ColorLog("[%s] Filename %s already exist\n", INFO, fileName)
 		return
 	}
-	defer output.Close()
+	if down {
+		ColorLog("[%s]Downloading %s to %s\n", SUCC, url, fileName)
+		output, err := os.Create(fileName)
+		if err != nil {
+			ColorLog("[%s]Error while creating %s: %s\n", ERRO, fileName, err)
+			return
+		}
+		defer output.Close()
 
-	response, err := http.Get(url)
-	if err != nil {
-		fmt.Println("Error while downloading", url, "-", err)
-		return
+		response, err := http.Get(url)
+		if err != nil {
+			ColorLog("[%s]Error while downloading %s:%s\n", ERRO, url, err)
+			return
+		}
+		defer response.Body.Close()
+
+		n, err := io.Copy(output, response.Body)
+		if err != nil {
+			ColorLog("[%s]Error while downloading %s:%s\n", ERRO, url, err)
+			return
+		}
+		ColorLog("[%s] %d bytes downloaded.\n", SUCC, n)
 	}
-	defer response.Body.Close()
-
-	n, err := io.Copy(output, response.Body)
-	if err != nil {
-		fmt.Println("Error while downloading", url, "-", err)
-		return
-	}
-
-	fmt.Println(n, "bytes downloaded.")
 }
 
-func unzipAndDelete(src, dest string) error {
-	fmt.Println("start to unzip file from " + src + " to " + dest)
+func unzipAndDelete(src string) error {
+	ColorLog("[%s]start to unzip file from %s\n", INFO, src)
 	r, err := zip.OpenReader(src)
 	if err != nil {
 		return err
@@ -118,12 +127,11 @@ func unzipAndDelete(src, dest string) error {
 		}
 		defer rc.Close()
 
-		path := filepath.Join(dest, f.Name)
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(path, f.Mode())
+			os.MkdirAll(f.Name, f.Mode())
 		} else {
 			f, err := os.OpenFile(
-				path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				f.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				return err
 			}
@@ -135,11 +143,11 @@ func unzipAndDelete(src, dest string) error {
 			}
 		}
 	}
-
-	fmt.Println("Start delete src file " + src)
-	err = os.RemoveAll(src)
+	os.RemoveAll("swagger")
+	err = os.Rename("swagger-"+swaggerVersion, "swagger")
 	if err != nil {
-		return err
+		ColorLog("[%s]Rename swagger-%s to swagger:%s\n", ERRO, swaggerVersion, err)
 	}
-	return nil
+	ColorLog("[%s]Start delete src file %s\n", INFO, src)
+	return os.RemoveAll(src)
 }
