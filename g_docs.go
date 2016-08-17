@@ -413,9 +413,15 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
+					cmpath, m, mod, realTypes := getModel(typ)
 					para.Schema = &swagger.Schema{
-						Ref: "#/definitions/" + typ,
+						Ref: "#/definitions/" + m,
 					}
+					if _, ok := modelsList[pkgpath+controllerName]; !ok {
+						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
+					}
+					modelsList[pkgpath+controllerName][typ] = mod
+					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				} else {
 					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
 						typ == "array" || typ == "file" {
