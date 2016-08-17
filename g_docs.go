@@ -219,6 +219,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 				if len(rootapi.Paths) == 0 {
 					rootapi.Paths = make(map[string]*swagger.Item)
 				}
+				rt = urlReplace(rt)
 				rootapi.Paths[rt] = item
 			}
 		}
@@ -338,7 +339,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				if len(e1) < 1 {
 					return errors.New("you should has router infomation")
 				}
-				routerPath = urlReplace(e1[0])
+				routerPath = e1[0]
 				if len(e1) == 2 && e1[1] != "" {
 					e1 = strings.SplitN(e1[1], " ", 2)
 					HTTPMethod = strings.ToUpper(strings.Trim(e1[0], "[]"))
