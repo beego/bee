@@ -108,8 +108,13 @@ func generateDocs(curpath string) {
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
 							// analisys NewNamespace, it will return version and the subfunction
+							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
+								continue
+							}
 							version, params := analisysNewNamespace(v)
-							rootapi.BasePath = version
+							if rootapi.BasePath == "" && version != "" {
+								rootapi.BasePath = version
+							}
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
