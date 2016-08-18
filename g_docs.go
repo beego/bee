@@ -603,17 +603,17 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 							// add type slice
 							if isSlice {
 								mp.Type = "array"
-								mp.Properties = make(map[string]swagger.Propertie)
 								if isBasicType(realType) {
 									typeFormat := strings.Split(sType, ":")
-									mp.Properties["items"] = swagger.Propertie{
+									mp.Items = []swagger.Propertie{{
 										Type:   typeFormat[0],
 										Format: typeFormat[1],
-									}
+									}}
+
 								} else {
-									mp.Properties["items"] = swagger.Propertie{
+									mp.Items = []swagger.Propertie{{
 										Ref: "#/definitions/" + realType,
-									}
+									}}
 								}
 							} else {
 								if isBasicType(realType) {
