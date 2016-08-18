@@ -255,7 +255,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 	// query: k:v,k:v
 	if v := c.GetString("query"); v != "" {
 		for _, cond := range strings.Split(v, ",") {
-			kv := strings.Split(cond, ":")
+			kv := strings.SplitN(cond, ":",2)
 			if len(kv) != 2 {
 				c.Data["json"] = errors.New("Error: invalid query key/value pair")
 				c.ServeJSON()
