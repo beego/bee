@@ -426,6 +426,12 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
 						typ == "array" || typ == "file" {
 						para.Type = typ
+					} else if sType, ok := basicTypes[typ]; ok {
+						typeFormat := strings.Split(sType, ":")
+						para.Type = typeFormat[0]
+						para.Format = typeFormat[1]
+					} else {
+						fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
 					}
 				}
 				if len(p) > 4 {
