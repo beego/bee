@@ -605,15 +605,15 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 								mp.Type = "array"
 								if isBasicType(realType) {
 									typeFormat := strings.Split(sType, ":")
-									mp.Items = []swagger.Propertie{{
+									mp.Items = &swagger.Propertie{
 										Type:   typeFormat[0],
 										Format: typeFormat[1],
-									}}
+									}
 
 								} else {
-									mp.Items = []swagger.Propertie{{
+									mp.Items = &swagger.Propertie{
 										Ref: "#/definitions/" + realType,
-									}}
+									}
 								}
 							} else {
 								if isBasicType(realType) {
