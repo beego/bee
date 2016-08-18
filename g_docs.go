@@ -430,7 +430,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						typeFormat := strings.Split(sType, ":")
 						para.Type = typeFormat[0]
 						para.Format = typeFormat[1]
-					}else {
+					} else {
 						fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
 					}
 				}
