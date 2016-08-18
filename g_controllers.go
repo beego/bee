@@ -15,53 +15,62 @@
 package main
 
 import (
+	"fmt"
 	"os"
 	"path"
 	"strings"
-	"fmt"
 )
 
 // article
 // cms/article
 //
-func generateController(cname, crupath string) {
+func generateController(cname, currpath string) {
+	w := NewColorWriter(os.Stdout)
+
 	p, f := path.Split(cname)
 	controllerName := strings.Title(f)
 	packageName := "controllers"
+
 	if p != "" {
 		i := strings.LastIndex(p[:len(p)-1], "/")
 		packageName = p[i+1 : len(p)-1]
 	}
+
 	ColorLog("[INFO] Using '%s' as controller name\n", controllerName)
 	ColorLog("[INFO] Using '%s' as package name\n", packageName)
-	fp := path.Join(crupath, "controllers", p)
+
+	fp := path.Join(currpath, "controllers", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
-		// create controller directory
+		// Create the controller's directory
 		if err := os.MkdirAll(fp, 0777); err != nil {
 			ColorLog("[ERRO] Could not create controllers directory: %s\n", err)
 			os.Exit(2)
 		}
 	}
+
 	fpath := path.Join(fp, strings.ToLower(controllerName)+".go")
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
-		defer f.Close()
-		modelPath := path.Join(crupath, "models", strings.ToLower(controllerName)+".go")
+		defer CloseFile(f)
+
+		modelPath := path.Join(currpath, "models", strings.ToLower(controllerName)+".go")
+
 		var content string
 		if _, err := os.Stat(modelPath); err == nil {
 			ColorLog("[INFO] Using matching model '%s'\n", controllerName)
 			content = strings.Replace(controllerModelTpl, "{{packageName}}", packageName, -1)
-			pkgPath := getPackagePath(crupath)
+			pkgPath := getPackagePath(currpath)
 			content = strings.Replace(content, "{{pkgPath}}", pkgPath, -1)
 		} else {
 			content = strings.Replace(controllerTpl, "{{packageName}}", packageName, -1)
 		}
+
 		content = strings.Replace(content, "{{controllerName}}", controllerName, -1)
 		f.WriteString(content)
-		// gofmt generated source code
+
+		// Run 'gofmt' on the generated source code
 		formatSourceCode(fpath)
-		fmt.Println("\tcreate\t", fpath)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		// error creating file
 		ColorLog("[ERRO] Could not create controller file: %s\n", err)
 		os.Exit(2)
 	}
@@ -86,7 +95,7 @@ func (c *{{controllerName}}Controller) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
-// @Title Post
+// @Title Create
 // @Description create {{controllerName}}
 // @Param	body		body 	models.{{controllerName}}	true		"body for {{controllerName}} content"
 // @Success 201 {object} models.{{controllerName}}
@@ -96,7 +105,7 @@ func (c *{{controllerName}}Controller) Post() {
 
 }
 
-// @Title Get
+// @Title GetOne
 // @Description get {{controllerName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{controllerName}}
@@ -106,7 +115,7 @@ func (c *{{controllerName}}Controller) GetOne() {
 
 }
 
-// @Title Get All
+// @Title GetAll
 // @Description get {{controllerName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
 // @Param	fields	query	string	false	"Fields returned. e.g. col1,col2 ..."
@@ -246,7 +255,7 @@ func (c *{{controllerName}}Controller) GetAll() {
 	// query: k:v,k:v
 	if v := c.GetString("query"); v != "" {
 		for _, cond := range strings.Split(v, ",") {
-			kv := strings.Split(cond, ":")
+			kv := strings.SplitN(cond, ":", 2)
 			if len(kv) != 2 {
 				c.Data["json"] = errors.New("Error: invalid query key/value pair")
 				c.ServeJSON()

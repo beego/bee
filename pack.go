@@ -72,6 +72,7 @@ var (
 	buildEnvs ListOpts
 	verbose   bool
 	format    string
+	w         io.Writer
 )
 
 type ListOpts []string
@@ -101,6 +102,7 @@ func init() {
 	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
+	w = NewColorWriter(os.Stdout)
 }
 
 func exitPrint(con string) {
@@ -242,7 +244,7 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 
 	if added, err := wft.wak.compress(name, fpath, fi); added {
 		if verbose {
-			fmt.Printf("\t+ Compressed: %s\n", name)
+			fmt.Fprintf(w, "\t%s%scompressed%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", name, "\x1b[0m")
 		}
 		wft.allfiles[name] = true
 		return err
@@ -338,7 +340,7 @@ func (wft *tarWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		defer fr.Close()
+		defer CloseFile(fr)
 		_, err = io.Copy(tw, fr)
 		if err != nil {
 			return false, err
@@ -374,7 +376,7 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		defer fr.Close()
+		defer CloseFile(fr)
 		_, err = io.Copy(w, fr)
 		if err != nil {
 			return false, err
@@ -559,7 +561,7 @@ func packApp(cmd *Command, args []string) int {
 		}
 
 		if verbose {
-			fmt.Println("\t+ go", strings.Join(args, " "))
+			fmt.Fprintf(w, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
 
 		execmd := exec.Command("go", args...)
