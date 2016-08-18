@@ -409,6 +409,20 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
 				}
 				para.Name = p[0]
+				switch p[1] {
+				case "query":
+					fallthrough
+				case "header":
+					fallthrough
+				case "path":
+					fallthrough
+				case "formData":
+					fallthrough
+				case "body":
+					break
+				default:
+					fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+				}
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
@@ -426,6 +440,12 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
 						typ == "array" || typ == "file" {
 						para.Type = typ
+					} else if sType, ok := basicTypes[typ]; ok {
+						typeFormat := strings.Split(sType, ":")
+						para.Type = typeFormat[0]
+						para.Format = typeFormat[1]
+					} else {
+						fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
 					}
 				}
 				if len(p) > 4 {
@@ -583,15 +603,15 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 							// add type slice
 							if isSlice {
 								mp.Type = "array"
-								mp.Properties = make(map[string]swagger.Propertie)
 								if isBasicType(realType) {
 									typeFormat := strings.Split(sType, ":")
-									mp.Properties["items"] = swagger.Propertie{
+									mp.Items = &swagger.Propertie{
 										Type:   typeFormat[0],
 										Format: typeFormat[1],
 									}
+
 								} else {
-									mp.Properties["items"] = swagger.Propertie{
+									mp.Items = &swagger.Propertie{
 										Ref: "#/definitions/" + realType,
 									}
 								}
