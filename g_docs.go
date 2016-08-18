@@ -409,7 +409,21 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
 				}
 				para.Name = p[0]
-				para.In = p[1]
+				switch p[1] {
+				case "query":
+					fallthrough
+				case "header":
+					fallthrough
+				case "path":
+					fallthrough
+				case "formData":
+					fallthrough
+				case "body":
+					para.In = p[1]
+				default:
+					fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+				}
+
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
