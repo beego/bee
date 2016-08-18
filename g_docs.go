@@ -413,7 +413,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
-					cmpath, m, mod, realTypes := getModel(typ)
+					cmpath, m, mod, realTypes := getModel(p[2])
 					para.Schema = &swagger.Schema{
 						Ref: "#/definitions/" + m,
 					}
