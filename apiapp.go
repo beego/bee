@@ -645,9 +645,19 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	currpath, _ := os.Getwd()
+	currpath = path.Join(currpath, appname)
+	for _, gpath := range gps {
+		gsrcpath := path.Join(gpath, "src")
+		if strings.HasPrefix(currpath, gsrcpath) {
+			return currpath, currpath[len(gsrcpath):], nil
+		}
+	}
+
 	// In case of multiple paths in the GOPATH, by default
 	// we use the first path
 	gopath := gps[0]
+	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
 	Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src")
