@@ -69,7 +69,6 @@ EnableDocs = true
 var apiMaingo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
@@ -87,7 +86,6 @@ func main() {
 var apiMainconngo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
@@ -578,8 +576,6 @@ func createapi(cmd *Command, args []string) int {
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
-	os.Mkdir(path.Join(apppath, "docs"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "docs"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
