@@ -631,9 +631,6 @@ func createapi(cmd *Command, args []string) int {
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "docs", "doc.go"), "\x1b[0m")
-		WriteToFile(path.Join(apppath, "docs", "doc.go"), "package docs")
-
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
