@@ -606,7 +606,7 @@ func createapi(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(apppath, args[0]))
+		generateAppcode(string(driver), string(conn), "3", string(tables), apppath)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
