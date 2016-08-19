@@ -650,7 +650,7 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	for _, gpath := range gps {
 		gsrcpath := path.Join(gpath, "src")
 		if strings.HasPrefix(currpath, gsrcpath) {
-			return currpath, currpath[len(gsrcpath):], nil
+			return currpath, currpath[len(gsrcpath)+1:], nil
 		}
 	}
 
