@@ -631,9 +631,6 @@ func createapi(cmd *Command, args []string) int {
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "docs", "doc.go"), "\x1b[0m")
-		WriteToFile(path.Join(apppath, "docs", "doc.go"), "package docs")
-
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
@@ -648,9 +645,19 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	currpath, _ := os.Getwd()
+	currpath = path.Join(currpath, appname)
+	for _, gpath := range gps {
+		gsrcpath := path.Join(gpath, "src")
+		if strings.HasPrefix(currpath, gsrcpath) {
+			return currpath, currpath[len(gsrcpath):], nil
+		}
+	}
+
 	// In case of multiple paths in the GOPATH, by default
 	// we use the first path
 	gopath := gps[0]
+	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
 	Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src")
