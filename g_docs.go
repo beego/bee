@@ -442,15 +442,32 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					modelsList[pkgpath+controllerName][typ] = mod
 					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				} else {
+					isArray := false
+					paraType := ""
+					paraFormat := ""
+					if strings.HasPrefix(typ, "[]") {
+						typ = typ[2:]
+						isArray = true
+					}
 					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
 						typ == "array" || typ == "file" {
-						para.Type = typ
+						paraType = typ
 					} else if sType, ok := basicTypes[typ]; ok {
 						typeFormat := strings.Split(sType, ":")
-						para.Type = typeFormat[0]
-						para.Format = typeFormat[1]
+						paraType = typeFormat[0]
+						paraFormat = typeFormat[1]
 					} else {
 						fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
+					}
+					if isArray {
+						para.Type = "array"
+						para.Items = &swagger.ParameterItems{
+							Type:   paraType,
+							Format: paraFormat,
+						}
+					} else {
+						para.Type = paraType
+						para.Format = paraFormat
 					}
 				}
 				if len(p) > 4 {
@@ -614,7 +631,6 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 										Type:   typeFormat[0],
 										Format: typeFormat[1],
 									}
-
 								} else {
 									mp.Items = &swagger.Propertie{
 										Ref: "#/definitions/" + realType,
