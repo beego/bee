@@ -328,6 +328,17 @@ func isSystemPackage(pkgpath string) bool {
 	return false
 }
 
+func peekNextSplitString(ss string) (s string, spacePos int) {
+	spacePos = strings.IndexFunc(ss, unicode.IsSpace)
+	if spacePos < 0 {
+		s = ss
+		spacePos = len(ss)
+	} else {
+		s = strings.TrimSpace(ss[:spacePos])
+	}
+	return
+}
+
 // parse the func comments
 func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpath string) error {
 	var routerPath string
@@ -358,72 +369,48 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			} else if strings.HasPrefix(t, "@Success") {
 				ss := strings.TrimSpace(t[len("@Success"):])
 				rs := swagger.Response{}
-				st := make([]string, 3)
-				j := 0
-				var tmp []rune
-				start := false
-
-				for i, c := range ss {
-					if unicode.IsSpace(c) {
-						if !start && j < 2 {
-							continue
-						}
-						if j == 0 || j == 1 {
-							st[j] = string(tmp)
-							tmp = make([]rune, 0)
-							j++
-							start = false
-							if j == 1 {
-								continue
-							} else {
-								st[j] = strings.TrimSpace(ss[i+1:])
-								break
-
-							}
-						}
-					} else {
-						start = true
-						tmp = append(tmp, c)
+				respCode, pos := peekNextSplitString(ss)
+				ss = strings.TrimSpace(ss[pos:])
+				respType, pos := peekNextSplitString(ss)
+				if respType == "{object}" || respType == "{array}" {
+					isArray := respType == "{array}"
+					ss = strings.TrimSpace(ss[pos:])
+					schemaName, pos := peekNextSplitString(ss)
+					if schemaName == "" {
+						ColorLog("[ERRO][%s.%s] Schema must follow {object} or {array}\n", controllerName, funcName)
+						os.Exit(-1)
 					}
-				}
-				if len(tmp) > 0 && st[2] == "" {
-					st[2] = strings.TrimSpace(string(tmp))
-				}
-				rs.Description = st[2]
-				if st[1] == "{object}" {
-					if st[2] == "" {
-						panic(controllerName + " " + funcName + " has no object")
+					if strings.HasPrefix(schemaName, "[]") {
+						schemaName = schemaName[2:]
+						isArray = true
 					}
-					cmpath, m, mod, realTypes := getModel(st[2])
-					//ll := strings.Split(st[2], ".")
-					//opts.Type = ll[len(ll)-1]
-					rs.Schema = &swagger.Schema{
-						Ref: "#/definitions/" + m,
-					}
-					if _, ok := modelsList[pkgpath+controllerName]; !ok {
-						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
-					}
-					modelsList[pkgpath+controllerName][st[2]] = mod
-					appendModels(cmpath, pkgpath, controllerName, realTypes)
-				} else if st[1] == "{array}" {
-					rs.Schema.Type = "array"
-					if sType, ok := basicTypes[st[2]]; ok {
+					schema := swagger.Schema{}
+					if sType, ok := basicTypes[schemaName]; ok {
 						typeFormat := strings.Split(sType, ":")
-						rs.Schema.Type = typeFormat[0]
-						rs.Schema.Format = typeFormat[1]
+						schema.Type = typeFormat[0]
+						schema.Format = typeFormat[1]
 					} else {
-						cmpath, m, mod, realTypes := getModel(st[2])
-						rs.Schema.Items = &swagger.Propertie{
-							Ref: "#/definitions/" + m,
-						}
+						cmpath, m, mod, realTypes := getModel(schemaName)
+						schema.Ref = "#/definitions/" + m
 						if _, ok := modelsList[pkgpath+controllerName]; !ok {
 							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 						}
-						modelsList[pkgpath+controllerName][st[2]] = mod
+						modelsList[pkgpath+controllerName][schemaName] = mod
 						appendModels(cmpath, pkgpath, controllerName, realTypes)
 					}
+					if isArray {
+						rs.Schema = &swagger.Schema{
+							Type: "array",
+							Items: &schema,
+						}
+					}else {
+						rs.Schema = &schema
+					}
+					rs.Description = strings.TrimSpace(ss[pos:])
+				} else {
+					rs.Description = strings.TrimSpace(ss)
 				}
-				opts.Responses[st[0]] = rs
+				opts.Responses[respCode] = rs
 			} else if strings.HasPrefix(t, "@Param") {
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
@@ -443,7 +430,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				case "body":
 					break
 				default:
-					fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+					ColorLog("[WARN][%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
 				}
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
@@ -474,7 +461,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						paraType = typeFormat[0]
 						paraFormat = typeFormat[1]
 					} else {
-						fmt.Fprintf(os.Stderr, "[%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
+						ColorLog("[WARN][%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
 					}
 					if isArray {
 						para.Type = "array"
@@ -625,7 +612,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 					}
 					ts, ok := d.Decl.(*ast.TypeSpec)
 					if !ok {
-						ColorLog("Unknown type without TypeSec: %v", d)
+						ColorLog("Unknown type without TypeSec: %v\n", d)
 						os.Exit(1)
 					}
 					st, ok := ts.Type.(*ast.StructType)
@@ -717,8 +704,8 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 		}
 	}
 	if m.Title == "" {
-		ColorLog("can't find the object: %s", str)
-		os.Exit(1)
+		ColorLog("[ERRO]can't find the object: %s\n", str)
+		//os.Exit(1)
 	}
 	if len(rootapi.Definitions) == 0 {
 		rootapi.Definitions = make(map[string]swagger.Schema)
