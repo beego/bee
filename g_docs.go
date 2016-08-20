@@ -405,6 +405,23 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					}
 					modelsList[pkgpath+controllerName][st[2]] = mod
 					appendModels(cmpath, pkgpath, controllerName, realTypes)
+				} else if st[1] == "{array}" {
+					rs.Schema.Type = "array"
+					if sType, ok := basicTypes[st[2]]; ok {
+						typeFormat := strings.Split(sType, ":")
+						rs.Schema.Type = typeFormat[0]
+						rs.Schema.Format = typeFormat[1]
+					} else {
+						cmpath, m, mod, realTypes := getModel(st[2])
+						rs.Schema.Items = &swagger.Propertie{
+							Ref: "#/definitions/" + m,
+						}
+						if _, ok := modelsList[pkgpath+controllerName]; !ok {
+							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
+						}
+						modelsList[pkgpath+controllerName][st[2]] = mod
+						appendModels(cmpath, pkgpath, controllerName, realTypes)
+					}
 				}
 				opts.Responses[st[0]] = rs
 			} else if strings.HasPrefix(t, "@Param") {
