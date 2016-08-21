@@ -288,7 +288,7 @@ For instance, to get more information about the `run` command:
 
 ```bash
 $ bee help run
-usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true]
+usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-runmode=BEEGO_RUNMODE]
 
 start the appname throw exec.Command
 

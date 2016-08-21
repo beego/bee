@@ -24,7 +24,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
 	Short:     "run the app and start a Web server for development",
 	Long: `
 Run command will supervise the file system of the beego project using inotify,
@@ -51,6 +51,8 @@ var (
 	vendorWatch bool
 	// Current user workspace
 	currentGoPath string
+	// Current runmode
+	runmode string
 )
 
 func init() {
@@ -61,6 +63,7 @@ func init() {
 	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
 	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Watch vendor folder")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
+	cmdRun.Flag.StringVar(&runmode, "runmode", "", "Set BEEGO_RUNMODE env variable.")
 	exit = make(chan bool)
 }
 
@@ -99,6 +102,16 @@ func runApp(cmd *Command, args []string) int {
 	}
 
 	Debugf("current path:%s\n", currpath)
+
+	if runmode == "prod" || runmode == "dev"{
+		os.Setenv("BEEGO_RUNMODE", runmode)
+		ColorLog("[INFO] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
+	}else if runmode != ""{
+		os.Setenv("BEEGO_RUNMODE", runmode)
+		ColorLog("[WARN] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
+	}else if os.Getenv("BEEGO_RUNMODE") != ""{
+		ColorLog("[WARN] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
+	}
 
 	err := loadConfig()
 	if err != nil {
