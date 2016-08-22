@@ -1,18 +1,17 @@
 bee
 ===
 
-[![Build Status](https://drone.io/github.com/beego/bee/status.png)](https://drone.io/github.com/beego/bee/latest)
+Bee is a command-line tool facilitating development of Beego-based application.
 
-Bee is a command line tool facilitating development with beego framework.
+[![Build Status](https://drone.io/github.com/beego/bee/status.png)](https://drone.io/github.com/beego/bee/latest)
 
 ## Requirements
 
 - Go version >= 1.3.
 
-
 ## Installation
 
-Begin by installing `bee` using `go get` command.
+To install `bee` use the `go get` command:
 
 ```bash
 go get github.com/beego/bee
@@ -32,242 +31,225 @@ go get -u github.com/beego/bee
 
 ## Basic commands
 
-Bee provides a variety of commands which can be helpful at various stage of development. The top level commands include: 
-```base
-  new         create an application base on beego framework
-  run         run the app which can hot compile
-  pack        compress an beego project
-  api         create an api application base on beego framework
-  bale        packs non-Go files to Go source files
-  version     show the bee & beego version
-  generate    source code generator
-  migrate     run database migrations
-  hprose      create an rpc application use hprose base on beego framework
+Bee provides a variety of commands which can be helpful at various stages of development. The top level commands include: 
 ```
-## bee version
+    new         Create a Beego application
+    run         Run the app and start a Web server for development
+    pack        Compress a beego project into a single file
+    api         Create an API beego application
+    hprose      Create an rpc application use hprose base on beego framework
+    bale        Packs non-Go files to Go source files
+    version     Prints the current Bee version
+    generate    Source code generator
+    migrate     Run database migrations
+    fix         Fix the Beego application to make it compatible with Beego 1.6
+```
+### bee version
 
-The first command is the easiest: displaying which version of `bee`, `beego` and `go` is installed on your machine:
+To display the current version of `bee`, `beego` and `go` installed on your machine:
 
 ```bash
 $ bee version
-bee   :1.2.2
-beego :1.4.0
-Go    :go version go1.2.1 linux/amd64
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+
+├── Beego     : 1.7.0
+├── GoVersion : go1.6.2
+├── GOOS      : windows
+├── GOARCH    : amd64
+├── NumCPU    : 4
+├── GOPATH    : C:\Users\beeuser\go
+├── GOROOT    : C:\go
+├── Compiler  : gc
+└── Date      : Monday, 22 Aug 2016
 ``` 
 
-## bee new
+### bee new
 
-Creating a new beego web application is no big deal, too.
-
-```bash
-$ bee new myapp
-[INFO] Creating application...
-/home/zheng/gopath/src/myapp/
-/home/zheng/gopath/src/myapp/conf/
-/home/zheng/gopath/src/myapp/controllers/
-/home/zheng/gopath/src/myapp/models/
-/home/zheng/gopath/src/myapp/routers/
-/home/zheng/gopath/src/myapp/tests/
-/home/zheng/gopath/src/myapp/static/
-/home/zheng/gopath/src/myapp/static/js/
-/home/zheng/gopath/src/myapp/static/css/
-/home/zheng/gopath/src/myapp/static/img/
-/home/zheng/gopath/src/myapp/views/
-/home/zheng/gopath/src/myapp/conf/app.conf
-/home/zheng/gopath/src/myapp/controllers/default.go
-/home/zheng/gopath/src/myapp/views/index.tpl
-/home/zheng/gopath/src/myapp/routers/router.go
-/home/zheng/gopath/src/myapp/tests/default_test.go
-/home/zheng/gopath/src/myapp/main.go
-2014/08/29 15:45:47 [SUCC] New application successfully created!
-```
-
-## bee run
-
-To run the application we just created, navigate to the application folder and execute `bee run`.
+To create a new Beego web application:
 
 ```bash
-$ cd myapp
-$ bee run
+$ bee new my-web-app
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 14:53:45 [INFO] Creating application...
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\conf\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\controllers\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\models\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\routers\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\tests\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\js\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\css\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\img\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\views\
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\conf\app.conf
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\controllers\default.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\views\index.tpl
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\routers\router.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\tests\default_test.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\main.go
+2016/08/22 14:53:45 [SUCC] New application successfully created!
 ```
 
-## bee pack
+For more information on the usage, run `bee help new`.
+
+### bee run
+
+To run the application we just created, you can navigate to the application folder and execute:
 
 ```bash
-usage: bee pack
-
-compress an beego project
-
--p            app path. default is current path
--b            build specify platform app. default true
--ba           additional args of go build
--be=[]        additional ENV Variables of go build. eg: GOARCH=arm
--o            compressed file output dir. default use current path
--f=""         format. [ tar.gz / zip ]. default tar.gz
--exp=""       relpath exclude prefix. default: .
--exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
-              all path use : as separator
--exr=[]       file/directory name exclude by Regexp. default: ^.
--fs=false     follow symlink. default false
--ss=false     skip symlink. default false
-              default embed symlink into compressed file
--v=false      verbose
+$ cd my-web-app && bee run
 ```
 
-## bee api
+Or from anywhere in your machine:
+
+```
+$ bee run github.com/user/my-web-app
+```
+
+For more information on the usage, run `bee help run`.
+
+### bee pack
+
+To compress a Beego application into a single deployable file:
 
 ```bash
-usage: bee api [appname]
-
-create an api application base on beego framework
-
-bee api [appname] [-tables=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is ''
-             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
-             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-  
-if conn is empty will create a example api application. otherwise generate api application based on an existing database.
-
-In the current path, will create a folder named [appname]
-
-In the appname folder has the follow struct:
-
-  ├── conf
-  │   └── app.conf
-  ├── controllers
-  │   └── object.go
-  │   └── user.go
-  ├── routers
-  │   └── router.go
-  ├── tests
-  │   └── default_test.go
-  ├── main.go
-  └── models
-      └── object.go
-      └── user.go
+$ bee pack
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 15:11:01 Packaging application: C:\Users\beeuser\go\src\github.com\user\my-web-app
+2016/08/22 15:11:01 Building application...
+2016/08/22 15:11:01 Env: GOOS=windows GOARCH=amd64
+2016/08/22 15:11:08 Build successful
+2016/08/22 15:11:08 Excluding relpath prefix: .
+2016/08/22 15:11:08 Excluding relpath suffix: .go:.DS_Store:.tmp
+2016/08/22 15:11:10 Writing to output: `C:\Users\beeuser\go\src\github.com\user\my-web-app\my-web-app.tar.gz`
 ```
 
-## bee hprose
+For more information on the usage, run `bee help pack`.
+
+### bee api
+
+To create a Beego API application:
 
 ```bash
-usage: bee hprose [appname]
-
-create an rpc application use hprose base on beego framework
-
-bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is ''
-             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
-             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-  
-if conn is empty will create a example rpc application. otherwise generate rpc application use hprose based on an existing database.
-
-In the current path, will create a folder named [appname]
-
-In the appname folder has the follow struct:
-
-  ├── conf
-  │   └── app.conf
-  ├── main.go
-  └── models
-      └── object.go
-      └── user.go
-
+$ bee api my-api
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 15:14:10 [INFO] Creating API...
+        create   C:\Users\beeuser\go\src\github.com\user\my-api
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\conf
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\tests
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\conf\app.conf
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\models
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\routers\
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers\object.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers\user.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\tests\default_test.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\routers\router.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\models\object.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\models\user.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-api\main.go
+2016/08/22 15:14:10 [SUCC] New API successfully created!
 ```
 
-## bee bale
+For more information on the usage, run `bee help api`.
+
+### bee hprose
+
+To create an Hprose RPC application based on Beego:
 
 ```bash
-usage: bee bale
-
-bale packs non-Go files to Go source files and
-
-auto-generate unpack function to main package then run it
-
-during the runtime.
-
-This is mainly used for zealots who are requiring 100% Go code.
+$ bee hprose my-rpc-app
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 16:09:13 [INFO] Creating Hprose application...
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\conf
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\conf\app.conf
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models\object.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models\user.go
+        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\main.go
+2016/08/22 16:09:13 [SUCC] New Hprose application successfully created!
 ```
 
-## bee migrate
+For more information on the usage, run `bee help hprose`.
+
+### bee bale
+
+To pack all the static files into Go source files:
 
 ```bash
-usage: bee migrate [Command]
-
-bee migrate [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    run all outstanding migrations
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-
-bee migrate rollback [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback the last migration operation
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-
-bee migrate reset [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback all migrations
-    -driver: [mysql | postgres| sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-
-bee migrate refresh [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback all migrations and run them all again
-    -driver: [mysql | postgresql | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-
+$ bee bale
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 16:37:24 [INFO] Detected bee.json
+2016/08/22 16:37:24 [INFO] Packaging directory(static/js)
+2016/08/22 16:37:24 [INFO] Packaging directory(static/css)
+2016/08/22 16:37:24 [SUCC] Baled resources successfully!
 ```
 
-## bee generate
+For more information on the usage, run `bee help bale`.
 
-Bee also comes with a souce code generator which speeds up the development.
+### bee migrate
+
+For database migrations, use `bee migrate`.
+
+For more information on the usage, run `bee help migrate`.
+
+### bee generate
+
+Bee also comes with a source code generator which speeds up the development.
+
+For example, to generate a new controller named `hello`:
 
 ```bash
-usage: bee generate [Command]
-
-bee generate scaffold [scaffoldname] [-fields=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    The generate scaffold command will do a number of things for you.
-    -fields: a list of table fields. Format: field:type, ...
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-    example: bee generate scaffold post -fields="title:string,body:text"
-
-bee generate model [modelname] [-fields=""]
-    generate RESTFul model based on fields
-    -fields: a list of table fields. Format: field:type, ...
-
-bee generate controller [controllerfile]
-    generate RESTFul controllers             
-
-bee generate view [viewpath]
-    generate CRUD view in viewpath
-
-bee generate migration [migrationfile] [-fields=""]
-    generate migration file for making database schema update
-    -fields: a list of table fields. Format: field:type, ...
-  
-bee generate docs
-    generate swagger doc file
-
-bee generate test [routerfile]
-    generate testcase
-
-bee generate appcode [-tables=""] [-driver="mysql"] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
-    generate appcode based on an existing database
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver.
-             default for mysql:    root:@tcp(127.0.0.1:3306)/test
-             default for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router
-
+$ bee generate controller hello
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.5.0
+2016/08/22 16:55:30 [INFO] Using 'Hello' as controller name
+2016/08/22 16:55:30 [INFO] Using 'controllers' as package name
+        create   C:\Users\beeuser\go\src\github.com\user\my-web-app/controllers/hello.go
+2016/08/22 16:55:30 [SUCC] Controller successfully generated!                                  
 ```
 
+For more information on the usage, run `bee help generate`.
 
 ## Shortcuts
 
-Because you'll likely type these generator commands over and over, it makes sense to create aliases.
+Because you'll likely type these generator commands over and over, it makes sense to create aliases:
 
 ```bash
 # Generator Stuff
@@ -278,32 +260,135 @@ alias g:v="bee generate view"
 alias g:mi="bee generate migration"
 ```
 
-These can be stored in, for example, your `~/.bash_profile` or `~/.bashrc` files.
+These can be stored , for example, in your `~/.bash_profile` or `~/.bashrc` files.
 
 ## Help
 
-If you happend to forget the usage of a command, you can always find the usage information by `bee help <command>`.
+To print more information on the usage of a particular command, use `bee help <command>`.
 
 For instance, to get more information about the `run` command:
 
 ```bash
 $ bee help run
-usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-runmode=BEEGO_RUNMODE]
+usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags]
 
-start the appname throw exec.Command
+Run command will supervise the file system of the beego project using inotify,
+it will recompile and restart the app after any modifications.
+```
 
-then start a inotify watch for current dir
-                    
-when the file has changed bee will auto go build and restart the app
+## Contributing
+Bug reports, feature requests and pull requests are always welcome.
 
-  file changed
-       |
-  check if it's go file
-       |
-     yes     no
-      |       |
- go build    do nothing
-     |
- restart app
+We work on two branches: `master` for stable, released code and `develop`, a development branch.
+It might be important to distinguish them when you are reading the commit history searching for a feature or a bugfix,
+or when you are unsure of where to base your work from when contributing.
 
+### Found a bug?
+
+Please [submit an issue][new-issue] on GitHub and we will follow up.
+Even better, we would appreciate a [Pull Request][new-pr] with a fix for it!
+
+- If the bug was found in a release, it is best to base your work on `master` and submit your PR against it.
+- If the bug was found on `develop` (the development branch), base your work on `develop` and submit your PR against it.
+
+Please follow the [Pull Request Guidelines][new-pr].
+
+### Want a feature?
+
+Feel free to request a feature by [submitting an issue][new-issue] on GitHub and open the discussion.
+
+If you'd like to implement a new feature, please consider opening an issue first to talk about it.
+It may be that somebody is already working on it, or that there are particular issues that you should be aware of
+before implementing the change. If you are about to open a Pull Request, please make sure to follow the [submissions guidelines][new-pr].
+
+## Submission Guidelines
+
+### Submitting an issue
+
+Before you submit an issue, search the archive, maybe you will find that a similar one already exists.
+
+If you are submitting an issue for a bug, please include the following:
+
+- An overview of the issue
+- Your use case (why is this a bug for you?)
+- The version of `bee` you are running (include the output of `bee version`)
+- Steps to reproduce the issue
+- Eventually, logs from your application.
+- Ideally, a suggested fix
+
+The more information you give us, the more able to help we will be!
+
+### Submitting a Pull Request
+
+- First of all, make sure to base your work on the `develop` branch (the development branch):
+
+```
+  # a bugfix branch for develop would be prefixed by fix/
+  # a bugfix branch for master would be prefixed by hotfix/
+  $ git checkout -b feature/my-feature develop
+```
+
+- Please create commits containing **related changes**. For example, two different bugfixes should produce two separate commits.
+A feature should be made of commits splitted by **logical chunks** (no half-done changes). Use your best judgement as to
+how many commits your changes require.
+
+- Write insightful and descriptive commit messages. It lets us and future contributors quickly understand your changes
+without having to read your changes. Please provide a summary in the first line (50-72 characters) and eventually, 
+go to greater lengths in your message's body. A good example can be found in [Angular commit message format](https://github.com/angular/angular.js/blob/master/CONTRIBUTING.md#commit-message-format).
+
+- Please **include the appropriate test cases** for your patch.
+
+- Make sure all tests pass before submitting your changes.
+
+- Rebase your commits. It may be that new commits have been introduced on `develop`. 
+Rebasing will update your branch with the most recent code and make your changes easier to review:
+
+  ```
+  $ git fetch
+  $ git rebase origin/develop
+  ```
+
+- Push your changes:
+
+  ```
+  $ git push origin -u feature/my-feature
+  ```
+
+- Open a pull request against the `develop` branch.
+
+- If we suggest changes:
+  - Please make the required updates (after discussion if any)
+  - Only create new commits if it makes sense. Generally, you will want to amend your latest commit or rebase your branch after the new changes:
+
+    ```
+    $ git rebase -i develop
+    # choose which commits to edit and perform the updates
+    ```
+
+  - Re-run the tests
+  - Force push to your branch:
+
+    ```
+    $ git push origin feature/my-feature -f
+    ```
+
+[new-issue]: #submitting-an-issue
+[new-pr]: #submitting-a-pull-request
+
+## Licence
+
+```text
+Copyright 2016 bee authors
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 ```
