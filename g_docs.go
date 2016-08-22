@@ -615,6 +615,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 						ColorLog("Unknown type without TypeSec: %v\n", d)
 						os.Exit(1)
 					}
+					// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 					st, ok := ts.Type.(*ast.StructType)
 					if !ok {
 						continue
@@ -704,7 +705,8 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 		}
 	}
 	if m.Title == "" {
-		ColorLog("[ERRO]can't find the object: %s\n", str)
+		ColorLog("[WARN]can't find the object: %s\n", str)
+		// TODO remove when all type have been supported
 		//os.Exit(1)
 	}
 	if len(rootapi.Definitions) == 0 {
