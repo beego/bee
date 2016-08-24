@@ -19,6 +19,7 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"os"
 	"path"
 	"strings"
@@ -31,11 +32,11 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = OModel
 	case "2":
-		mode = O_MODEL | O_CONTROLLER
+		mode = OModel | OController
 	case "3":
-		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+		mode = OModel | OController | ORouter
 	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
@@ -90,7 +91,7 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
 func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
-	if (O_MODEL & mode) == O_MODEL {
+	if (OModel & mode) == OModel {
 		ColorLog("[INFO] Creating model files...\n")
 		writeHproseModelFiles(tables, paths.ModelPath, selectedTables)
 	}
@@ -98,6 +99,8 @@ func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *M
 
 // writeHproseModelFiles generates model files
 func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -110,7 +113,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -118,7 +121,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -130,10 +133,10 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		}
 		template := ""
 		if tb.Pk == "" {
-			template = HPROSE_STRUCT_MODEL_TPL
+			template = HproseStructModelTPL
 		} else {
-			template = HPROSE_MODEL_TPL
-			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HPROSE_ADDFUNCTION, "{{modelName}}", camelCase(tb.Name), -1))
+			template = HproseModelTPL
+			hproseAddFunctions = append(hproseAddFunctions, strings.Replace(HproseAddFunction, "{{modelName}}", camelCase(tb.Name), -1))
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
@@ -147,17 +150,17 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
 		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
+			ColorLog("[ERRO] Could not write model file to '%s'\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] model => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 const (
-	HPROSE_ADDFUNCTION = `
+	HproseAddFunction = `
 	// publish about {{modelName}} function
 	service.AddFunction("Add{{modelName}}", models.Add{{modelName}})
 	service.AddFunction("Get{{modelName}}ById", models.Get{{modelName}}ById)
@@ -166,12 +169,12 @@ const (
 	service.AddFunction("Delete{{modelName}}", models.Delete{{modelName}})
 
 `
-	HPROSE_STRUCT_MODEL_TPL = `package models
+	HproseStructModelTPL = `package models
 {{importTimePkg}}
 {{modelStruct}}
 `
 
-	HPROSE_MODEL_TPL = `package models
+	HproseModelTPL = `package models
 
 import (
 	"errors"
@@ -260,7 +263,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
-	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
+	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
 				ml = append(ml, v)

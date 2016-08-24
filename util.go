@@ -15,13 +15,14 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"time"
+	"path"
+	"fmt"
 )
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -173,6 +174,34 @@ func GetGOPATHs() []string {
 	return paths
 }
 
+func SearchGOPATHs(app string) (bool, string, string) {
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start [ %s ]\n", "GOPATH environment variable is not set or empty")
+		os.Exit(2)
+	}
+
+	// Lookup the application inside the user workspace(s)
+	for _, gopath := range gps {
+		var currentPath string
+
+		if !strings.Contains(app, "src") {
+			gopathsrc := path.Join(gopath, "src")
+			currentPath = path.Join(gopathsrc, app)
+		} else {
+			currentPath = app
+		}
+
+		if isExist(currentPath) {
+			if !isBeegoProject(currentPath) {
+				continue
+			}
+			return true, gopath, currentPath
+		}
+	}
+	return false, "", ""
+}
+
 // askForConfirmation uses Scanln to parse user input. A user must type in "yes" or "no" and
 // then press enter. It has fuzzy matching, so "y", "Y", "yes", "YES", and "Yes" all count as
 // confirmations. If the input is not recognized, it will ask again. The function does not return
@@ -257,4 +286,12 @@ func (s *strFlags) String() string {
 func (s *strFlags) Set(value string) error {
 	*s = append(*s, value)
 	return nil
+}
+
+// CloseFile attempts to close the passed file
+// or panics with the actual error
+func CloseFile(f *os.File) {
+	if err := f.Close(); err != nil {
+		panic(err)
+	}
 }

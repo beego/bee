@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	O_MODEL byte = 1 << iota
-	O_CONTROLLER
-	O_ROUTER
+	OModel byte = 1 << iota
+	OController
+	ORouter
 )
 
 // DbTransformer has method to reverse engineer a database schema to restful api code
@@ -259,11 +259,11 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = OModel
 	case "2":
-		mode = O_MODEL | O_CONTROLLER
+		mode = OModel | OController
 	case "3":
-		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+		mode = OModel | OController | ORouter
 	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
@@ -292,7 +292,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
+func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, apppath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
@@ -304,11 +304,11 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, cu
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
-		mvcPath.ModelPath = path.Join(currpath, "models")
-		mvcPath.ControllerPath = path.Join(currpath, "controllers")
-		mvcPath.RouterPath = path.Join(currpath, "routers")
+		mvcPath.ModelPath = path.Join(apppath, "models")
+		mvcPath.ControllerPath = path.Join(apppath, "controllers")
+		mvcPath.RouterPath = path.Join(apppath, "routers")
 		createPaths(mode, mvcPath)
-		pkgPath := getPackagePath(currpath)
+		pkgPath := getPackagePath(apppath)
 		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
 		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)
@@ -499,16 +499,15 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	}
 }
 
-// getGoDataType maps an SQL data type to Golang data type
+// GetGoDataType maps an SQL data type to Golang data type
 func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 	var typeMapping = map[string]string{}
 	typeMapping = typeMappingMysql
 	if v, ok := typeMapping[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
@@ -689,25 +688,26 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 		table.Columns = append(table.Columns, col)
 	}
 }
+
+// GetGoDataType returns the Go type from the mapped Postgres type
 func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
 	if v, ok := typeMappingPostgres[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
 // deleteAndRecreatePaths removes several directories completely
 func createPaths(mode byte, paths *MvcPath) {
-	if (mode & O_MODEL) == O_MODEL {
+	if (mode & OModel) == OModel {
 		os.Mkdir(paths.ModelPath, 0777)
 	}
-	if (mode & O_CONTROLLER) == O_CONTROLLER {
+	if (mode & OController) == OController {
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
-	if (mode & O_ROUTER) == O_ROUTER {
+	if (mode & ORouter) == ORouter {
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
@@ -716,15 +716,15 @@ func createPaths(mode byte, paths *MvcPath) {
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
-	if (O_MODEL & mode) == O_MODEL {
+	if (OModel & mode) == OModel {
 		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
-	if (O_CONTROLLER & mode) == O_CONTROLLER {
+	if (OController & mode) == OController {
 		ColorLog("[INFO] Creating controller files...\n")
 		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
 	}
-	if (O_ROUTER & mode) == O_ROUTER {
+	if (ORouter & mode) == ORouter {
 		ColorLog("[INFO] Creating router files...\n")
 		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
 	}
@@ -732,6 +732,8 @@ func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath
 
 // writeModelFiles generates model files
 func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -744,7 +746,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -752,7 +754,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -764,9 +766,9 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		template := ""
 		if tb.Pk == "" {
-			template = STRUCT_MODEL_TPL
+			template = StructModelTPL
 		} else {
-			template = MODEL_TPL
+			template = ModelTPL
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
@@ -784,14 +786,16 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] model => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeControllerFiles generates controller files
 func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -807,7 +811,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -815,7 +819,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -825,20 +829,22 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 				continue
 			}
 		}
-		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
+		fileStr := strings.Replace(CtrlTPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		fileStr = strings.Replace(fileStr, "{{pkgPath}}", pkgPath, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] controller => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeRouterFile generates router file
 func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	var nameSpaces []string
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
@@ -850,19 +856,19 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		if tb.Pk == "" {
 			continue
 		}
-		// add name spaces
-		nameSpace := strings.Replace(NAMESPACE_TPL, "{{nameSpace}}", tb.Name, -1)
+		// add namespaces
+		nameSpace := strings.Replace(NamespaceTPL, "{{nameSpace}}", tb.Name, -1)
 		nameSpace = strings.Replace(nameSpace, "{{ctrlName}}", camelCase(tb.Name), -1)
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
-	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
+	routerStr := strings.Replace(RouterTPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File
 	var err error
 	if isExist(fpath) {
-		ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+		ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 		if askForConfirmation() {
 			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
@@ -870,7 +876,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 				return
 			}
 		} else {
-			ColorLog("[WARN] skip create file\n")
+			ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 			return
 		}
 	} else {
@@ -881,11 +887,11 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		}
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
-		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
+		ColorLog("[ERRO] Could not write router file to '%s'\n", fpath)
 		os.Exit(2)
 	}
-	f.Close()
-	ColorLog("[INFO] router => %s\n", fpath)
+	CloseFile(f)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	formatSourceCode(fpath)
 }
 
@@ -968,7 +974,7 @@ func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
-		ColorLog("[ERRO] you should set GOPATH in the env")
+		ColorLog("[ERRO] You should set GOPATH in the env")
 		os.Exit(2)
 	}
 
@@ -1001,12 +1007,12 @@ func getPackagePath(curpath string) (packpath string) {
 }
 
 const (
-	STRUCT_MODEL_TPL = `package models
+	StructModelTPL = `package models
 {{importTimePkg}}
 {{modelStruct}}
 `
 
-	MODEL_TPL = `package models
+	ModelTPL = `package models
 
 import (
 	"errors"
@@ -1099,7 +1105,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
-	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
+	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
 				ml = append(ml, v)
@@ -1150,7 +1156,7 @@ func Delete{{modelName}}(id int) (err error) {
 	return
 }
 `
-	CTRL_TPL = `package controllers
+	CtrlTPL = `package controllers
 
 import (
 	"{{pkgPath}}/models"
@@ -1256,7 +1262,7 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	// query: k:v,k:v
 	if v := c.GetString("query"); v != "" {
 		for _, cond := range strings.Split(v, ",") {
-			kv := strings.Split(cond, ":")
+			kv := strings.SplitN(cond, ":", 2)
 			if len(kv) != 2 {
 				c.Data["json"] = errors.New("Error: invalid query key/value pair")
 				c.ServeJSON()
@@ -1316,7 +1322,7 @@ func (c *{{ctrlName}}Controller) Delete() {
 	c.ServeJSON()
 }
 `
-	ROUTER_TPL = `// @APIVersion 1.0.0
+	RouterTPL = `// @APIVersion 1.0.0
 // @Title beego Test API
 // @Description beego has a very cool tools to autogenerate documents for your API
 // @Contact astaxie@gmail.com
@@ -1338,7 +1344,7 @@ func init() {
 	beego.AddNamespace(ns)
 }
 `
-	NAMESPACE_TPL = `
+	NamespaceTPL = `
 		beego.NSNamespace("/{{nameSpace}}",
 			beego.NSInclude(
 				&controllers.{{ctrlName}}Controller{},
