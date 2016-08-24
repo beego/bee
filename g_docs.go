@@ -406,6 +406,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					modelsList[pkgpath+controllerName][st[2]] = mod
 					appendModels(cmpath, pkgpath, controllerName, realTypes)
 				} else if st[1] == "{array}" {
+					rs.Schema = &swagger.Schema{}
 					rs.Schema.Type = "array"
 					if sType, ok := basicTypes[st[2]]; ok {
 						typeFormat := strings.Split(sType, ":")
