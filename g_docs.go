@@ -609,96 +609,7 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 					if k != objectname {
 						continue
 					}
-					ts, ok := d.Decl.(*ast.TypeSpec)
-					if !ok {
-						ColorLog("Unknown type without TypeSec: %v", d)
-						os.Exit(1)
-					}
-					st, ok := ts.Type.(*ast.StructType)
-					if !ok {
-						continue
-					}
-					m.Title = k
-					if st.Fields.List != nil {
-						m.Properties = make(map[string]swagger.Propertie)
-						for _, field := range st.Fields.List {
-							isSlice, realType, sType := typeAnalyser(field)
-							realTypes = append(realTypes, realType)
-							mp := swagger.Propertie{}
-							// add type slice
-							if isSlice {
-								mp.Type = "array"
-								if isBasicType(realType) {
-									typeFormat := strings.Split(sType, ":")
-									mp.Items = &swagger.Propertie{
-										Type:   typeFormat[0],
-										Format: typeFormat[1],
-									}
-
-								} else {
-									mp.Items = &swagger.Propertie{
-										Ref: "#/definitions/" + realType,
-									}
-								}
-							} else {
-								if isBasicType(realType) {
-									typeFormat := strings.Split(sType, ":")
-									mp.Type = typeFormat[0]
-									mp.Format = typeFormat[1]
-								} else if sType == "object" {
-									mp.Ref = "#/definitions/" + realType
-								}
-							}
-
-							// dont add property if anonymous field
-							if field.Names != nil {
-
-								// set property name as field name
-								var name = field.Names[0].Name
-
-								// if no tag skip tag processing
-								if field.Tag == nil {
-									m.Properties[name] = mp
-									continue
-								}
-
-								var tagValues []string
-								stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
-								tag := stag.Get("json")
-
-								if tag != "" {
-									tagValues = strings.Split(tag, ",")
-								}
-
-								// dont add property if json tag first value is "-"
-								if len(tagValues) == 0 || tagValues[0] != "-" {
-
-									// set property name to the left most json tag value only if is not omitempty
-									if len(tagValues) > 0 && tagValues[0] != "omitempty" {
-										name = tagValues[0]
-									}
-
-									if thrifttag := stag.Get("thrift"); thrifttag != "" {
-										ts := strings.Split(thrifttag, ",")
-										if ts[0] != "" {
-											name = ts[0]
-										}
-									}
-									if required := stag.Get("required"); required != "" {
-										m.Required = append(m.Required, name)
-									}
-									if desc := stag.Get("description"); desc != "" {
-										mp.Description = desc
-									}
-
-									m.Properties[name] = mp
-								}
-								if ignore := stag.Get("ignore"); ignore != "" {
-									continue
-								}
-							}
-						}
-					}
+					parseObject(d, k, &m, &realTypes, astPkgs)
 				}
 			}
 		}
@@ -712,6 +623,106 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 	}
 	rootapi.Definitions[objectname] = m
 	return
+}
+
+func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package) {
+	ts, ok := d.Decl.(*ast.TypeSpec)
+	if !ok {
+		ColorLog("Unknown type without TypeSec: %v", d)
+		os.Exit(1)
+	}
+	st, ok := ts.Type.(*ast.StructType)
+	if !ok {
+		return
+	}
+	m.Title = k
+	if st.Fields.List != nil {
+		m.Properties = make(map[string]swagger.Propertie)
+		for _, field := range st.Fields.List {
+			isSlice, realType, sType := typeAnalyser(field)
+			*realTypes = append(*realTypes, realType)
+			mp := swagger.Propertie{}
+			if isSlice {
+				mp.Type = "array"
+				if isBasicType(realType) {
+					typeFormat := strings.Split(sType, ":")
+					mp.Items = &swagger.Propertie{
+						Type:   typeFormat[0],
+						Format: typeFormat[1],
+					}
+
+				} else {
+					mp.Items = &swagger.Propertie{
+						Ref: "#/definitions/" + realType,
+					}
+				}
+			} else {
+				if isBasicType(realType) {
+					typeFormat := strings.Split(sType, ":")
+					mp.Type = typeFormat[0]
+					mp.Format = typeFormat[1]
+				} else if sType == "object" {
+					mp.Ref = "#/definitions/" + realType
+				}
+			}
+			if field.Names != nil {
+
+				// set property name as field name
+				var name = field.Names[0].Name
+
+				// if no tag skip tag processing
+				if field.Tag == nil {
+					m.Properties[name] = mp
+					continue
+				}
+
+				var tagValues []string
+				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+				tag := stag.Get("json")
+
+				if tag != "" {
+					tagValues = strings.Split(tag, ",")
+				}
+
+				// dont add property if json tag first value is "-"
+				if len(tagValues) == 0 || tagValues[0] != "-" {
+
+					// set property name to the left most json tag value only if is not omitempty
+					if len(tagValues) > 0 && tagValues[0] != "omitempty" {
+						name = tagValues[0]
+					}
+
+					if thrifttag := stag.Get("thrift"); thrifttag != "" {
+						ts := strings.Split(thrifttag, ",")
+						if ts[0] != "" {
+							name = ts[0]
+						}
+					}
+					if required := stag.Get("required"); required != "" {
+						m.Required = append(m.Required, name)
+					}
+					if desc := stag.Get("description"); desc != "" {
+						mp.Description = desc
+					}
+
+					m.Properties[name] = mp
+				}
+				if ignore := stag.Get("ignore"); ignore != "" {
+					continue
+				}
+			} else {
+				for _, pkg := range astPkgs {
+					for _, fl := range pkg.Files {
+						for nameOfObj, obj := range fl.Scope.Objects {
+							if obj.Name == fmt.Sprint(field.Type) {
+								parseObject(obj, nameOfObj, m, realTypes, astPkgs)
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 }
 
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
