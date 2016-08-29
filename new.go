@@ -56,26 +56,16 @@ func init() {
 
 func createApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
-
 	w := NewColorWriter(os.Stdout)
-
 	if len(args) != 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
-
-	gps := GetGOPATHs()
-	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
+	apppath, packpath, err := checkEnv(args[0])
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(2)
 	}
-	// In case of multiple paths in the GOPATH, by default
-	// we use the first path
-	gopath := gps[0]
-	Debugf("GOPATH: %s", gopath)
-
-	gosrcpath := path.Join(gopath, "src") // User's workspace
-	apppath := path.Join(gosrcpath, args[0])
 
 	if isExist(apppath) {
 		ColorLog("[ERRO] Path (%s) already exists\n", apppath)
@@ -119,13 +109,13 @@ func createApp(cmd *Command, args []string) int {
 	WriteToFile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
-	WriteToFile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
+	WriteToFile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", packpath, -1))
 
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
-	WriteToFile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
+	WriteToFile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", packpath, -1))
 
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
-	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/"), -1))
+	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", packpath, -1))
 
 	ColorLog("[SUCC] New application successfully created!\n")
 	return 0
