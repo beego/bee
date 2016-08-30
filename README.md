@@ -29,6 +29,16 @@ export PATH=$PATH:<your_main_gopath>/bin
 go get -u github.com/beego/bee
 ```
 
+------
+
+On **Mac OS X**, bee can be installed via [Homebrew](http://brew.sh/):
+
+```bash
+brew tap youngsterxyf/bee
+brew tap-pin youngsterxyf/bee
+brew install --HEAD bee
+```
+
 ## Basic commands
 
 Bee provides a variety of commands which can be helpful at various stages of development. The top level commands include: 
