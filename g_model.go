@@ -200,7 +200,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				}
 				sortFields = append(sortFields, orderby)
 			}
-			qs = qs.OrderBy(sortFields...)
+			qs = qs.OrderBy(sortFields...).RelatedSel()
 		} else if len(sortby) != len(order) && len(order) == 1 {
 			// 2) there is exactly one order, all the sorted fields will be sorted by this order
 			for _, v := range sortby {
@@ -224,7 +224,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	}
 
 	var l []{{modelName}}
-	qs = qs.OrderBy(sortFields...)
+	qs = qs.OrderBy(sortFields...).RelatedSel()
 	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
