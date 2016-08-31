@@ -204,7 +204,7 @@ func Add{{modelName}}(m *{{modelName}}) (id int64, err error) {
 func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 	o := orm.NewOrm()
 	v = &{{modelName}}{Id: id}
-	if err = o.QueryTable(new({{modelName}})).RelatedSel().One(v); err == nil {
+	if err = o.QueryTable(new({{modelName}})).Filter("Id", id).RelatedSel().One(v); err == nil {
 		return v, nil
 	}
 	return nil, err
