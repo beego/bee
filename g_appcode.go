@@ -1168,11 +1168,12 @@ import (
 	"github.com/astaxie/beego"
 )
 
-// oprations for {{ctrlName}}
+// {{ctrlName}}Controller oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
+// URLMapping ...
 func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Post", c.Post)
 	c.Mapping("GetOne", c.GetOne)
@@ -1181,6 +1182,7 @@ func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
+// Post ...
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -1202,6 +1204,7 @@ func (c *{{ctrlName}}Controller) Post() {
 	c.ServeJSON()
 }
 
+// Get ...
 // @Title Get
 // @Description get {{ctrlName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
@@ -1220,6 +1223,7 @@ func (c *{{ctrlName}}Controller) GetOne() {
 	c.ServeJSON()
 }
 
+// GetAll ...
 // @Title Get All
 // @Description get {{ctrlName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
@@ -1282,6 +1286,7 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	c.ServeJSON()
 }
 
+// Update ...
 // @Title Update
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
@@ -1305,6 +1310,7 @@ func (c *{{ctrlName}}Controller) Put() {
 	c.ServeJSON()
 }
 
+// Delete ...
 // @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"
