@@ -238,9 +238,9 @@ func (c *{{controllerName}}Controller) GetAll() {
 	var fields []string
 	var sortby []string
 	var order []string
-	var query map[string]string = make(map[string]string)
+	var query = make(map[string]string)
 	var limit int64 = 10
-	var offset int64 = 0
+	var offset int64
 
 	// fields: col1,col2,entity.col3
 	if v := c.GetString("fields"); v != "" {
