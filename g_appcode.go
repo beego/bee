@@ -1204,8 +1204,8 @@ func (c *{{ctrlName}}Controller) Post() {
 	c.ServeJSON()
 }
 
-// Get ...
-// @Title Get
+// GetOne ...
+// @Title Get One
 // @Description get {{ctrlName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{ctrlName}}
@@ -1286,8 +1286,8 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	c.ServeJSON()
 }
 
-// Update ...
-// @Title Update
+// Put ...
+// @Title Put
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
