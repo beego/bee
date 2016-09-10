@@ -69,7 +69,6 @@ EnableDocs = true
 var apiMaingo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
@@ -87,7 +86,6 @@ func main() {
 var apiMainconngo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
@@ -578,8 +576,6 @@ func createapi(cmd *Command, args []string) int {
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
-	os.Mkdir(path.Join(apppath, "docs"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "docs"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
@@ -606,7 +602,7 @@ func createapi(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(apppath, args[0]))
+		generateAppcode(string(driver), string(conn), "3", string(tables), apppath)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
@@ -635,9 +631,6 @@ func createapi(cmd *Command, args []string) int {
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "docs", "doc.go"), "\x1b[0m")
-		WriteToFile(path.Join(apppath, "docs", "doc.go"), "package docs")
-
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
@@ -652,9 +645,20 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	currpath, _ := os.Getwd()
+	currpath = path.Join(currpath, appname)
+	for _, gpath := range gps {
+		gsrcpath := path.Join(gpath, "src")
+		if strings.HasPrefix(currpath, gsrcpath) {
+			packpath = strings.Replace(currpath[len(gsrcpath)+1:], string(path.Separator), "/", -1)
+			return currpath, packpath, nil
+		}
+	}
+
 	// In case of multiple paths in the GOPATH, by default
 	// we use the first path
 	gopath := gps[0]
+	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
 	Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src")

@@ -20,6 +20,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 )
 
 var cmdRundocs = &Command{
@@ -120,6 +121,7 @@ func unzipAndDelete(src string) error {
 	}
 	defer r.Close()
 
+	rp := strings.NewReplacer("swagger-"+swaggerVersion, "swagger")
 	for _, f := range r.File {
 		rc, err := f.Open()
 		if err != nil {
@@ -127,11 +129,12 @@ func unzipAndDelete(src string) error {
 		}
 		defer rc.Close()
 
+		fname := rp.Replace(f.Name)
 		if f.FileInfo().IsDir() {
-			os.MkdirAll(f.Name, f.Mode())
+			os.MkdirAll(fname, f.Mode())
 		} else {
 			f, err := os.OpenFile(
-				f.Name, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
+				fname, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
 			if err != nil {
 				return err
 			}
@@ -142,11 +145,6 @@ func unzipAndDelete(src string) error {
 				return err
 			}
 		}
-	}
-	os.RemoveAll("swagger")
-	err = os.Rename("swagger-"+swaggerVersion, "swagger")
-	if err != nil {
-		ColorLog("[%s]Rename swagger-%s to swagger:%s\n", ERRO, swaggerVersion, err)
 	}
 	ColorLog("[%s]Start delete src file %s\n", INFO, src)
 	return os.RemoveAll(src)

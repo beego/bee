@@ -170,11 +170,9 @@ func generateCode(cmd *Command, args []string) int {
 		upsql := ""
 		downsql := ""
 		if fields != "" {
-			upsql = `m.SQL("CREATE TABLE ` + mname + "(" + generateSQLFromFields(fields.String()) + `)");`
-			downsql = `m.SQL("DROP TABLE ` + "`" + mname + "`" + `")`
-			if driver == "postgres" {
-				downsql = strings.Replace(downsql, "`", "", -1)
-			}
+			dbMigrator := newDBDriver()
+			upsql = dbMigrator.generateCreateUp(mname)
+			downsql = dbMigrator.generateCreateDown(mname)
 		}
 		generateMigration(mname, upsql, downsql, currpath)
 	case "controller":
