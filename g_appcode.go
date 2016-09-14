@@ -1168,11 +1168,12 @@ import (
 	"github.com/astaxie/beego"
 )
 
-// oprations for {{ctrlName}}
+// {{ctrlName}}Controller oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
+// URLMapping ...
 func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Post", c.Post)
 	c.Mapping("GetOne", c.GetOne)
@@ -1181,6 +1182,7 @@ func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
+// Post ...
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -1202,7 +1204,8 @@ func (c *{{ctrlName}}Controller) Post() {
 	c.ServeJSON()
 }
 
-// @Title Get
+// GetOne ...
+// @Title Get One
 // @Description get {{ctrlName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{ctrlName}}
@@ -1220,6 +1223,7 @@ func (c *{{ctrlName}}Controller) GetOne() {
 	c.ServeJSON()
 }
 
+// GetAll ...
 // @Title Get All
 // @Description get {{ctrlName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
@@ -1235,9 +1239,9 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	var fields []string
 	var sortby []string
 	var order []string
-	var query map[string]string = make(map[string]string)
+	var query = make(map[string]string)
 	var limit int64 = 10
-	var offset int64 = 0
+	var offset int64
 
 	// fields: col1,col2,entity.col3
 	if v := c.GetString("fields"); v != "" {
@@ -1282,7 +1286,8 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	c.ServeJSON()
 }
 
-// @Title Update
+// Put ...
+// @Title Put
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -1305,6 +1310,7 @@ func (c *{{ctrlName}}Controller) Put() {
 	c.ServeJSON()
 }
 
+// Delete ...
 // @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"
