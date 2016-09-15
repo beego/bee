@@ -31,6 +31,8 @@ import (
 	"strings"
 	"unicode"
 
+	"gopkg.in/yaml.v2"
+
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
 )
@@ -83,10 +85,18 @@ func generateDocs(curpath string) {
 					rootapi.Infos.TermsOfService = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
 					rootapi.Infos.Contact.EMail = strings.TrimSpace(s[len("@Contact"):])
+				} else if strings.HasPrefix(s, "@Name") {
+					rootapi.Infos.Contact.Name = strings.TrimSpace(s[len("@Name"):])
+				} else if strings.HasPrefix(s, "@URL") {
+					rootapi.Infos.Contact.URL = strings.TrimSpace(s[len("@URL"):])
 				} else if strings.HasPrefix(s, "@License") {
 					rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
 					rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+				} else if strings.HasPrefix(s, "@Schemes") {
+					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
+				} else if strings.HasPrefix(s, "@Host") {
+					rootapi.Host = strings.TrimSpace(s[len("@Host"):])
 				}
 			}
 		}
@@ -155,16 +165,20 @@ func generateDocs(curpath string) {
 	}
 	os.Mkdir(path.Join(curpath, "swagger"), 0755)
 	fd, err := os.Create(path.Join(curpath, "swagger", "swagger.json"))
+	fdyml, err := os.Create(path.Join(curpath, "swagger", "swagger.yml"))
 	if err != nil {
 		panic(err)
 	}
+	defer fdyml.Close()
 	defer fd.Close()
 	dt, err := json.MarshalIndent(rootapi, "", "    ")
-	if err != nil {
+	dtyml, erryml := yaml.Marshal(rootapi)
+	if err != nil || erryml != nil {
 		panic(err)
 	}
 	_, err = fd.Write(dt)
-	if err != nil {
+	_, erryml = fdyml.Write(dtyml)
+	if err != nil || erryml != nil {
 		panic(err)
 	}
 }
