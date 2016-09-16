@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"runtime"
 )
 
 var cmdMigrate = &Command{
@@ -145,8 +146,12 @@ func migrateRefresh(currpath, driver, connStr string) {
 
 // migrate generates source code, build it, and invoke the binary who does the actual migration
 func migrate(goal, currpath, driver, connStr string) {
-	dir := path.Join(currpath, "database", "migrations")
-	binary := "m"
+	dir := path.Join(currpath, "database", "migrations")	
+	postfix := ""
+	if runtime.GOOS == "windows" {
+		postfix = ".exe"
+	}
+	binary := "m" + postfix
 	source := binary + ".go"
 	// connect to database
 	db, err := sql.Open(driver, connStr)
