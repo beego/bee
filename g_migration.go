@@ -129,7 +129,7 @@ func (m postgresqlDriver) generateSQLFromFields(fields string) string {
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
-			sql += "id interger serial primary key,"
+			sql += "id serial primary key,"
 		}
 		sql += snakeString(kv[0]) + " " + typ + ","
 		if tag != "" {
