@@ -90,9 +90,17 @@ func generateDocs(curpath string) {
 				} else if strings.HasPrefix(s, "@URL") {
 					rootapi.Infos.Contact.URL = strings.TrimSpace(s[len("@URL"):])
 				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
+					if rootapi.Infos.License == nil {
+						rootapi.Infos.License = &swagger.License{Name: strings.TrimSpace(s[len("@License"):])}
+					} else {
+						rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
+					}
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					if rootapi.Infos.License == nil {
+						rootapi.Infos.License = &swagger.License{URL: strings.TrimSpace(s[len("@LicenseUrl"):])}
+					} else {
+						rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					}
 				} else if strings.HasPrefix(s, "@Schemes") {
 					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
 				} else if strings.HasPrefix(s, "@Host") {
