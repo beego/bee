@@ -683,12 +683,18 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					}
 				}
 			} else {
-				if isBasicType(realType) {
+				if sType == "object" {
+					mp.Ref = "#/definitions/" + realType
+				} else if isBasicType(realType) {
 					typeFormat := strings.Split(sType, ":")
 					mp.Type = typeFormat[0]
 					mp.Format = typeFormat[1]
-				} else if sType == "object" {
-					mp.Ref = "#/definitions/" + realType
+				} else if realType == "map" {
+					typeFormat := strings.Split(sType, ":")
+					mp.AdditionalProperties = &swagger.Propertie{
+						Type:   typeFormat[0],
+						Format: typeFormat[1],
+					}
 				}
 			}
 			if field.Names != nil {
@@ -768,7 +774,11 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	case *ast.StarExpr:
 		return false, fmt.Sprint(t.X), "object"
 	case *ast.MapType:
-		return false, fmt.Sprint(t.Value), "object"
+		val := fmt.Sprintf("%v", t.Value)
+		if isBasicType(val) {
+			return false, "map", basicTypes[val]
+		}
+		return false, val, "object"
 	}
 	if k, ok := basicTypes[fmt.Sprint(f.Type)]; ok {
 		return false, fmt.Sprint(f.Type), k
