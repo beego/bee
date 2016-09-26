@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	path "path/filepath"
@@ -452,24 +451,6 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 	}
 
 	return
-}
-
-func isBeegoProject(thePath string) bool {
-	fh, _ := os.Open(thePath)
-	fis, _ := fh.Readdir(-1)
-	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
-	for _, fi := range fis {
-		if fi.IsDir() == false && strings.HasSuffix(fi.Name(), ".go") {
-			data, err := ioutil.ReadFile(path.Join(thePath, fi.Name()))
-			if err != nil {
-				continue
-			}
-			if len(regex.Find(data)) > 0 {
-				return true
-			}
-		}
-	}
-	return false
 }
 
 func packApp(cmd *Command, args []string) int {

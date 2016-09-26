@@ -15,14 +15,16 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"time"
-	"path"
-	"fmt"
 )
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -35,7 +37,7 @@ func Go(f func() error) chan error {
 	return ch
 }
 
-// if os.env DEBUG set, debug is on
+// Debugf outputs a formtted debug message, when os.env DEBUG is set.
 func Debugf(format string, a ...interface{}) {
 	if os.Getenv("DEBUG") != "" {
 		_, file, line, ok := runtime.Caller(1)
@@ -174,6 +176,37 @@ func GetGOPATHs() []string {
 	return paths
 }
 
+func isBeegoProject(thePath string) bool {
+	mainFiles := []string{}
+	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
+	// Walk the application path tree to look for main files.
+	// Main files must satisfy the 'hasBeegoRegex' regular expression.
+	err := filepath.Walk(thePath, func(fpath string, f os.FileInfo, err error) error {
+		if !f.IsDir() { // Skip sub-directories
+			data, _err := ioutil.ReadFile(fpath)
+			if _err != nil {
+				return _err
+			}
+			if len(hasBeegoRegex.Find(data)) > 0 {
+				mainFiles = append(mainFiles, fpath)
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		log.Fatalf("Unable to walk '%s' tree: %v", thePath, err)
+		return false
+	}
+
+	if len(mainFiles) > 0 {
+		return true
+	}
+	return false
+}
+
+// SearchGOPATHs searchs the user GOPATH(s) for the specified application name.
+// It returns a boolean, the application's GOPATH and its full path.
 func SearchGOPATHs(app string) (bool, string, string) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
