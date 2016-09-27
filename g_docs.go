@@ -90,7 +90,11 @@ func init() {
 
 func parsePackagesFromDir(path string) {
 	parsePackageFromDir(path)
-	list, _ := ioutil.ReadDir(path)
+	list, err := ioutil.ReadDir(path)
+	if err != nil {
+		ColorLog("[ERRO] Can't read directory %s : %s\n", path, err)
+		os.Exit(1)
+	}
 	for _, item := range list {
 		if item.IsDir() && item.Name() != "vendor" {
 			parsePackagesFromDir(path + "/" + item.Name())
