@@ -253,6 +253,7 @@ var ignoredFilesRegExps = []string{
 	`.(\w+).go.swp`,
 	`(\w+).go~`,
 	`(\w+).tmp`,
+	`policies_autogen.go`,
 }
 
 // checkIfWatchExt returns true if the name HasSuffix <watch_ext>.
