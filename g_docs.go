@@ -770,6 +770,30 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 
 				var tagValues []string
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+				
+				defaultValue := stag.Get("doc")
+				if defaultValue != ""{
+					r, _ := regexp.Compile(`default\((.*)\)`)
+					if r.MatchString(defaultValue) {
+						res := r.FindStringSubmatch(defaultValue)
+						mp.Default = res[1]
+						switch realType{
+							case "int","int64", "int32", "int16", "int8":
+								mp.Default, _ = strconv.Atoi(res[1])
+							case "bool":
+								mp.Default, _ = strconv.ParseBool(res[1])
+							case "float64":
+								mp.Default, _ = strconv.ParseFloat(res[1], 64)
+							case "float32":
+								mp.Default, _ = strconv.ParseFloat(res[1], 32)
+							default:
+								mp.Default = res[1]
+						}
+					}else{
+						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
+					}
+				}
+				
 				tag := stag.Get("json")
 
 				if tag != "" {
