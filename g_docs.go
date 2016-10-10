@@ -779,15 +779,24 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 						mp.Default = res[1]
 						switch realType{
 							case "int","int64", "int32", "int16", "int8":
-								mp.Default, _ = strconv.Atoi(res[1])
+								if mp.Default, err = strconv.Atoi(res[1]); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
+
 							case "bool":
-								mp.Default, _ = strconv.ParseBool(res[1])
+								if mp.Default, err = strconv.ParseBool(res[1]); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
 							case "float64":
-								mp.Default, _ = strconv.ParseFloat(res[1], 64)
+								 if mp.Default, err = strconv.ParseFloat(res[1], 64); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								 }
 							case "float32":
-								mp.Default, _ = strconv.ParseFloat(res[1], 32)
-							default:
-								mp.Default = res[1]
+								if mp.Default, err = strconv.ParseFloat(res[1], 32); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
+						default:
+							mp.Default = res[1]
 						}
 					}else{
 						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
