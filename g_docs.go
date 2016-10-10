@@ -769,6 +769,8 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 				}
 
 				var tagValues []string
+				var err error
+				
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
 				
 				defaultValue := stag.Get("doc")
