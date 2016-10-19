@@ -758,9 +758,16 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 }
 
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
-	if arr, ok := f.Type.(*ast.ArrayType); ok {
+	fType := f.Type
+	if star, ok := fType.(*ast.StarExpr); ok {
+		fType = star.X
+	}
+
+	switch t := fType.(type) {
+	case *ast.ArrayType:
+		arr := fType.(*ast.ArrayType)
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+			return true, fmt.Sprint(arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"
@@ -769,21 +776,22 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return true, fmt.Sprint(star.X), "object"
 		}
 		return true, fmt.Sprint(arr.Elt), "object"
-	}
-	switch t := f.Type.(type) {
-	case *ast.StarExpr:
-		return false, fmt.Sprint(t.X), "object"
 	case *ast.MapType:
-		val := fmt.Sprintf("%v", t.Value)
+		var val string
+		if star, ok := t.Value.(*ast.StarExpr); ok {
+			val = fmt.Sprint(star.X)
+		} else {
+			val = fmt.Sprint(t.Value)
+		}
 		if isBasicType(val) {
 			return false, "map", basicTypes[val]
 		}
 		return false, val, "object"
 	}
-	if k, ok := basicTypes[fmt.Sprint(f.Type)]; ok {
-		return false, fmt.Sprint(f.Type), k
+	if k, ok := basicTypes[fmt.Sprint(fType)]; ok {
+		return false, fmt.Sprint(fType), k
 	}
-	return false, fmt.Sprint(f.Type), "object"
+	return false, fmt.Sprint(fType), "object"
 }
 
 func isBasicType(Type string) bool {
