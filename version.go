@@ -6,8 +6,10 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	path "path/filepath"
 	"regexp"
+	"strings"
 )
 
 var cmdVersion = &Command{
@@ -113,4 +115,17 @@ func getBeegoVersion() string {
 
 	}
 	return "Beego not installed. Please install it first: https://github.com/astaxie/beego"
+}
+
+func getGoVersion() string {
+	var (
+		cmdOut []byte
+		err    error
+	)
+
+	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
+		fmt.Fprintln(os.Stderr, "There was an error running go version command:", err)
+		os.Exit(2)
+	}
+	return strings.Split(string(cmdOut), " ")[2]
 }
