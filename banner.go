@@ -57,7 +57,7 @@ func show(out io.Writer, content string) {
 	}
 
 	err = t.Execute(out, vars{
-		runtime.Version(),
+		getGoVersion(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		runtime.NumCPU(),
