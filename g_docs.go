@@ -33,6 +33,8 @@ import (
 
 	"gopkg.in/yaml.v2"
 
+	"io/ioutil"
+
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
 )
@@ -50,6 +52,30 @@ var importlist map[string]string
 var controllerList map[string]map[string]*swagger.Item //controllername Paths items
 var modelsList map[string]map[string]swagger.Schema
 var rootapi swagger.Swagger
+var astPkgs map[string]*ast.Package
+
+// refer to builtin.go
+var basicTypes = map[string]string{
+	"bool":        "boolean:",
+	"uint":        "integer:int32",
+	"uint8":       "integer:int32",
+	"uint16":      "integer:int32",
+	"uint32":      "integer:int32",
+	"uint64":      "integer:int64",
+	"int":         "integer:int64",
+	"int8":        "integer:int32",
+	"int16:int32": "integer:int32",
+	"int32":       "integer:int32",
+	"int64":       "integer:int64",
+	"uintptr":     "integer:int64",
+	"float32":     "number:float",
+	"float64":     "number:double",
+	"string":      "string:",
+	"complex64":   "number:float",
+	"complex128":  "number:double",
+	"byte":        "string:byte",
+	"rune":        "string:byte",
+}
 
 func init() {
 	pkgCache = make(map[string]struct{})
@@ -57,6 +83,39 @@ func init() {
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
+	curPath, _ := os.Getwd()
+	astPkgs = map[string]*ast.Package{}
+	parsePackagesFromDir(curPath)
+}
+
+func parsePackagesFromDir(path string) {
+	parsePackageFromDir(path)
+	list, err := ioutil.ReadDir(path)
+	if err != nil {
+		ColorLog("[ERRO] Can't read directory %s : %s\n", path, err)
+		os.Exit(1)
+	}
+	for _, item := range list {
+		if item.IsDir() && item.Name() != "vendor" {
+			parsePackagesFromDir(path + "/" + item.Name())
+		}
+	}
+}
+
+func parsePackageFromDir(path string) {
+	fileSet := token.NewFileSet()
+	folderPkgs, err := parser.ParseDir(fileSet, path, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	}, parser.ParseComments)
+
+	if err != nil {
+		ColorLog("[ERRO] the model %s parser.ParseDir error\n", path)
+		os.Exit(1)
+	}
+	for k, v := range folderPkgs {
+		astPkgs[k] = v
+	}
 }
 
 func generateDocs(curpath string) {
@@ -414,13 +473,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						schema.Type = typeFormat[0]
 						schema.Format = typeFormat[1]
 					} else {
-						cmpath, m, mod, realTypes := getModel(schemaName)
+						m, mod, realTypes := getModel(schemaName)
 						schema.Ref = "#/definitions/" + m
 						if _, ok := modelsList[pkgpath+controllerName]; !ok {
 							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 						}
 						modelsList[pkgpath+controllerName][schemaName] = mod
-						appendModels(cmpath, pkgpath, controllerName, realTypes)
+						appendModels(pkgpath, controllerName, realTypes)
 					}
 					if isArray {
 						rs.Schema = &swagger.Schema{
@@ -460,7 +519,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
-					cmpath, m, mod, realTypes := getModel(p[2])
+					m, mod, realTypes := getModel(p[2])
 					para.Schema = &swagger.Schema{
 						Ref: "#/definitions/" + m,
 					}
@@ -468,7 +527,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 					}
 					modelsList[pkgpath+controllerName][typ] = mod
-					appendModels(cmpath, pkgpath, controllerName, realTypes)
+					appendModels(pkgpath, controllerName, realTypes)
 				} else {
 					isArray := false
 					paraType := ""
@@ -610,22 +669,10 @@ func getparams(str string) []string {
 	return r
 }
 
-func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTypes []string) {
+func getModel(str string) (objectname string, m swagger.Schema, realTypes []string) {
 	strs := strings.Split(str, ".")
 	objectname = strs[len(strs)-1]
-	pkgpath = strings.Join(strs[:len(strs)-1], "/")
-	curpath, _ := os.Getwd()
-	pkgRealpath := path.Join(curpath, pkgpath)
-	fileSet := token.NewFileSet()
-	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
-		name := info.Name()
-		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
-	}, parser.ParseComments)
-
-	if err != nil {
-		ColorLog("[ERRO] the model %s parser.ParseDir error\n", str)
-		os.Exit(1)
-	}
+	packageName := ""
 	m.Type = "object"
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
@@ -634,7 +681,8 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 					if k != objectname {
 						continue
 					}
-					parseObject(d, k, &m, &realTypes, astPkgs)
+					packageName = pkg.Name
+					parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
 				}
 			}
 		}
@@ -647,11 +695,12 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 	if len(rootapi.Definitions) == 0 {
 		rootapi.Definitions = make(map[string]swagger.Schema)
 	}
+	objectname = packageName + "." + objectname
 	rootapi.Definitions[objectname] = m
 	return
 }
 
-func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package) {
+func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
 		ColorLog("Unknown type without TypeSec: %v\n", d)
@@ -666,7 +715,18 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
 		for _, field := range st.Fields.List {
+			realType := ""
 			isSlice, realType, sType := typeAnalyser(field)
+			if (isSlice && isBasicType(realType)) || sType == "object" {
+				if len(strings.Split(realType, " ")) > 1 {
+					realType = strings.Replace(realType, " ", ".", -1)
+					realType = strings.Replace(realType, "&", "", -1)
+					realType = strings.Replace(realType, "{", "", -1)
+					realType = strings.Replace(realType, "}", "", -1)
+				} else {
+					realType = packageName + "." + realType
+				}
+			}
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
 			if isSlice {
@@ -709,7 +769,42 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 				}
 
 				var tagValues []string
+				var err error
+				
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+				
+				defaultValue := stag.Get("doc")
+				if defaultValue != ""{
+					r, _ := regexp.Compile(`default\((.*)\)`)
+					if r.MatchString(defaultValue) {
+						res := r.FindStringSubmatch(defaultValue)
+						mp.Default = res[1]
+						switch realType{
+							case "int","int64", "int32", "int16", "int8":
+								if mp.Default, err = strconv.Atoi(res[1]); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
+
+							case "bool":
+								if mp.Default, err = strconv.ParseBool(res[1]); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
+							case "float64":
+								 if mp.Default, err = strconv.ParseFloat(res[1], 64); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								 }
+							case "float32":
+								if mp.Default, err = strconv.ParseFloat(res[1], 32); err != nil{
+									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+								}
+						default:
+							mp.Default = res[1]
+						}
+					}else{
+						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
+					}
+				}
+				
 				tag := stag.Get("json")
 
 				if tag != "" {
@@ -747,7 +842,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					for _, fl := range pkg.Files {
 						for nameOfObj, obj := range fl.Scope.Objects {
 							if obj.Name == fmt.Sprint(field.Type) {
-								parseObject(obj, nameOfObj, m, realTypes, astPkgs)
+								parseObject(obj, nameOfObj, m, realTypes, astPkgs, pkg.Name)
 							}
 						}
 					}
@@ -793,18 +888,6 @@ func isBasicType(Type string) bool {
 	return false
 }
 
-// refer to builtin.go
-var basicTypes = map[string]string{
-	"bool": "boolean:",
-	"uint": "integer:int32", "uint8": "integer:int32", "uint16": "integer:int32", "uint32": "integer:int32", "uint64": "integer:int64",
-	"int": "integer:int64", "int8": "integer:int32", "int16:int32": "integer:int32", "int32": "integer:int32", "int64": "integer:int64",
-	"uintptr": "integer:int64",
-	"float32": "number:float", "float64": "number:double",
-	"string":    "string:",
-	"complex64": "number:float", "complex128": "number:double",
-	"byte": "string:byte", "rune": "string:byte",
-}
-
 // regexp get json tag
 func grepJSONTag(tag string) string {
 	r, _ := regexp.Compile(`json:"([^"]*)"`)
@@ -816,23 +899,16 @@ func grepJSONTag(tag string) string {
 }
 
 // append models
-func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
-	var p string
-	if cmpath != "" {
-		p = strings.Join(strings.Split(cmpath, "/"), ".") + "."
-	} else {
-		p = ""
-	}
+func appendModels(pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
 		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
 			!strings.HasPrefix(realType, "map") && !strings.HasPrefix(realType, "&") {
-			if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
+			if _, ok := modelsList[pkgpath+controllerName][realType]; ok {
 				continue
 			}
-			//fmt.Printf(pkgpath + ":" + controllerName + ":" + cmpath + ":" + realType + "\n")
-			_, _, mod, newRealTypes := getModel(p + realType)
-			modelsList[pkgpath+controllerName][p+realType] = mod
-			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
+			_, mod, newRealTypes := getModel(realType)
+			modelsList[pkgpath+controllerName][realType] = mod
+			appendModels(pkgpath, controllerName, newRealTypes)
 		}
 	}
 }

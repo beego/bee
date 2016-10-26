@@ -240,9 +240,8 @@ func shouldIgnoreFile(filename string) bool {
 		}
 		if r.MatchString(filename) {
 			return true
-		} else {
-			continue
 		}
+		continue
 	}
 	return false
 }

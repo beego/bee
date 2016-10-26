@@ -87,7 +87,7 @@ func runApp(cmd *Command, args []string) int {
 			currentGoPath = _gopath
 			appname = path.Base(currpath)
 		} else {
-			panic(fmt.Sprintf("No Beego application '%s' found in your GOPATH", args[0]))
+			exitPrint(fmt.Sprintf("No Beego application '%s' found in your GOPATH", args[0]))
 		}
 
 		ColorLog("[INFO] Using '%s' as 'appname'\n", appname)
@@ -103,13 +103,13 @@ func runApp(cmd *Command, args []string) int {
 
 	Debugf("current path:%s\n", currpath)
 
-	if runmode == "prod" || runmode == "dev"{
+	if runmode == "prod" || runmode == "dev" {
 		os.Setenv("BEEGO_RUNMODE", runmode)
 		ColorLog("[INFO] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
-	}else if runmode != ""{
+	} else if runmode != "" {
 		os.Setenv("BEEGO_RUNMODE", runmode)
 		ColorLog("[WARN] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
-	}else if os.Getenv("BEEGO_RUNMODE") != ""{
+	} else if os.Getenv("BEEGO_RUNMODE") != "" {
 		ColorLog("[WARN] Using '%s' as 'runmode'\n", os.Getenv("BEEGO_RUNMODE"))
 	}
 
