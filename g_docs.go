@@ -769,7 +769,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 				}
 
 				var tagValues []string
-				var err error
+				//var err error
 				
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
 				
@@ -779,27 +779,27 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					if r.MatchString(defaultValue) {
 						res := r.FindStringSubmatch(defaultValue)
 						mp.Default = res[1]
-						switch realType{
-							case "int","int64", "int32", "int16", "int8":
-								if mp.Default, err = strconv.Atoi(res[1]); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
-
-							case "bool":
-								if mp.Default, err = strconv.ParseBool(res[1]); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
-							case "float64":
-								 if mp.Default, err = strconv.ParseFloat(res[1], 64); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								 }
-							case "float32":
-								if mp.Default, err = strconv.ParseFloat(res[1], 32); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
-						default:
-							mp.Default = res[1]
-						}
+						//switch realType{
+						//	case "int","int64", "int32", "int16", "int8":
+						//		if mp.Default, err = strconv.Atoi(res[1]); err != nil{
+						//			ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+						//		}
+						//
+						//	case "bool":
+						//		if mp.Default, err = strconv.ParseBool(res[1]); err != nil{
+						//			ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+						//		}
+						//	case "float64":
+						//		 if mp.Default, err = strconv.ParseFloat(res[1], 64); err != nil{
+						//			ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+						//		 }
+						//	case "float32":
+						//		if mp.Default, err = strconv.ParseFloat(res[1], 32); err != nil{
+						//			ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
+						//		}
+						//default:
+						//	mp.Default = res[1]
+						//}
 					}else{
 						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
 					}
