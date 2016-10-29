@@ -557,10 +557,15 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						para.Format = paraFormat
 					}
 				}
-				if len(p) > 4 {
+				switch len(p) {
+				case 5:
 					para.Required, _ = strconv.ParseBool(p[3])
 					para.Description = strings.Trim(p[4], `" `)
-				} else {
+				case 6:
+					para.Default = str2RealType(p[3], para.Type)
+					para.Required, _ = strconv.ParseBool(p[4])
+					para.Description = strings.Trim(p[5], `" `)
+				default:
 					para.Description = strings.Trim(p[3], `" `)
 				}
 				opts.Parameters = append(opts.Parameters, para)
@@ -646,16 +651,12 @@ func getparams(str string) []string {
 	var j int
 	var start bool
 	var r []string
-	for i, c := range []rune(str) {
-		if unicode.IsSpace(c) {
+	var quoted int8
+	for _, c := range []rune(str) {
+		if unicode.IsSpace(c) && quoted == 0 {
 			if !start {
 				continue
 			} else {
-				if j == 3 {
-					r = append(r, string(s))
-					r = append(r, strings.TrimSpace((str[i+1:])))
-					break
-				}
 				start = false
 				j++
 				r = append(r, string(s))
@@ -663,8 +664,16 @@ func getparams(str string) []string {
 				continue
 			}
 		}
+
 		start = true
+		if c == '"' {
+			quoted ^= 1
+			continue
+		}
 		s = append(s, c)
+	}
+	if len(s) > 0 {
+		r = append(r, string(s))
 	}
 	return r
 }
@@ -769,42 +778,21 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 				}
 
 				var tagValues []string
-				var err error
-				
+
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
-				
+
 				defaultValue := stag.Get("doc")
-				if defaultValue != ""{
+				if defaultValue != "" {
 					r, _ := regexp.Compile(`default\((.*)\)`)
 					if r.MatchString(defaultValue) {
 						res := r.FindStringSubmatch(defaultValue)
-						mp.Default = res[1]
-						switch realType{
-							case "int","int64", "int32", "int16", "int8":
-								if mp.Default, err = strconv.Atoi(res[1]); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
+						mp.Default = str2RealType(res[1], realType)
 
-							case "bool":
-								if mp.Default, err = strconv.ParseBool(res[1]); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
-							case "float64":
-								 if mp.Default, err = strconv.ParseFloat(res[1], 64); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								 }
-							case "float32":
-								if mp.Default, err = strconv.ParseFloat(res[1], 32); err != nil{
-									ColorLog("[WARN] Invalid default value type(%s): %s\n",realType, res[1])
-								}
-						default:
-							mp.Default = res[1]
-						}
-					}else{
+					} else {
 						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
 					}
 				}
-				
+
 				tag := stag.Get("json")
 
 				if tag != "" {
@@ -925,4 +913,29 @@ func urlReplace(src string) string {
 		}
 	}
 	return strings.Join(pt, "/")
+}
+
+func str2RealType(s string, typ string) interface{} {
+	var err error
+	var ret interface{}
+
+	switch typ {
+	case "int", "int64", "int32", "int16", "int8":
+		ret, err = strconv.Atoi(s)
+	case "bool":
+		ret, err = strconv.ParseBool(s)
+	case "float64":
+		ret, err = strconv.ParseFloat(s, 64)
+	case "float32":
+		ret, err = strconv.ParseFloat(s, 32)
+	default:
+		return s
+	}
+
+	if err != nil {
+		ColorLog("[WARN] Invalid default value type(%s): %s\n", typ, s)
+		return s
+	}
+
+	return ret
 }
