@@ -64,7 +64,7 @@ var hproseMaingo = `package main
 
 import (
 	"fmt"
-    "reflect"
+	"reflect"
 	
 	"{{.Appname}}/models"
 	"github.com/hprose/hprose-golang/rpc"
@@ -73,14 +73,14 @@ import (
 )
 
 func logInvokeHandler(
-    name string,
-    args []reflect.Value,
-    context rpc.Context,
-    next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
-    fmt.Printf("%s(%v) = ", name, args)
-    results, err = next(name, args, context)
-    fmt.Printf("%v %v\r\n", results, err)
-    return
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
 }
 
 func main() {
@@ -107,8 +107,8 @@ var hproseMainconngo = `package main
 
 import (
 	"fmt"
-    "reflect"
-	
+	"reflect"
+
 	"{{.Appname}}/models"
 	"github.com/hprose/hprose-golang/rpc"
 
@@ -122,14 +122,14 @@ func init() {
 }
 
 func logInvokeHandler(
-    name string,
-    args []reflect.Value,
-    context rpc.Context,
-    next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
-    fmt.Printf("%s(%v) = ", name, args)
-    results, err = next(name, args, context)
-    fmt.Printf("%v %v\r\n", results, err)
-    return
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
 }
 
 func main() {
