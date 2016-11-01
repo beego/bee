@@ -23,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"runtime"
 )
 
 var cmdMigrate = &Command{
@@ -31,22 +32,22 @@ var cmdMigrate = &Command{
 	Long: `
 bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     run all outstanding migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback the last migration operation
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 
 bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
     rollback all migrations and run them all again
-    -driver: [mysql | postgresql | sqlite], the default is mysql
+    -driver: [mysql | postgres | sqlite] (default: mysql)
     -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
 `,
 }
@@ -56,21 +57,24 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
-	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgresql, etc.")
+	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
-	crupath, _ := os.Getwd()
+	ShowShortVersionBanner()
 
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+	currpath, _ := os.Getwd()
+
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
 		os.Exit(2)
 	}
+	gopath := gps[0]
+	Debugf("GOPATH: %s", gopath)
+
 	// load config
 	err := loadConfig()
 	if err != nil {
@@ -98,19 +102,19 @@ func runMigration(cmd *Command, args []string) int {
 	if len(args) == 0 {
 		// run all outstanding migrations
 		ColorLog("[INFO] Running all outstanding migrations\n")
-		migrateUpdate(crupath, driverStr, connStr)
+		migrateUpdate(currpath, driverStr, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			ColorLog("[INFO] Rolling back the last migration operation\n")
-			migrateRollback(crupath, driverStr, connStr)
+			migrateRollback(currpath, driverStr, connStr)
 		case "reset":
 			ColorLog("[INFO] Reseting all migrations\n")
-			migrateReset(crupath, driverStr, connStr)
+			migrateReset(currpath, driverStr, connStr)
 		case "refresh":
 			ColorLog("[INFO] Refreshing all migrations\n")
-			migrateRefresh(crupath, driverStr, connStr)
+			migrateRefresh(currpath, driverStr, connStr)
 		default:
 			ColorLog("[ERRO] Command is missing\n")
 			os.Exit(2)
@@ -121,38 +125,43 @@ func runMigration(cmd *Command, args []string) int {
 }
 
 // migrateUpdate does the schema update
-func migrateUpdate(crupath, driver, connStr string) {
-	migrate("upgrade", crupath, driver, connStr)
+func migrateUpdate(currpath, driver, connStr string) {
+	migrate("upgrade", currpath, driver, connStr)
 }
 
 // migrateRollback rolls back the latest migration
-func migrateRollback(crupath, driver, connStr string) {
-	migrate("rollback", crupath, driver, connStr)
+func migrateRollback(currpath, driver, connStr string) {
+	migrate("rollback", currpath, driver, connStr)
 }
 
 // migrateReset rolls back all migrations
-func migrateReset(crupath, driver, connStr string) {
-	migrate("reset", crupath, driver, connStr)
+func migrateReset(currpath, driver, connStr string) {
+	migrate("reset", currpath, driver, connStr)
 }
 
 // migrationRefresh rolls back all migrations and start over again
-func migrateRefresh(crupath, driver, connStr string) {
-	migrate("refresh", crupath, driver, connStr)
+func migrateRefresh(currpath, driver, connStr string) {
+	migrate("refresh", currpath, driver, connStr)
 }
 
 // migrate generates source code, build it, and invoke the binary who does the actual migration
-func migrate(goal, crupath, driver, connStr string) {
-	dir := path.Join(crupath, "database", "migrations")
-	binary := "m"
+func migrate(goal, currpath, driver, connStr string) {
+	dir := path.Join(currpath, "database", "migrations")	
+	postfix := ""
+	if runtime.GOOS == "windows" {
+		postfix = ".exe"
+	}
+	binary := "m" + postfix
 	source := binary + ".go"
 	// connect to database
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
+		ColorLog("[ERRO] Error: %v", err.Error())
 		os.Exit(2)
 	}
 	defer db.Close()
-	checkForSchemaUpdateTable(db)
+	checkForSchemaUpdateTable(db, driver)
 	latestName, latestTime := getLatestMigration(db, goal)
 	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
 	buildMigrationBinary(dir, binary)
@@ -163,20 +172,24 @@ func migrate(goal, crupath, driver, connStr string) {
 
 // checkForSchemaUpdateTable checks the existence of migrations table.
 // It checks for the proper table structures and creates the table using MYSQL_MIGRATION_DDL if it does not exist.
-func checkForSchemaUpdateTable(db *sql.DB) {
-	if rows, err := db.Query("SHOW TABLES LIKE 'migrations'"); err != nil {
+func checkForSchemaUpdateTable(db *sql.DB, driver string) {
+	showTableSQL := showMigrationsTableSQL(driver)
+	if rows, err := db.Query(showTableSQL); err != nil {
 		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
 		os.Exit(2)
 	} else if !rows.Next() {
 		// no migrations table, create anew
+		createTableSQL := createMigrationsTableSQL(driver)
 		ColorLog("[INFO] Creating 'migrations' table...\n")
-		if _, err := db.Query(MYSQL_MIGRATION_DDL); err != nil {
+		if _, err := db.Query(createTableSQL); err != nil {
 			ColorLog("[ERRO] Could not create migrations table: %s\n", err)
 			os.Exit(2)
 		}
 	}
+
 	// checking that migrations table schema are expected
-	if rows, err := db.Query("DESC migrations"); err != nil {
+	selectTableSQL := selectMigrationsTableSQL(driver)
+	if rows, err := db.Query(selectTableSQL); err != nil {
 		ColorLog("[ERRO] Could not show columns of migrations table: %s\n", err)
 		os.Exit(2)
 	} else {
@@ -209,6 +222,39 @@ func checkForSchemaUpdateTable(db *sql.DB) {
 				}
 			}
 		}
+	}
+}
+
+func showMigrationsTableSQL(driver string) string {
+	switch driver {
+	case "mysql":
+		return "SHOW TABLES LIKE 'migrations'"
+	case "postgres":
+		return "SELECT * FROM pg_catalog.pg_tables WHERE tablename = 'migrations';"
+	default:
+		return "SHOW TABLES LIKE 'migrations'"
+	}
+}
+
+func createMigrationsTableSQL(driver string) string {
+	switch driver {
+	case "mysql":
+		return MYSQLMigrationDDL
+	case "postgres":
+		return POSTGRESMigrationDDL
+	default:
+		return MYSQLMigrationDDL
+	}
+}
+
+func selectMigrationsTableSQL(driver string) string {
+	switch driver {
+	case "mysql":
+		return "DESC migrations"
+	case "postgres":
+		return "SELECT * FROM migrations WHERE false ORDER BY id_migration;"
+	default:
+		return "DESC migrations"
 	}
 }
 
@@ -250,7 +296,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 		ColorLog("[ERRO] Could not create file: %s\n", err)
 		os.Exit(2)
 	} else {
-		content := strings.Replace(MIGRATION_MAIN_TPL, "{{DBDriver}}", driver, -1)
+		content := strings.Replace(MigrationMainTPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
 		content = strings.Replace(content, "{{LatestTime}}", strconv.FormatInt(latestTime, 10), -1)
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
@@ -259,7 +305,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 			ColorLog("[ERRO] Could not write to file: %s\n", err)
 			os.Exit(2)
 		}
-		f.Close()
+		CloseFile(f)
 	}
 }
 
@@ -329,7 +375,7 @@ func formatShellOutput(o string) {
 }
 
 const (
-	MIGRATION_MAIN_TPL = `package main
+	MigrationMainTPL = `package main
 
 import(
 	"os"
@@ -338,6 +384,7 @@ import(
 	"github.com/astaxie/beego/migration"
 
 	_ "github.com/go-sql-driver/mysql"
+	_ "github.com/lib/pq"
 )
 
 func init(){
@@ -367,7 +414,7 @@ func main(){
 }
 
 `
-	MYSQL_MIGRATION_DDL = `
+	MYSQLMigrationDDL = `
 CREATE TABLE migrations (
 	id_migration int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'surrogate key',
 	name varchar(255) DEFAULT NULL COMMENT 'migration name, unique',
@@ -376,6 +423,18 @@ CREATE TABLE migrations (
 	rollback_statements longtext COMMENT 'SQL statment for rolling back migration',
 	status ENUM('update', 'rollback') COMMENT 'update indicates it is a normal migration while rollback means this migration is rolled back',
 	PRIMARY KEY (id_migration)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8
 `
+
+	POSTGRESMigrationDDL = `
+CREATE TYPE migrations_status AS ENUM('update', 'rollback');
+
+CREATE TABLE migrations (
+	id_migration SERIAL PRIMARY KEY,
+	name varchar(255) DEFAULT NULL,
+	created_at timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+	statements text,
+	rollback_statements text,
+	status migrations_status
+)`
 )

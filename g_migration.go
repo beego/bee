@@ -23,15 +23,170 @@ import (
 )
 
 const (
-	M_PATH        = "migrations"
-	M_DATE_FORMAT = "20060102_150405"
+	MPath       = "migrations"
+	MDateFormat = "20060102_150405"
+	DBPath      = "database"
 )
+
+type DBDriver interface {
+	generateCreateUp(tableName string) string
+	generateCreateDown(tableName string) string
+}
+
+type mysqlDriver struct{}
+
+func (m mysqlDriver) generateCreateUp(tableName string) string {
+	upsql := `m.SQL("CREATE TABLE ` + tableName + "(" + m.generateSQLFromFields(fields.String()) + `)");`
+	return upsql
+}
+
+func (m mysqlDriver) generateCreateDown(tableName string) string {
+	downsql := `m.SQL("DROP TABLE ` + "`" + tableName + "`" + `")`
+	return downsql
+}
+
+func (m mysqlDriver) generateSQLFromFields(fields string) string {
+	sql, tags := "", ""
+	fds := strings.Split(fields, ",")
+	for i, v := range fds {
+		kv := strings.SplitN(v, ":", 2)
+		if len(kv) != 2 {
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			return ""
+		}
+		typ, tag := m.getSQLType(kv[1])
+		if typ == "" {
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			return ""
+		}
+		if i == 0 && strings.ToLower(kv[0]) != "id" {
+			sql += "`id` int(11) NOT NULL AUTO_INCREMENT,"
+			tags = tags + "PRIMARY KEY (`id`),"
+		}
+		sql += "`" + snakeString(kv[0]) + "` " + typ + ","
+		if tag != "" {
+			tags = tags + fmt.Sprintf(tag, "`"+snakeString(kv[0])+"`") + ","
+		}
+	}
+	sql = strings.TrimRight(sql+tags, ",")
+	return sql
+}
+
+func (m mysqlDriver) getSQLType(ktype string) (tp, tag string) {
+	kv := strings.SplitN(ktype, ":", 2)
+	switch kv[0] {
+	case "string":
+		if len(kv) == 2 {
+			return "varchar(" + kv[1] + ") NOT NULL", ""
+		}
+		return "varchar(128) NOT NULL", ""
+	case "text":
+		return "longtext  NOT NULL", ""
+	case "auto":
+		return "int(11) NOT NULL AUTO_INCREMENT", ""
+	case "pk":
+		return "int(11) NOT NULL", "PRIMARY KEY (%s)"
+	case "datetime":
+		return "datetime NOT NULL", ""
+	case "int", "int8", "int16", "int32", "int64":
+		fallthrough
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return "int(11) DEFAULT NULL", ""
+	case "bool":
+		return "tinyint(1) NOT NULL", ""
+	case "float32", "float64":
+		return "float NOT NULL", ""
+	case "float":
+		return "float NOT NULL", ""
+	}
+	return "", ""
+}
+
+type postgresqlDriver struct{}
+
+func (m postgresqlDriver) generateCreateUp(tableName string) string {
+	upsql := `m.SQL("CREATE TABLE ` + tableName + "(" + m.generateSQLFromFields(fields.String()) + `)");`
+	return upsql
+}
+
+func (m postgresqlDriver) generateCreateDown(tableName string) string {
+	downsql := `m.SQL("DROP TABLE ` + tableName + `")`
+	return downsql
+}
+
+func (m postgresqlDriver) generateSQLFromFields(fields string) string {
+	sql, tags := "", ""
+	fds := strings.Split(fields, ",")
+	for i, v := range fds {
+		kv := strings.SplitN(v, ":", 2)
+		if len(kv) != 2 {
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			return ""
+		}
+		typ, tag := m.getSQLType(kv[1])
+		if typ == "" {
+			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			return ""
+		}
+		if i == 0 && strings.ToLower(kv[0]) != "id" {
+			sql += "id serial primary key,"
+		}
+		sql += snakeString(kv[0]) + " " + typ + ","
+		if tag != "" {
+			tags = tags + fmt.Sprintf(tag, snakeString(kv[0])) + ","
+		}
+	}
+	if tags != "" {
+		sql = strings.TrimRight(sql+" "+tags, ",")
+	} else {
+		sql = strings.TrimRight(sql, ",")
+	}
+	return sql
+}
+
+func (m postgresqlDriver) getSQLType(ktype string) (tp, tag string) {
+	kv := strings.SplitN(ktype, ":", 2)
+	switch kv[0] {
+	case "string":
+		if len(kv) == 2 {
+			return "char(" + kv[1] + ") NOT NULL", ""
+		}
+		return "TEXT NOT NULL", ""
+	case "text":
+		return "TEXT NOT NULL", ""
+	case "auto", "pk":
+		return "serial primary key", ""
+	case "datetime":
+		return "TIMESTAMP WITHOUT TIME ZONE NOT NULL", ""
+	case "int", "int8", "int16", "int32", "int64":
+		fallthrough
+	case "uint", "uint8", "uint16", "uint32", "uint64":
+		return "integer DEFAULT NULL", ""
+	case "bool":
+		return "boolean NOT NULL", ""
+	case "float32", "float64", "float":
+		return "numeric NOT NULL", ""
+	}
+	return "", ""
+}
+
+func newDBDriver() DBDriver {
+	switch driver {
+	case "mysql":
+		return mysqlDriver{}
+	case "postgres":
+		return postgresqlDriver{}
+	default:
+		panic("driver not supported")
+	}
+}
 
 // generateMigration generates migration file template for database schema update.
 // The generated file template consists of an up() method for updating schema and
 // a down() method for reverting the update.
 func generateMigration(mname, upsql, downsql, curpath string) {
-	migrationFilePath := path.Join(curpath, "database", M_PATH)
+	w := NewColorWriter(os.Stdout)
+	migrationFilePath := path.Join(curpath, DBPath, MPath)
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
 		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
@@ -40,26 +195,25 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 		}
 	}
 	// create file
-	today := time.Now().Format(M_DATE_FORMAT)
+	today := time.Now().Format(MDateFormat)
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
-		defer f.Close()
-		content := strings.Replace(MIGRATION_TPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
+		defer CloseFile(f)
+		content := strings.Replace(MigrationTPL, "{{StructName}}", camelCase(mname)+"_"+today, -1)
 		content = strings.Replace(content, "{{CurrTime}}", today, -1)
 		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
 		content = strings.Replace(content, "{{DownSQL}}", downsql, -1)
 		f.WriteString(content)
-		// gofmt generated source code
+		// Run 'gofmt' on the generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] Migration file generated: %s\n", fpath)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		// error creating file
 		ColorLog("[ERRO] Could not create migration file: %s\n", err)
 		os.Exit(2)
 	}
 }
 
-const MIGRATION_TPL = `package main
+const MigrationTPL = `package main
 
 import (
 	"github.com/astaxie/beego/migration"
@@ -79,13 +233,13 @@ func init() {
 
 // Run the migrations
 func (m *{{StructName}}) Up() {
-	// use m.Sql("CREATE TABLE ...") to make schema update
+	// use m.SQL("CREATE TABLE ...") to make schema update
 	{{UpSQL}}
 }
 
 // Reverse the migrations
 func (m *{{StructName}}) Down() {
-	// use m.Sql("DROP TABLE ...") to reverse schema update
+	// use m.SQL("DROP TABLE ...") to reverse schema update
 	{{DownSQL}}
 }
 `

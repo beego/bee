@@ -37,22 +37,23 @@ import (
 var cmdPack = &Command{
 	CustomFlags: true,
 	UsageLine:   "pack",
-	Short:       "compress an beego project",
+	Short:       "Compress a beego project into a single file",
 	Long: `
-compress an beego project
+Pack is used to compress a beego project into a single file.
+This eases the deployment by extracting the zip file to a server.
 
--p            app path. default is current path
--b            build specify platform app. default true
+-p            app path (default is the current path).
+-b            build specify platform app (default: true).
 -ba           additional args of go build
 -be=[]        additional ENV Variables of go build. eg: GOARCH=arm
 -o            compressed file output dir. default use current path
--f=""         format. [ tar.gz / zip ]. default tar.gz
--exp=""       relpath exclude prefix. default: .
--exs=""       relpath exclude suffix. default: .go:.DS_Store:.tmp
+-f=""         format: tar.gz, zip (default: tar.gz)
+-exp=""       relpath exclude prefix (default: .). use : as separator
+-exs=""       relpath exclude suffix (default: .go:.DS_Store:.tmp). use : as separator
               all path use : as separator
--exr=[]       file/directory name exclude by Regexp. default: ^.
--fs=false     follow symlink. default false
--ss=false     skip symlink. default false
+-exr=[]       file/directory name exclude by Regexp (default: ^).
+-fs=false     follow symlink (default: false).
+-ss=false     skip symlink (default: false)
               default embed symlink into compressed file
 -v=false      verbose
 `,
@@ -71,6 +72,7 @@ var (
 	buildEnvs ListOpts
 	verbose   bool
 	format    string
+	w         io.Writer
 )
 
 type ListOpts []string
@@ -100,6 +102,7 @@ func init() {
 	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
+	w = NewColorWriter(os.Stdout)
 }
 
 func exitPrint(con string) {
@@ -198,6 +201,7 @@ func (wft *walkFileTree) virPath(fpath string) string {
 		return ""
 	}
 	name = name[1:]
+	name = path.ToSlash(name)
 	return name
 }
 
@@ -240,13 +244,12 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 
 	if added, err := wft.wak.compress(name, fpath, fi); added {
 		if verbose {
-			fmt.Printf("Compressed: %s\n", name)
+			fmt.Fprintf(w, "\t%s%scompressed%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", name, "\x1b[0m")
 		}
 		wft.allfiles[name] = true
 		return err
-	} else {
-		return err
 	}
+	return err
 }
 
 func (wft *walkFileTree) iterDirectory(fpath string, fi os.FileInfo) error {
@@ -337,7 +340,7 @@ func (wft *tarWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		defer fr.Close()
+		defer CloseFile(fr)
 		_, err = io.Copy(tw, fr)
 		if err != nil {
 			return false, err
@@ -373,7 +376,7 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 		if err != nil {
 			return false, err
 		}
-		defer fr.Close()
+		defer CloseFile(fr)
 		_, err = io.Copy(w, fr)
 		if err != nil {
 			return false, err
@@ -395,10 +398,10 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 func packDirectory(excludePrefix []string, excludeSuffix []string,
 	excludeRegexp []*regexp.Regexp, includePath ...string) (err error) {
 
-	fmt.Printf("exclude relpath prefix: %s\n", strings.Join(excludePrefix, ":"))
-	fmt.Printf("exclude relpath suffix: %s\n", strings.Join(excludeSuffix, ":"))
+	ColorLog("Excluding relpath prefix: %s\n", strings.Join(excludePrefix, ":"))
+	ColorLog("Excluding relpath suffix: %s\n", strings.Join(excludeSuffix, ":"))
 	if len(excludeRegexp) > 0 {
-		fmt.Printf("exclude filename regex: `%s`\n", strings.Join(excludeR, "`, `"))
+		ColorLog("Excluding filename regex: `%s`\n", strings.Join(excludeR, "`, `"))
 	}
 
 	w, err := os.OpenFile(outputP, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -454,7 +457,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 func isBeegoProject(thePath string) bool {
 	fh, _ := os.Open(thePath)
 	fis, _ := fh.Readdir(-1)
-	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?"github.com/astaxie/beego".*?\).*func main()`)
+	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
 	for _, fi := range fis {
 		if fi.IsDir() == false && strings.HasSuffix(fi.Name(), ".go") {
 			data, err := ioutil.ReadFile(path.Join(thePath, fi.Name()))
@@ -470,6 +473,8 @@ func isBeegoProject(thePath string) bool {
 }
 
 func packApp(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -491,17 +496,17 @@ func packApp(cmd *Command, args []string) int {
 
 	thePath, err := path.Abs(appPath)
 	if err != nil {
-		exitPrint(fmt.Sprintf("wrong app path: %s", thePath))
+		exitPrint(fmt.Sprintf("Wrong app path: %s", thePath))
 	}
 	if stat, err := os.Stat(thePath); os.IsNotExist(err) || stat.IsDir() == false {
-		exitPrint(fmt.Sprintf("not exist app path: %s", thePath))
+		exitPrint(fmt.Sprintf("App path does not exist: %s", thePath))
 	}
 
 	if isBeegoProject(thePath) == false {
-		exitPrint(fmt.Sprintf("not support non beego project"))
+		exitPrint(fmt.Sprintf("Bee does not support non Beego project"))
 	}
 
-	fmt.Printf("app path: %s\n", thePath)
+	ColorLog("Packaging application: %s\n", thePath)
 
 	appName := path.Base(thePath)
 
@@ -516,14 +521,12 @@ func packApp(cmd *Command, args []string) int {
 
 	str := strconv.FormatInt(time.Now().UnixNano(), 10)[9:]
 
-	gobin := path.Join(runtime.GOROOT(), "bin", "go")
 	tmpdir := path.Join(os.TempDir(), "beePack-"+str)
 
 	os.Mkdir(tmpdir, 0700)
 
 	if build {
-		fmt.Println("build", appName)
-
+		ColorLog("Building application...\n")
 		var envs []string
 		for _, env := range buildEnvs {
 			parts := strings.SplitN(env, "=", 2)
@@ -545,7 +548,7 @@ func packApp(cmd *Command, args []string) int {
 		os.Setenv("GOOS", goos)
 		os.Setenv("GOARCH", goarch)
 
-		fmt.Println("GOOS", goos, "GOARCH", goarch)
+		ColorLog("Env: GOOS=%s GOARCH=%s\n", goos, goarch)
 
 		binPath := path.Join(tmpdir, appName)
 		if goos == "windows" {
@@ -558,10 +561,10 @@ func packApp(cmd *Command, args []string) int {
 		}
 
 		if verbose {
-			fmt.Println(gobin, " ", strings.Join(args, " "))
+			fmt.Fprintf(w, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
 
-		execmd := exec.Command(gobin, args...)
+		execmd := exec.Command("go", args...)
 		execmd.Env = append(os.Environ(), envs...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
@@ -571,7 +574,7 @@ func packApp(cmd *Command, args []string) int {
 			exitPrint(err.Error())
 		}
 
-		fmt.Println("build success")
+		ColorLog("Build successful\n")
 	}
 
 	switch format {
@@ -623,6 +626,6 @@ func packApp(cmd *Command, args []string) int {
 		exitPrint(err.Error())
 	}
 
-	fmt.Printf("file write to `%s`\n", outputP)
+	ColorLog("Writing to output: `%s`\n", outputP)
 	return 0
 }

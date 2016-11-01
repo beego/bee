@@ -30,13 +30,15 @@ var cmdBale = &Command{
 	UsageLine: "bale",
 	Short:     "packs non-Go files to Go source files",
 	Long: `
-bale packs non-Go files to Go source files and
+Bale command compress all the static files in to a single binary file.
 
-auto-generate unpack function to main package then run it
+This is usefull to not have to carry static files including js, css, images
+and views when publishing a project.
 
-during the runtime.
+auto-generate unpack function to main package then run it during the runtime.
+This is mainly used for zealots who are requiring 100% Go code.
 
-This is mainly used for zealots who are requiring 100% Go code.`,
+`,
 }
 
 func init() {
@@ -44,6 +46,8 @@ func init() {
 }
 
 func runBale(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
 	err := loadConfig()
 	if err != nil {
 		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
@@ -58,13 +62,13 @@ func runBale(cmd *Command, args []string) int {
 			ColorLog("[WARN] Skipped directory( %s )\n", p)
 			continue
 		}
-		ColorLog("[INFO] Packing directory( %s )\n", p)
+		ColorLog("[INFO] Packaging directory( %s )\n", p)
 		filepath.Walk(p, walkFn)
 	}
 
 	// Generate auto-uncompress function.
 	buf := new(bytes.Buffer)
-	buf.WriteString(fmt.Sprintf(_BALE_HEADER, conf.Bale.Import,
+	buf.WriteString(fmt.Sprintf(BaleHeader, conf.Bale.Import,
 		strings.Join(resFiles, "\",\n\t\t\""),
 		strings.Join(resFiles, ",\n\t\tbale.R")))
 
@@ -86,7 +90,7 @@ func runBale(cmd *Command, args []string) int {
 }
 
 const (
-	_BALE_HEADER = `package main
+	BaleHeader = `package main
 
 import(
 	"os"
@@ -174,7 +178,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	defer fw.Close()
 
 	// Write header.
-	fmt.Fprintf(fw, _HEADER, resPath)
+	fmt.Fprintf(fw, Header, resPath)
 
 	// Copy and compress data.
 	gz := gzip.NewWriter(&ByteWriter{Writer: fw})
@@ -182,7 +186,7 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	gz.Close()
 
 	// Write footer.
-	fmt.Fprint(fw, _FOOTER)
+	fmt.Fprint(fw, Footer)
 
 	resFiles = append(resFiles, resPath)
 	return nil
@@ -198,7 +202,7 @@ func filterSuffix(name string) bool {
 }
 
 const (
-	_HEADER = `package bale
+	Header = `package bale
 
 import(
 	"bytes"
@@ -208,7 +212,7 @@ import(
 
 func R%s() []byte {
 	gz, err := gzip.NewReader(bytes.NewBuffer([]byte{`
-	_FOOTER = `
+	Footer = `
 	}))
 
 	if err != nil {

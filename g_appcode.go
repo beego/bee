@@ -29,9 +29,9 @@ import (
 )
 
 const (
-	O_MODEL byte = 1 << iota
-	O_CONTROLLER
-	O_ROUTER
+	OModel byte = 1 << iota
+	OController
+	ORouter
 )
 
 // DbTransformer has method to reverse engineer a database schema to restful api code
@@ -118,6 +118,7 @@ var typeMappingPostgres = map[string]string{
 	"time":                        "time.Time",
 	"timestamp":                   "time.Time",
 	"timestamp without time zone": "time.Time",
+	"timestamp with time zone":    "time.Time",
 	"interval":                    "string",  // time interval, string for now
 	"real":                        "float32", // float & decimal
 	"double precision":            "float64",
@@ -130,6 +131,7 @@ var typeMappingPostgres = map[string]string{
 	"USER-DEFINED":                "string",  // user defined
 	"uuid":                        "string",  // uuid
 	"json":                        "string",  // json
+	"jsonb":                       "string",
 }
 
 // Table represent a table in a database
@@ -257,11 +259,11 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	var mode byte
 	switch level {
 	case "1":
-		mode = O_MODEL
+		mode = OModel
 	case "2":
-		mode = O_MODEL | O_CONTROLLER
+		mode = OModel | OController
 	case "3":
-		mode = O_MODEL | O_CONTROLLER | O_ROUTER
+		mode = OModel | OController | ORouter
 	default:
 		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
 		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
@@ -290,7 +292,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 
 // Generate takes table, column and foreign key information from database connection
 // and generate corresponding golang source files
-func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
+func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, apppath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
 		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
@@ -302,11 +304,11 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, cu
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
-		mvcPath.ModelPath = path.Join(currpath, "models")
-		mvcPath.ControllerPath = path.Join(currpath, "controllers")
-		mvcPath.RouterPath = path.Join(currpath, "routers")
+		mvcPath.ModelPath = path.Join(apppath, "models")
+		mvcPath.ControllerPath = path.Join(apppath, "controllers")
+		mvcPath.RouterPath = path.Join(apppath, "routers")
 		createPaths(mode, mvcPath)
-		pkgPath := getPackagePath(currpath)
+		pkgPath := getPackagePath(apppath)
 		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
 		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)
@@ -360,12 +362,12 @@ func getTableObjects(tableNames []string, db *sql.DB, dbTransformer DbTransforme
 // and fill in Table struct
 func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 	rows, err := db.Query(
-		`SELECT 
+		`SELECT
 			c.constraint_type, u.column_name, u.referenced_table_schema, u.referenced_table_name, referenced_column_name, u.ordinal_position
 		FROM
-			information_schema.table_constraints c 
+			information_schema.table_constraints c
 		INNER JOIN
-			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name 
+			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name
 		WHERE
 			c.table_schema = database() AND c.table_name = ? AND u.table_schema = database() AND u.table_name = ?`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
@@ -410,9 +412,9 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	// retrieve columns
 	colDefRows, _ := db.Query(
 		`SELECT
-			column_name, data_type, column_type, is_nullable, column_default, extra 
+			column_name, data_type, column_type, is_nullable, column_default, extra
 		FROM
-			information_schema.columns 
+			information_schema.columns
 		WHERE
 			table_schema = database() AND table_name = ?`,
 		table.Name)
@@ -497,16 +499,15 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	}
 }
 
-// getGoDataType maps an SQL data type to Golang data type
+// GetGoDataType maps an SQL data type to Golang data type
 func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 	var typeMapping = map[string]string{}
 	typeMapping = typeMappingMysql
 	if v, ok := typeMapping[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
@@ -514,7 +515,9 @@ func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
 func (*PostgresDB) GetTableNames(db *sql.DB) (tables []string) {
 	rows, err := db.Query(`
 		SELECT table_name FROM information_schema.tables
-		WHERE table_catalog = current_database() and table_schema = 'public'`)
+		WHERE table_catalog = current_database() AND
+		table_type = 'BASE TABLE' AND
+		table_schema NOT IN ('pg_catalog', 'information_schema')`)
 	if err != nil {
 		ColorLog("[ERRO] Could not show tables: %s\n", err)
 		ColorLog("[HINT] Check your connection string\n")
@@ -535,7 +538,7 @@ func (*PostgresDB) GetTableNames(db *sql.DB) (tables []string) {
 // GetConstraints for PostgreSQL
 func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 	rows, err := db.Query(
-		`SELECT 
+		`SELECT
 			c.constraint_type,
 			u.column_name,
 			cu.table_catalog AS referenced_table_catalog,
@@ -543,14 +546,16 @@ func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string
 			cu.column_name AS referenced_column_name,
 			u.ordinal_position
 		FROM
-			information_schema.table_constraints c 
+			information_schema.table_constraints c
 		INNER JOIN
 			information_schema.key_column_usage u ON c.constraint_name = u.constraint_name
 		INNER JOIN
 			information_schema.constraint_column_usage cu ON cu.constraint_name =  c.constraint_name
 		WHERE
-			c.table_catalog = current_database() AND c.table_schema = 'public' AND c.table_name = $1 
-			AND u.table_catalog = current_database() AND u.table_schema = 'public' AND u.table_name = $2`,
+			c.table_catalog = current_database() AND c.table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND c.table_name = $1
+			AND u.table_catalog = current_database() AND u.table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND u.table_name = $2`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
 		ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for PK/UK/FK information: %s\n", err)
@@ -604,9 +609,10 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 			column_default,
 			'' AS extra
 		FROM
-			information_schema.columns 
+			information_schema.columns
 		WHERE
-			table_catalog = current_database() AND table_schema = 'public' AND table_name = $1`,
+			table_catalog = current_database() AND table_schema NOT IN ('pg_catalog', 'information_schema')
+			 AND table_name = $1`,
 		table.Name)
 	defer colDefRows.Close()
 	for colDefRows.Next() {
@@ -682,25 +688,26 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 		table.Columns = append(table.Columns, col)
 	}
 }
+
+// GetGoDataType returns the Go type from the mapped Postgres type
 func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
 	if v, ok := typeMappingPostgres[sqlType]; ok {
 		return v
-	} else {
-		ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-		os.Exit(2)
 	}
+	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
+	os.Exit(2)
 	return goType
 }
 
 // deleteAndRecreatePaths removes several directories completely
 func createPaths(mode byte, paths *MvcPath) {
-	if (mode & O_MODEL) == O_MODEL {
+	if (mode & OModel) == OModel {
 		os.Mkdir(paths.ModelPath, 0777)
 	}
-	if (mode & O_CONTROLLER) == O_CONTROLLER {
+	if (mode & OController) == OController {
 		os.Mkdir(paths.ControllerPath, 0777)
 	}
-	if (mode & O_ROUTER) == O_ROUTER {
+	if (mode & ORouter) == ORouter {
 		os.Mkdir(paths.RouterPath, 0777)
 	}
 }
@@ -709,15 +716,15 @@ func createPaths(mode byte, paths *MvcPath) {
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
-	if (O_MODEL & mode) == O_MODEL {
+	if (OModel & mode) == OModel {
 		ColorLog("[INFO] Creating model files...\n")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
-	if (O_CONTROLLER & mode) == O_CONTROLLER {
+	if (OController & mode) == OController {
 		ColorLog("[INFO] Creating controller files...\n")
 		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
 	}
-	if (O_ROUTER & mode) == O_ROUTER {
+	if (ORouter & mode) == ORouter {
 		ColorLog("[INFO] Creating router files...\n")
 		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
 	}
@@ -725,6 +732,8 @@ func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath
 
 // writeModelFiles generates model files
 func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -737,7 +746,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -745,7 +754,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -757,12 +766,13 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		}
 		template := ""
 		if tb.Pk == "" {
-			template = STRUCT_MODEL_TPL
+			template = StructModelTPL
 		} else {
-			template = MODEL_TPL
+			template = ModelTPL
 		}
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
+		fileStr = strings.Replace(fileStr, "{{tableName}}", tb.Name, -1)
 		// if table contains time field, import time.Time package
 		timePkg := ""
 		importTimePkg := ""
@@ -776,14 +786,16 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] model => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeControllerFiles generates controller files
 func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
@@ -799,7 +811,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
@@ -807,7 +819,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 					continue
 				}
 			} else {
-				ColorLog("[WARN] skip create file\n")
+				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 				continue
 			}
 		} else {
@@ -817,20 +829,22 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 				continue
 			}
 		}
-		fileStr := strings.Replace(CTRL_TPL, "{{ctrlName}}", camelCase(tb.Name), -1)
+		fileStr := strings.Replace(CtrlTPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		fileStr = strings.Replace(fileStr, "{{pkgPath}}", pkgPath, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
 			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
 			os.Exit(2)
 		}
-		f.Close()
-		ColorLog("[INFO] controller => %s\n", fpath)
+		CloseFile(f)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 		formatSourceCode(fpath)
 	}
 }
 
 // writeRouterFile generates router file
 func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool, pkgPath string) {
+	w := NewColorWriter(os.Stdout)
+
 	var nameSpaces []string
 	for _, tb := range tables {
 		// if selectedTables map is not nil and this table is not selected, ignore it
@@ -842,19 +856,19 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		if tb.Pk == "" {
 			continue
 		}
-		// add name spaces
-		nameSpace := strings.Replace(NAMESPACE_TPL, "{{nameSpace}}", tb.Name, -1)
+		// add namespaces
+		nameSpace := strings.Replace(NamespaceTPL, "{{nameSpace}}", tb.Name, -1)
 		nameSpace = strings.Replace(nameSpace, "{{ctrlName}}", camelCase(tb.Name), -1)
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
 	// add export controller
 	fpath := path.Join(rPath, "router.go")
-	routerStr := strings.Replace(ROUTER_TPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
+	routerStr := strings.Replace(RouterTPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File
 	var err error
 	if isExist(fpath) {
-		ColorLog("[WARN] %v is exist, do you want to overwrite it? Yes or No?\n", fpath)
+		ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 		if askForConfirmation() {
 			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
@@ -862,7 +876,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 				return
 			}
 		} else {
-			ColorLog("[WARN] skip create file\n")
+			ColorLog("[WARN] Skipped create file '%s'\n", fpath)
 			return
 		}
 	} else {
@@ -873,11 +887,11 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		}
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
-		ColorLog("[ERRO] Could not write router file to %s\n", fpath)
+		ColorLog("[ERRO] Could not write router file to '%s'\n", fpath)
 		os.Exit(2)
 	}
-	f.Close()
-	ColorLog("[INFO] router => %s\n", fpath)
+	CloseFile(f)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	formatSourceCode(fpath)
 }
 
@@ -960,7 +974,7 @@ func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
 	Debugf("gopath:%s", gopath)
 	if gopath == "" {
-		ColorLog("[ERRO] you should set GOPATH in the env")
+		ColorLog("[ERRO] You should set GOPATH in the env")
 		os.Exit(2)
 	}
 
@@ -982,17 +996,23 @@ func getPackagePath(curpath string) (packpath string) {
 		ColorLog("[ERRO] Can't generate application code outside of GOPATH '%s'\n", gopath)
 		os.Exit(2)
 	}
+
+	if curpath == appsrcpath {
+		ColorLog("[ERRO] Can't generate application code outside of application PATH \n")
+		os.Exit(2)
+	}
+
 	packpath = strings.Join(strings.Split(curpath[len(appsrcpath)+1:], string(filepath.Separator)), "/")
 	return
 }
 
 const (
-	STRUCT_MODEL_TPL = `package models
+	StructModelTPL = `package models
 {{importTimePkg}}
 {{modelStruct}}
 `
 
-	MODEL_TPL = `package models
+	ModelTPL = `package models
 
 import (
 	"errors"
@@ -1004,6 +1024,10 @@ import (
 )
 
 {{modelStruct}}
+
+func (t *{{modelName}}) TableName() string {
+	return "{{tableName}}"
+}
 
 func init() {
 	orm.RegisterModel(new({{modelName}}))
@@ -1081,7 +1105,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
-	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
+	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
 				ml = append(ml, v)
@@ -1132,7 +1156,7 @@ func Delete{{modelName}}(id int) (err error) {
 	return
 }
 `
-	CTRL_TPL = `package controllers
+	CtrlTPL = `package controllers
 
 import (
 	"{{pkgPath}}/models"
@@ -1144,54 +1168,62 @@ import (
 	"github.com/astaxie/beego"
 )
 
-// oprations for {{ctrlName}}
+// {{ctrlName}}Controller oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
-func (this *{{ctrlName}}Controller) URLMapping() {
-	this.Mapping("Post", this.Post)
-	this.Mapping("GetOne", this.GetOne)
-	this.Mapping("GetAll", this.GetAll)
-	this.Mapping("Put", this.Put)
-	this.Mapping("Delete", this.Delete)
+// URLMapping ...
+func (c *{{ctrlName}}Controller) URLMapping() {
+	c.Mapping("Post", c.Post)
+	c.Mapping("GetOne", c.GetOne)
+	c.Mapping("GetAll", c.GetAll)
+	c.Mapping("Put", c.Put)
+	c.Mapping("Delete", c.Delete)
 }
 
+// Post ...
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
-// @Success 200 {int} models.{{ctrlName}}.Id
+// @Success 201 {int} models.{{ctrlName}}
 // @Failure 403 body is empty
 // @router / [post]
-func (this *{{ctrlName}}Controller) Post() {
+func (c *{{ctrlName}}Controller) Post() {
 	var v models.{{ctrlName}}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &v)
-	if id, err := models.Add{{ctrlName}}(&v); err == nil {
-		this.Data["json"] = map[string]int64{"id": id}
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if _, err := models.Add{{ctrlName}}(&v); err == nil {
+			c.Ctx.Output.SetStatus(201)
+			c.Data["json"] = v
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJSON()
 }
 
-// @Title Get
+// GetOne ...
+// @Title Get One
 // @Description get {{ctrlName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{ctrlName}}
 // @Failure 403 :id is empty
 // @router /:id [get]
-func (this *{{ctrlName}}Controller) GetOne() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) GetOne() {
+	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.Atoi(idStr)
 	v, err := models.Get{{ctrlName}}ById(id)
 	if err != nil {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	} else {
-		this.Data["json"] = v
+		c.Data["json"] = v
 	}
-	this.ServeJson()
+	c.ServeJSON()
 }
 
+// GetAll ...
 // @Title Get All
 // @Description get {{ctrlName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
@@ -1201,43 +1233,43 @@ func (this *{{ctrlName}}Controller) GetOne() {
 // @Param	limit	query	string	false	"Limit the size of result set. Must be an integer"
 // @Param	offset	query	string	false	"Start position of result set. Must be an integer"
 // @Success 200 {object} models.{{ctrlName}}
-// @Failure 403 
+// @Failure 403
 // @router / [get]
-func (this *{{ctrlName}}Controller) GetAll() {
+func (c *{{ctrlName}}Controller) GetAll() {
 	var fields []string
 	var sortby []string
 	var order []string
-	var query map[string]string = make(map[string]string)
+	var query = make(map[string]string)
 	var limit int64 = 10
-	var offset int64 = 0
+	var offset int64
 
 	// fields: col1,col2,entity.col3
-	if v := this.GetString("fields"); v != "" {
+	if v := c.GetString("fields"); v != "" {
 		fields = strings.Split(v, ",")
 	}
 	// limit: 10 (default is 10)
-	if v, err := this.GetInt("limit"); err == nil {
+	if v, err := c.GetInt64("limit"); err == nil {
 		limit = v
 	}
 	// offset: 0 (default is 0)
-	if v, err := this.GetInt("offset"); err == nil {
+	if v, err := c.GetInt64("offset"); err == nil {
 		offset = v
 	}
 	// sortby: col1,col2
-	if v := this.GetString("sortby"); v != "" {
+	if v := c.GetString("sortby"); v != "" {
 		sortby = strings.Split(v, ",")
 	}
 	// order: desc,asc
-	if v := this.GetString("order"); v != "" {
+	if v := c.GetString("order"); v != "" {
 		order = strings.Split(v, ",")
 	}
 	// query: k:v,k:v
-	if v := this.GetString("query"); v != "" {
+	if v := c.GetString("query"); v != "" {
 		for _, cond := range strings.Split(v, ",") {
-			kv := strings.Split(cond, ":")
+			kv := strings.SplitN(cond, ":", 2)
 			if len(kv) != 2 {
-				this.Data["json"] = errors.New("Error: invalid query key/value pair")
-				this.ServeJson()
+				c.Data["json"] = errors.New("Error: invalid query key/value pair")
+				c.ServeJSON()
 				return
 			}
 			k, v := kv[0], kv[1]
@@ -1247,51 +1279,56 @@ func (this *{{ctrlName}}Controller) GetAll() {
 
 	l, err := models.GetAll{{ctrlName}}(query, fields, sortby, order, offset, limit)
 	if err != nil {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	} else {
-		this.Data["json"] = l
+		c.Data["json"] = l
 	}
-	this.ServeJson()
+	c.ServeJSON()
 }
 
-// @Title Update
+// Put ...
+// @Title Put
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
 // @Success 200 {object} models.{{ctrlName}}
 // @Failure 403 :id is not int
 // @router /:id [put]
-func (this *{{ctrlName}}Controller) Put() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) Put() {
+	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.Atoi(idStr)
 	v := models.{{ctrlName}}{Id: id}
-	json.Unmarshal(this.Ctx.Input.RequestBody, &v)
-	if err := models.Update{{ctrlName}}ById(&v); err == nil {
-		this.Data["json"] = "OK"
+	if err := json.Unmarshal(c.Ctx.Input.RequestBody, &v); err == nil {
+		if err := models.Update{{ctrlName}}ById(&v); err == nil {
+			c.Data["json"] = "OK"
+		} else {
+			c.Data["json"] = err.Error()
+		}
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJSON()
 }
 
+// Delete ...
 // @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 id is empty
 // @router /:id [delete]
-func (this *{{ctrlName}}Controller) Delete() {
-	idStr := this.Ctx.Input.Params[":id"]
+func (c *{{ctrlName}}Controller) Delete() {
+	idStr := c.Ctx.Input.Param(":id")
 	id, _ := strconv.Atoi(idStr)
 	if err := models.Delete{{ctrlName}}(id); err == nil {
-		this.Data["json"] = "OK"
+		c.Data["json"] = "OK"
 	} else {
-		this.Data["json"] = err.Error()
+		c.Data["json"] = err.Error()
 	}
-	this.ServeJson()
+	c.ServeJSON()
 }
 `
-	ROUTER_TPL = `// @APIVersion 1.0.0
+	RouterTPL = `// @APIVersion 1.0.0
 // @Title beego Test API
 // @Description beego has a very cool tools to autogenerate documents for your API
 // @Contact astaxie@gmail.com
@@ -1313,7 +1350,7 @@ func init() {
 	beego.AddNamespace(ns)
 }
 `
-	NAMESPACE_TPL = `
+	NamespaceTPL = `
 		beego.NSNamespace("/{{nameSpace}}",
 			beego.NSInclude(
 				&controllers.{{ctrlName}}Controller{},

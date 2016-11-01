@@ -73,7 +73,6 @@ func testApp(cmd *Command, args []string) int {
 			runTest()
 		}
 	}
-	return 0
 }
 
 func runTest() {
