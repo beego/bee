@@ -10,7 +10,7 @@
  *                                                        *
  * Build rpc application use Hprose base on beego         *
  *                                                        *
- * LastModified: Oct 13, 2014                             *
+ * LastModified: Oct 31, 2016                             *
  * Author: Liu jian <laoliu@lanmv.com>                    *
  *                                                        *
 \**********************************************************/
@@ -63,16 +63,41 @@ EnableDocs = true
 var hproseMaingo = `package main
 
 import (
+	"fmt"
+	"reflect"
+	
 	"{{.Appname}}/models"
-	"github.com/hprose/hprose-go/hprose"
+	"github.com/hprose/hprose-golang/rpc"
 
 	"github.com/astaxie/beego"
 )
 
+func logInvokeHandler(
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
+}
+
 func main() {
-	service := hprose.NewHttpService()
+	// Create WebSocketServer
+	// service := rpc.NewWebSocketService()
+
+	// Create Http Server
+	service := rpc.NewHTTPService()
+
+	// Use Logger Middleware 
+	service.AddInvokeHandler(logInvokeHandler)
+
+	// Publish Functions
 	service.AddFunction("AddOne", models.AddOne)
 	service.AddFunction("GetOne", models.GetOne)
+
+	// Start Service
 	beego.Handler("/", service)
 	beego.Run()
 }
@@ -81,8 +106,11 @@ func main() {
 var hproseMainconngo = `package main
 
 import (
+	"fmt"
+	"reflect"
+
 	"{{.Appname}}/models"
-	"github.com/hprose/hprose-go/hprose"
+	"github.com/hprose/hprose-golang/rpc"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -93,9 +121,30 @@ func init() {
 	orm.RegisterDataBase("default", "{{.DriverName}}", "{{.conn}}")
 }
 
+func logInvokeHandler(
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
+}
+
 func main() {
-	service := hprose.NewHttpService()
+	// Create WebSocketServer
+	// service := rpc.NewWebSocketService()
+
+	// Create Http Server
+	service := rpc.NewHTTPService()
+
+	// Use Logger Middleware 
+	service.AddInvokeHandler(logInvokeHandler)
+
 	{{HproseFunctionList}}
+
+	// Start Service
 	beego.Handler("/", service)
 	beego.Run()
 }
