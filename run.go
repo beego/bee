@@ -115,7 +115,7 @@ func runApp(cmd *Command, args []string) int {
 
 	err := loadConfig()
 	if err != nil {
-		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		ColorLog("[ERRO] Failed to load configuration [ %s ]\n", err)
 	}
 
 	var paths []string
