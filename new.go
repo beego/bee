@@ -171,13 +171,13 @@ func init() {
 }
 
 
-// TestMain is a sample to run an endpoint test
-func TestMain(t *testing.T) {
+// TestBeego is a sample to run an endpoint test
+func TestBeego(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	beego.Trace("testing", "TestMain", "Code[%d]\n%s", w.Code, w.Body.String())
+	beego.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
 
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
