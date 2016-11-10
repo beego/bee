@@ -110,7 +110,7 @@ func parsePackageFromDir(path string) {
 	}, parser.ParseComments)
 
 	if err != nil {
-		ColorLog("[ERRO] the model %s parser.ParseDir error\n", path)
+		ColorLog("[ERRO] the model %s parser.ParseDir error: %s\n", path, err)
 		os.Exit(1)
 	}
 	for k, v := range folderPkgs {
@@ -357,7 +357,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	}, parser.ParseComments)
 
 	if err != nil {
-		ColorLog("[ERRO] the %s pkg parser.ParseDir error\n", pkgpath)
+		ColorLog("[ERRO] the %s pkg parser.ParseDir error: %s\n", pkgpath, err)
 		os.Exit(1)
 	}
 	for _, pkg := range astPkgs {
