@@ -1055,7 +1055,7 @@ func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
 // GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
 // no records exist
 func GetAll{{modelName}}(query map[string]string, fields []string, sortby []string, order []string,
-	offset int64, limit int64) (ml []interface{}, err error) {
+	offset int64, limit int64) (ml map[string]interface{}, err error) {
 	o := orm.NewOrm()
 	qs := o.QueryTable(new({{modelName}}))
 	// query k=v
@@ -1105,10 +1105,17 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
+	
+	total, err := qs.Count()
+	if err != nil {
+		panic(err)
+	}
+	
 	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
+		var result []interface{}
 		if len(fields) == 0 {
 			for _, v := range l {
-				ml = append(ml, v)
+				result = append(result, v)
 			}
 		} else {
 			// trim unused fields
@@ -1118,9 +1125,13 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				for _, fname := range fields {
 					m[fname] = val.FieldByName(fname).Interface()
 				}
-				ml = append(ml, m)
+				result = append(result, m)
 			}
 		}
+		
+		var ml map[string]interface{} = make(map[string]interface{})
+		ml["result"] = result
+		ml["total"] = total
 		return ml, nil
 	}
 	return nil, err
