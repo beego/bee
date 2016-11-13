@@ -21,9 +21,6 @@ import (
 	"strings"
 )
 
-// article
-// cms/article
-//
 func generateController(cname, currpath string) {
 	w := NewColorWriter(os.Stdout)
 
@@ -36,15 +33,14 @@ func generateController(cname, currpath string) {
 		packageName = p[i+1 : len(p)-1]
 	}
 
-	ColorLog("[INFO] Using '%s' as controller name\n", controllerName)
-	ColorLog("[INFO] Using '%s' as package name\n", packageName)
+	logger.Infof("Using '%s' as controller name", controllerName)
+	logger.Infof("Using '%s' as package name", packageName)
 
 	fp := path.Join(currpath, "controllers", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
 		// Create the controller's directory
 		if err := os.MkdirAll(fp, 0777); err != nil {
-			ColorLog("[ERRO] Could not create controllers directory: %s\n", err)
-			os.Exit(2)
+			logger.Fatalf("Could not create controllers directory: %s", err)
 		}
 	}
 
@@ -56,7 +52,7 @@ func generateController(cname, currpath string) {
 
 		var content string
 		if _, err := os.Stat(modelPath); err == nil {
-			ColorLog("[INFO] Using matching model '%s'\n", controllerName)
+			logger.Infof("Using matching model '%s'", controllerName)
 			content = strings.Replace(controllerModelTpl, "{{packageName}}", packageName, -1)
 			pkgPath := getPackagePath(currpath)
 			content = strings.Replace(content, "{{pkgPath}}", pkgPath, -1)
@@ -71,8 +67,7 @@ func generateController(cname, currpath string) {
 		formatSourceCode(fpath)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create controller file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create controller file: %s", err)
 	}
 }
 

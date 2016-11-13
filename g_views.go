@@ -25,13 +25,12 @@ import (
 func generateView(viewpath, currpath string) {
 	w := NewColorWriter(os.Stdout)
 
-	ColorLog("[INFO] Generating view...\n")
+	logger.Info("Generating view...")
 
 	absViewPath := path.Join(currpath, "views", viewpath)
 	err := os.MkdirAll(absViewPath, os.ModePerm)
 	if err != nil {
-		ColorLog("[ERRO] Could not create '%s' view: %s\n", viewpath, err)
-		os.Exit(2)
+		logger.Fatalf("Could not create '%s' view: %s", viewpath, err)
 	}
 
 	cfile := path.Join(absViewPath, "index.tpl")
@@ -40,8 +39,7 @@ func generateView(viewpath, currpath string) {
 		f.WriteString(cfile)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", cfile, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create view file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create view file: %s", err)
 	}
 
 	cfile = path.Join(absViewPath, "show.tpl")
@@ -50,8 +48,7 @@ func generateView(viewpath, currpath string) {
 		f.WriteString(cfile)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", cfile, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create view file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create view file: %s", err)
 	}
 
 	cfile = path.Join(absViewPath, "create.tpl")
@@ -60,8 +57,7 @@ func generateView(viewpath, currpath string) {
 		f.WriteString(cfile)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", cfile, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create view file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create view file: %s", err)
 	}
 
 	cfile = path.Join(absViewPath, "edit.tpl")
@@ -70,7 +66,6 @@ func generateView(viewpath, currpath string) {
 		f.WriteString(cfile)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", cfile, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create view file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create view file: %s", err)
 	}
 }

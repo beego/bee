@@ -81,29 +81,28 @@ func generateCode(cmd *Command, args []string) int {
 
 	currpath, _ := os.Getwd()
 	if len(args) < 1 {
-		ColorLog("[ERRO] command is missing\n")
-		os.Exit(2)
+		logger.Fatal("Command is missing")
 	}
 
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
+
 	gopath := gps[0]
-	Debugf("GOPATH: %s", gopath)
+
+	logger.Debugf("GOPATH: %s", gopath)
 
 	gcmd := args[0]
 	switch gcmd {
 	case "scaffold":
 		if len(args) < 2 {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate scaffold [scaffoldname] [-fields=\"\"]\n")
-			os.Exit(2)
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
+		// Load the configuration
 		err := loadConfig()
 		if err != nil {
-			ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+			logger.Fatalf("Failed to load configuration: %s", err)
 		}
 		cmd.Flag.Parse(args[2:])
 		if driver == "" {
@@ -119,19 +118,18 @@ func generateCode(cmd *Command, args []string) int {
 			}
 		}
 		if fields == "" {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate scaffold [scaffoldname] [-fields=\"title:string,body:text\"]\n")
-			os.Exit(2)
+			logger.Hint("fields option should not be empty, i.e. -fields=\"title:string,body:text\"")
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 		sname := args[1]
 		generateScaffold(sname, fields.String(), currpath, driver.String(), conn.String())
 	case "docs":
 		generateDocs(currpath)
 	case "appcode":
-		// load config
+		// Load the configuration
 		err := loadConfig()
 		if err != nil {
-			ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+			logger.Fatalf("Failed to load configuration: %s", err)
 		}
 		cmd.Flag.Parse(args[1:])
 		if driver == "" {
@@ -153,20 +151,20 @@ func generateCode(cmd *Command, args []string) int {
 		if level == "" {
 			level = "3"
 		}
-		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
-		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		ColorLog("[INFO] Using '%s' as 'level'\n", level)
+		logger.Infof("Using '%s' as 'driver'", driver)
+		logger.Infof("Using '%s' as 'conn'", conn)
+		logger.Infof("Using '%s' as 'tables'", tables)
+		logger.Infof("Using '%s' as 'level'", level)
 		generateAppcode(driver.String(), conn.String(), level.String(), tables.String(), currpath)
 	case "migration":
 		if len(args) < 2 {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate migration [migrationname] [-fields=\"\"]\n")
-			os.Exit(2)
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 		cmd.Flag.Parse(args[2:])
 		mname := args[1]
-		ColorLog("[INFO] Using '%s' as migration name\n", mname)
+
+		logger.Infof("Using '%s' as migration name", mname)
+
 		upsql := ""
 		downsql := ""
 		if fields != "" {
@@ -180,21 +178,16 @@ func generateCode(cmd *Command, args []string) int {
 			cname := args[1]
 			generateController(cname, currpath)
 		} else {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate controller [controllername]\n")
-			os.Exit(2)
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 	case "model":
 		if len(args) < 2 {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"\"]\n")
-			os.Exit(2)
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 		cmd.Flag.Parse(args[2:])
 		if fields == "" {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate model [modelname] [-fields=\"title:string,body:text\"]\n")
-			os.Exit(2)
+			logger.Hint("fields option should not be empty, i.e. -fields=\"title:string,body:text\"")
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 		sname := args[1]
 		generateModel(sname, fields.String(), currpath)
@@ -203,13 +196,11 @@ func generateCode(cmd *Command, args []string) int {
 			cname := args[1]
 			generateView(cname, currpath)
 		} else {
-			ColorLog("[ERRO] Wrong number of arguments\n")
-			ColorLog("[HINT] Usage: bee generate view [viewpath]\n")
-			os.Exit(2)
+			logger.Fatal("Wrong number of arguments. Run: bee help generate")
 		}
 	default:
-		ColorLog("[ERRO] Command is missing\n")
+		logger.Fatal("Command is missing")
 	}
-	ColorLog("[SUCC] %s successfully generated!\n", strings.Title(gcmd))
+	logger.Successf("%s successfully generated!", strings.Title(gcmd))
 	return 0
 }

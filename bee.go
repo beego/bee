@@ -27,6 +27,7 @@ import (
 
 const version = "1.5.2"
 
+// Command is the unit of execution
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
@@ -60,6 +61,7 @@ func (c *Command) Name() string {
 	return name
 }
 
+// Usage puts out the usage for the command.
 func (c *Command) Usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
 	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(string(c.Long)))

@@ -549,8 +549,7 @@ func createapi(cmd *Command, args []string) int {
 	w := NewColorWriter(os.Stdout)
 
 	if len(args) < 1 {
-		ColorLog("[ERRO] Argument [appname] is missing\n")
-		os.Exit(2)
+		logger.Fatal("Argument [appname] is missing")
 	}
 
 	if len(args) > 1 {
@@ -568,7 +567,7 @@ func createapi(cmd *Command, args []string) int {
 	if conn == "" {
 	}
 
-	ColorLog("[INFO] Creating API...\n")
+	logger.Info("Creating API...")
 
 	os.MkdirAll(apppath, 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
@@ -599,9 +598,9 @@ func createapi(cmd *Command, args []string) int {
 				-1,
 			),
 		)
-		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
-		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
+		logger.Infof("Using '%s' as 'driver'", driver)
+		logger.Infof("Using '%s' as 'conn'", conn)
+		logger.Infof("Using '%s' as 'tables'", tables)
 		generateAppcode(string(driver), string(conn), "3", string(tables), apppath)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
@@ -635,15 +634,14 @@ func createapi(cmd *Command, args []string) int {
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
-	ColorLog("[SUCC] New API successfully created!\n")
+	logger.Success("New API successfully created!")
 	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
 	currpath = path.Join(currpath, appname)
@@ -658,15 +656,16 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	// In case of multiple paths in the GOPATH, by default
 	// we use the first path
 	gopath := gps[0]
-	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
-	Debugf("GOPATH: %s", gopath)
+
+	logger.Warn("You current workdir is not inside $GOPATH/src")
+	logger.Debugf("GOPATH: %s", gopath)
 
 	gosrcpath := path.Join(gopath, "src")
 	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
 		err = fmt.Errorf("Cannot create application without removing '%s' first.", apppath)
-		ColorLog("[ERRO] Path '%s' already exists\n", apppath)
+		logger.Errorf("Path '%s' already exists", apppath)
 		return
 	}
 	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")
