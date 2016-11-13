@@ -52,7 +52,7 @@ type BeeLogger struct {
 // LogRecord represents a log record and contains the timestamp when the record
 // was created, an increasing id, level and the actual formatted log line.
 type LogRecord struct {
-	ID       uint64
+	ID       string
 	Level    string
 	Message  string
 	Filename string
@@ -144,7 +144,7 @@ func (l *BeeLogger) getColorLevel(level int) string {
 func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
 	// Create the logging record and pass into the output
 	record := LogRecord{
-		ID:      atomic.AddUint64(&sequenceNo, 1),
+		ID:      fmt.Sprintf("%04d", atomic.AddUint64(&sequenceNo, 1)),
 		Level:   l.getColorLevel(level),
 		Message: fmt.Sprintf(message, args...),
 	}
@@ -167,7 +167,7 @@ func (l *BeeLogger) mustLogDebug(message string, args ...interface{}) {
 	// and the line number of the caller
 	_, file, line, _ := runtime.Caller(1)
 	record := LogRecord{
-		ID:       atomic.AddUint64(&sequenceNo, 1),
+		ID:       fmt.Sprintf("%04d", atomic.AddUint64(&sequenceNo, 1)),
 		Level:    l.getColorLevel(levelDebug),
 		Message:  fmt.Sprintf(message, args...),
 		LineNo:   line,
