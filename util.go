@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -37,124 +38,14 @@ func Go(f func() error) chan error {
 	return ch
 }
 
-// Debugf outputs a formtted debug message, when os.env DEBUG is set.
-func Debugf(format string, a ...interface{}) {
-	if os.Getenv("DEBUG") != "" {
-		_, file, line, ok := runtime.Caller(1)
-		if !ok {
-			file = "<unknown>"
-			line = -1
-		} else {
-			file = filepath.Base(file)
-		}
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("[debug] %s:%d %s\n", file, line, format), a...)
-	}
+// Now returns the current local time in the specified layout
+func Now(layout string) string {
+	return time.Now().Format(layout)
 }
 
-const (
-	Gray = uint8(iota + 90)
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	//NRed      = uint8(31) // Normal
-	EndColor = "\033[0m"
-
-	INFO = "INFO"
-	TRAC = "TRAC"
-	ERRO = "ERRO"
-	WARN = "WARN"
-	SUCC = "SUCC"
-)
-
-// ColorLog colors log and print to stdout.
-// See color rules in function 'ColorLogS'.
-func ColorLog(format string, a ...interface{}) {
-	fmt.Print(ColorLogS(format, a...))
-}
-
-// ColorLogS colors log and return colored content.
-// Log format: <level> <content [highlight][path]> [ error ].
-// Level: TRAC -> blue; ERRO -> red; WARN -> Magenta; SUCC -> green; others -> default.
-// Content: default; path: yellow; error -> red.
-// Level has to be surrounded by "[" and "]".
-// Highlights have to be surrounded by "# " and " #"(space), "#" will be deleted.
-// Paths have to be surrounded by "( " and " )"(space).
-// Errors have to be surrounded by "[ " and " ]"(space).
-// Note: it hasn't support windows yet, contribute is welcome.
-func ColorLogS(format string, a ...interface{}) string {
-	log := fmt.Sprintf(format, a...)
-
-	var clog string
-
-	if runtime.GOOS != "windows" {
-		// Level.
-		i := strings.Index(log, "]")
-		if log[0] == '[' && i > -1 {
-			clog += "[" + getColorLevel(log[1:i]) + "]"
-		}
-
-		log = log[i+1:]
-
-		// Error.
-		log = strings.Replace(log, "[ ", fmt.Sprintf("[\033[%dm", Red), -1)
-		log = strings.Replace(log, " ]", EndColor+"]", -1)
-
-		// Path.
-		log = strings.Replace(log, "( ", fmt.Sprintf("(\033[%dm", Yellow), -1)
-		log = strings.Replace(log, " )", EndColor+")", -1)
-
-		// Highlights.
-		log = strings.Replace(log, "# ", fmt.Sprintf("\033[%dm", Gray), -1)
-		log = strings.Replace(log, " #", EndColor, -1)
-
-		log = clog + log
-
-	} else {
-		// Level.
-		i := strings.Index(log, "]")
-		if log[0] == '[' && i > -1 {
-			clog += "[" + log[1:i] + "]"
-		}
-
-		log = log[i+1:]
-
-		// Error.
-		log = strings.Replace(log, "[ ", "[", -1)
-		log = strings.Replace(log, " ]", "]", -1)
-
-		// Path.
-		log = strings.Replace(log, "( ", "(", -1)
-		log = strings.Replace(log, " )", ")", -1)
-
-		// Highlights.
-		log = strings.Replace(log, "# ", "", -1)
-		log = strings.Replace(log, " #", "", -1)
-
-		log = clog + log
-	}
-
-	return time.Now().Format("2006/01/02 15:04:05 ") + log
-}
-
-// getColorLevel returns colored level string by given level.
-func getColorLevel(level string) string {
-	level = strings.ToUpper(level)
-	switch level {
-	case INFO:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
-	case TRAC:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
-	case ERRO:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Red, level)
-	case WARN:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Magenta, level)
-	case SUCC:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Green, level)
-	default:
-		return level
-	}
+// EndLine returns the a newline escape character
+func EndLine() string {
+	return "\n"
 }
 
 // IsExist returns whether a file or directory exists.
@@ -210,8 +101,7 @@ func isBeegoProject(thePath string) bool {
 func SearchGOPATHs(app string) (bool, string, string) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start [ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 
 	// Lookup the application inside the user workspace(s)
@@ -282,7 +172,7 @@ func snakeString(s string) string {
 		}
 		data = append(data, d)
 	}
-	return strings.ToLower(string(data[:len(data)]))
+	return strings.ToLower(string(data[:]))
 }
 
 func camelString(s string) string {
@@ -306,7 +196,25 @@ func camelString(s string) string {
 		}
 		data = append(data, d)
 	}
-	return string(data[:len(data)])
+	return string(data[:])
+}
+
+// camelCase converts a _ delimited string to camel case
+// e.g. very_important_person => VeryImportantPerson
+func camelCase(in string) string {
+	tokens := strings.Split(in, "_")
+	for i := range tokens {
+		tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
+	}
+	return strings.Join(tokens, "")
+}
+
+// formatSourceCode formats source files
+func formatSourceCode(filename string) {
+	cmd := exec.Command("gofmt", "-w", filename)
+	if err := cmd.Run(); err != nil {
+		logger.Warnf("Error while running gofmt: %s", err)
+	}
 }
 
 // The string flag list, implemented flag.Value interface
@@ -324,7 +232,33 @@ func (s *strFlags) Set(value string) error {
 // CloseFile attempts to close the passed file
 // or panics with the actual error
 func CloseFile(f *os.File) {
-	if err := f.Close(); err != nil {
+	err := f.Close()
+	MustCheck(err)
+}
+
+// MustCheck panics when the error is not nil
+func MustCheck(err error) {
+	if err != nil {
 		panic(err)
 	}
+}
+
+func exitPrint(con string) {
+	fmt.Fprintln(os.Stderr, con)
+	os.Exit(2)
+}
+
+// WriteToFile creates a file and writes content to it
+func WriteToFile(filename, content string) {
+	f, err := os.Create(filename)
+	MustCheck(err)
+	defer CloseFile(f)
+	_, err = f.WriteString(content)
+	MustCheck(err)
+}
+
+// IsDebugEnabled checks if DEBUG_ENABLED is set or not
+func IsDebugEnabled() bool {
+	debugMode := os.Getenv("DEBUG_ENABLED")
+	return map[string]bool{"1": true, "0": false}[debugMode]
 }
