@@ -16,7 +16,6 @@ package main
 
 import (
 	"bytes"
-	"github.com/howeyc/fsnotify"
 	"os"
 	"os/exec"
 	"regexp"
@@ -24,6 +23,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/howeyc/fsnotify"
 )
 
 var (
@@ -209,7 +210,7 @@ func Kill() {
 
 // Restart kills the running command process and starts it again
 func Restart(appname string) {
-	logger.Debugf("Kill running process")
+	logger.Debugf("Kill running process", __FILE__(), __LINE__())
 	Kill()
 	go Start(appname)
 }
