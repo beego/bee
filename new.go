@@ -58,7 +58,7 @@ func createApp(cmd *Command, args []string) int {
 	ShowShortVersionBanner()
 	w := NewColorWriter(os.Stdout)
 	if len(args) != 1 {
-		ColorLog("[ERRO] Argument [appname] is missing\n")
+		logger.Error("Argument [appname] is missing")
 		os.Exit(2)
 	}
 	apppath, packpath, err := checkEnv(args[0])
@@ -68,14 +68,14 @@ func createApp(cmd *Command, args []string) int {
 	}
 
 	if isExist(apppath) {
-		ColorLog("[ERRO] Path (%s) already exists\n", apppath)
-		ColorLog("[WARN] Do you want to overwrite it? [Yes|No] ")
+		logger.Errorf("Path (%s) already exists", apppath)
+		logger.Warn("Do you want to overwrite it? [Yes|No] ")
 		if !askForConfirmation() {
 			os.Exit(2)
 		}
 	}
 
-	ColorLog("[INFO] Creating application...\n")
+	logger.Info("Creating application...")
 
 	os.MkdirAll(apppath, 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath+string(path.Separator), "\x1b[0m")
@@ -117,7 +117,7 @@ func createApp(cmd *Command, args []string) int {
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", packpath, -1))
 
-	ColorLog("[SUCC] New application successfully created!\n")
+	logger.Success("New application successfully created!")
 	return 0
 }
 
@@ -302,13 +302,3 @@ var indextpl = `<!DOCTYPE html>
 </body>
 </html>
 `
-
-// WriteToFile creates a file and writes content to it
-func WriteToFile(filename, content string) {
-	f, err := os.Create(filename)
-	defer CloseFile(f)
-	if err != nil {
-		panic(err)
-	}
-	f.WriteString(content)
-}

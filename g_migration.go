@@ -51,12 +51,12 @@ func (m mysqlDriver) generateSQLFromFields(fields string) string {
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			logger.Error("Fields format is wrong. Should be: key:type,key:type " + v)
 			return ""
 		}
 		typ, tag := m.getSQLType(kv[1])
 		if typ == "" {
-			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			logger.Error("Fields format is wrong. Should be: key:type,key:type " + v)
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
@@ -120,12 +120,12 @@ func (m postgresqlDriver) generateSQLFromFields(fields string) string {
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			logger.Error("Fields format is wrong. Should be: key:type,key:type " + v)
 			return ""
 		}
 		typ, tag := m.getSQLType(kv[1])
 		if typ == "" {
-			ColorLog("[ERRO] Fields format is wrong. Should be: key:type,key:type " + v + "\n")
+			logger.Error("Fields format is wrong. Should be: key:type,key:type " + v)
 			return ""
 		}
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
@@ -177,7 +177,8 @@ func newDBDriver() DBDriver {
 	case "postgres":
 		return postgresqlDriver{}
 	default:
-		panic("driver not supported")
+		logger.Fatal("Driver not supported")
+		return nil
 	}
 }
 
@@ -190,8 +191,7 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 	if _, err := os.Stat(migrationFilePath); os.IsNotExist(err) {
 		// create migrations directory
 		if err := os.MkdirAll(migrationFilePath, 0777); err != nil {
-			ColorLog("[ERRO] Could not create migration directory: %s\n", err)
-			os.Exit(2)
+			logger.Fatalf("Could not create migration directory: %s", err)
 		}
 	}
 	// create file
@@ -208,8 +208,7 @@ func generateMigration(mname, upsql, downsql, curpath string) {
 		formatSourceCode(fpath)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create migration file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create migration file: %s", err)
 	}
 }
 

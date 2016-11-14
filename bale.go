@@ -50,19 +50,19 @@ func runBale(cmd *Command, args []string) int {
 
 	err := loadConfig()
 	if err != nil {
-		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		logger.Fatalf("Failed to load configuration: %s", err)
 	}
 
 	os.RemoveAll("bale")
 	os.Mkdir("bale", os.ModePerm)
 
-	// Pack and compress data.
+	// Pack and compress data
 	for _, p := range conf.Bale.Dirs {
 		if !isExist(p) {
-			ColorLog("[WARN] Skipped directory( %s )\n", p)
+			logger.Warnf("Skipped directory: %s", p)
 			continue
 		}
-		ColorLog("[INFO] Packaging directory( %s )\n", p)
+		logger.Infof("Packaging directory: %s", p)
 		filepath.Walk(p, walkFn)
 	}
 
@@ -74,22 +74,21 @@ func runBale(cmd *Command, args []string) int {
 
 	fw, err := os.Create("bale.go")
 	if err != nil {
-		ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
-		os.Exit(2)
+		logger.Fatalf("Failed to create file: %s", err)
 	}
 	defer fw.Close()
 
 	_, err = fw.Write(buf.Bytes())
 	if err != nil {
-		ColorLog("[ERRO] Fail to write data[ %s ]\n", err)
-		os.Exit(2)
+		logger.Fatalf("Failed to write data: %s", err)
 	}
 
-	ColorLog("[SUCC] Baled resources successfully!\n")
+	logger.Success("Baled resources successfully!")
 	return 0
 }
 
 const (
+	// BaleHeader ...
 	BaleHeader = `package main
 
 import(
@@ -150,14 +149,13 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 		return nil
 	}
 
-	// Open resource files.
+	// Open resource files
 	fr, err := os.Open(resPath)
 	if err != nil {
-		ColorLog("[ERRO] Fail to read file[ %s ]\n", err)
-		os.Exit(2)
+		logger.Fatalf("Failed to read file: %s", err)
 	}
 
-	// Convert path.
+	// Convert path
 	resPath = strings.Replace(resPath, "_", "_0_", -1)
 	resPath = strings.Replace(resPath, ".", "_1_", -1)
 	resPath = strings.Replace(resPath, "-", "_2_", -1)
@@ -168,19 +166,18 @@ func walkFn(resPath string, info os.FileInfo, err error) error {
 	}
 	resPath = strings.Replace(resPath, sep, "_4_", -1)
 
-	// Create corresponding Go source files.
+	// Create corresponding Go source files
 	os.MkdirAll(path.Dir(resPath), os.ModePerm)
 	fw, err := os.Create("bale/" + resPath + ".go")
 	if err != nil {
-		ColorLog("[ERRO] Fail to create file[ %s ]\n", err)
-		os.Exit(2)
+		logger.Fatalf("Failed to create file: %s", err)
 	}
 	defer fw.Close()
 
-	// Write header.
+	// Write header
 	fmt.Fprintf(fw, Header, resPath)
 
-	// Copy and compress data.
+	// Copy and compress data
 	gz := gzip.NewWriter(&ByteWriter{Writer: fw})
 	io.Copy(gz, fr)
 	gz.Close()
@@ -202,6 +199,7 @@ func filterSuffix(name string) bool {
 }
 
 const (
+	// Header ...
 	Header = `package bale
 
 import(
@@ -212,6 +210,7 @@ import(
 
 func R%s() []byte {
 	gz, err := gzip.NewReader(bytes.NewBuffer([]byte{`
+	// Footer ...
 	Footer = `
 	}))
 
@@ -229,6 +228,7 @@ func R%s() []byte {
 
 var newline = []byte{'\n'}
 
+// ByteWriter ...
 type ByteWriter struct {
 	io.Writer
 	c int
@@ -244,12 +244,9 @@ func (w *ByteWriter) Write(p []byte) (n int, err error) {
 			w.Writer.Write(newline)
 			w.c = 0
 		}
-
 		fmt.Fprintf(w.Writer, "0x%02x,", p[n])
 		w.c++
 	}
-
 	n++
-
 	return
 }

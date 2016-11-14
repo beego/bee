@@ -25,7 +25,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-const ConfVer = 0
+const confVer = 0
 
 var defaultConf = `{
 	"version": 0,
@@ -89,20 +89,20 @@ func loadConfig() (err error) {
 		}
 
 		if fileInfo.Name() == "bee.json" {
-			ColorLog("[INFO] Loading configuration from 'bee.json'...\n")
+			logger.Info("Loading configuration from 'bee.json'...")
 			err = parseJSON(path, conf)
 			if err != nil {
-				ColorLog("[ERRO] Failed to parse JSON file: %v\n", err)
+				logger.Errorf("Failed to parse JSON file: %s", err)
 				return err
 			}
 			return io.EOF
 		}
 
 		if fileInfo.Name() == "Beefile" {
-			ColorLog("[INFO] Loading configuration from 'Beefile'...\n")
+			logger.Info("Loading configuration from 'Beefile'...")
 			err = parseYAML(path, conf)
 			if err != nil {
-				ColorLog("[ERRO] Failed to parse YAML file: %v\n", err)
+				logger.Errorf("Failed to parse YAML file: %s", err)
 				return err
 			}
 			return io.EOF
@@ -113,7 +113,7 @@ func loadConfig() (err error) {
 	// In case no configuration file found or an error different than io.EOF,
 	// fallback to default configuration
 	if err != io.EOF {
-		ColorLog("[INFO] Loading default configuration...\n")
+		logger.Info("Loading default configuration...")
 		err = json.Unmarshal([]byte(defaultConf), &conf)
 		if err != nil {
 			return
@@ -124,9 +124,9 @@ func loadConfig() (err error) {
 	err = nil
 
 	// Check format version
-	if conf.Version != ConfVer {
-		ColorLog("[WARN] Your bee.json is outdated. Please do consider updating it.\n")
-		ColorLog("[HINT] Compare bee.json under bee source code path and yours\n")
+	if conf.Version != confVer {
+		logger.Warn("Your configuration file is outdated. Please do consider updating it.")
+		logger.Hint("Check the latest version of bee's configuration file.")
 	}
 
 	// Set variables

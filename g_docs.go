@@ -26,7 +26,6 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -92,8 +91,7 @@ func parsePackagesFromDir(path string) {
 	parsePackageFromDir(path)
 	list, err := ioutil.ReadDir(path)
 	if err != nil {
-		ColorLog("[ERRO] Can't read directory %s : %s\n", path, err)
-		os.Exit(1)
+		logger.Fatalf("Cannot read directory '%s': %s", path, err)
 	}
 	for _, item := range list {
 		if item.IsDir() && item.Name() != "vendor" {
@@ -108,11 +106,10 @@ func parsePackageFromDir(path string) {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
-
 	if err != nil {
-		ColorLog("[ERRO] the model %s parser.ParseDir error: %s\n", path, err)
-		os.Exit(1)
+		logger.Fatalf("Error while parsing dir at '%s': %s", path, err)
 	}
+
 	for k, v := range folderPkgs {
 		astPkgs[k] = v
 	}
@@ -124,13 +121,13 @@ func generateDocs(curpath string) {
 	f, err := parser.ParseFile(fset, path.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 
 	if err != nil {
-		ColorLog("[ERRO] parse router.go error\n")
-		os.Exit(2)
+		logger.Fatalf("Error while parsing router.go: %s", err)
 	}
 
 	rootapi.Infos = swagger.Information{}
 	rootapi.SwaggerVersion = "2.0"
-	//analysis API comments
+
+	// Analyse API comments
 	if f.Comments != nil {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
@@ -168,13 +165,14 @@ func generateDocs(curpath string) {
 			}
 		}
 	}
-	// analisys controller package
+
+	// Analyse controller package
 	for _, im := range f.Imports {
 		localName := ""
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analisyscontrollerPkg(localName, im.Path.Value)
+		analyseControllerPkg(localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -184,11 +182,11 @@ func generateDocs(curpath string) {
 				case *ast.AssignStmt:
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
-							// analisys NewNamespace, it will return version and the subfunction
+							// Analyse NewNamespace, it will return version and the subfunction
 							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
 								continue
 							}
-							version, params := analisysNewNamespace(v)
+							version, params := analyseNewNamespace(v)
 							if rootapi.BasePath == "" && version != "" {
 								rootapi.BasePath = version
 							}
@@ -197,12 +195,12 @@ func generateDocs(curpath string) {
 								case *ast.CallExpr:
 									controllerName := ""
 									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
-										s, params := analisysNewNamespace(pp)
+										s, params := analyseNewNamespace(pp)
 										for _, sp := range params {
 											switch pp := sp.(type) {
 											case *ast.CallExpr:
 												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-													controllerName = analisysNSInclude(s, pp)
+													controllerName = analyseNSInclude(s, pp)
 													if v, ok := controllerComments[controllerName]; ok {
 														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
 															Name:        strings.Trim(s, "/"),
@@ -213,7 +211,7 @@ func generateDocs(curpath string) {
 											}
 										}
 									} else if selname == "NSInclude" {
-										controllerName = analisysNSInclude("", pp)
+										controllerName = analyseNSInclude("", pp)
 										if v, ok := controllerComments[controllerName]; ok {
 											rootapi.Tags = append(rootapi.Tags, swagger.Tag{
 												Name:        controllerName, // if the NSInclude has no prefix, we use the controllername as the tag
@@ -250,8 +248,8 @@ func generateDocs(curpath string) {
 	}
 }
 
-// return version and the others params
-func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
+// analyseNewNamespace returns version and the others params
+func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	for i, p := range ce.Args {
 		if i == 0 {
 			switch pp := p.(type) {
@@ -265,7 +263,7 @@ func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	return
 }
 
-func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
+func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	cname := ""
 	for _, p := range ce.Args {
 		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
@@ -313,7 +311,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analisyscontrollerPkg(localName, pkgpath string) {
+func analyseControllerPkg(localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
@@ -329,7 +327,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	}
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
-		panic("please set gopath")
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 	pkgRealpath := ""
 
@@ -347,18 +345,16 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		ColorLog("[ERRO] the %s pkg not exist in gopath\n", pkgpath)
-		os.Exit(1)
+		logger.Fatalf("Package '%s' does not exist in the GOPATH", pkgpath)
 	}
+
 	fileSet := token.NewFileSet()
 	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
-
 	if err != nil {
-		ColorLog("[ERRO] the %s pkg parser.ParseDir error: %s\n", pkgpath, err)
-		os.Exit(1)
+		logger.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
@@ -367,7 +363,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 				case *ast.FuncDecl:
 					if specDecl.Recv != nil && len(specDecl.Recv.List) > 0 {
 						if t, ok := specDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
-							// parse controller method
+							// Parse controller method
 							parserComments(specDecl.Doc, specDecl.Name.String(), fmt.Sprint(t.X), pkgpath)
 						}
 					}
@@ -377,7 +373,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 							switch tp := s.(*ast.TypeSpec).Type.(type) {
 							case *ast.StructType:
 								_ = tp.Struct
-								//parse controller definition comments
+								// Parse controller definition comments
 								if strings.TrimSpace(specDecl.Doc.Text()) != "" {
 									controllerComments[pkgpath+s.(*ast.TypeSpec).Name.String()] = specDecl.Doc.Text()
 								}
@@ -391,10 +387,11 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 }
 
 func isSystemPackage(pkgpath string) bool {
-	goroot := runtime.GOROOT()
+	goroot := os.Getenv("GOROOT")
 	if goroot == "" {
-		panic("goroot is empty, do you install Go right?")
+		logger.Fatalf("GOROOT environment variable is not set or empty")
 	}
+
 	wg, _ := filepath.EvalSymlinks(filepath.Join(goroot, "src", "pkg", pkgpath))
 	if utils.FileExists(wg) {
 		return true
@@ -460,8 +457,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					ss = strings.TrimSpace(ss[pos:])
 					schemaName, pos := peekNextSplitString(ss)
 					if schemaName == "" {
-						ColorLog("[ERRO][%s.%s] Schema must follow {object} or {array}\n", controllerName, funcName)
-						os.Exit(-1)
+						logger.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
 					}
 					if strings.HasPrefix(schemaName, "[]") {
 						schemaName = schemaName[2:]
@@ -498,7 +494,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
 				if len(p) < 4 {
-					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
+					logger.Fatal(controllerName + "_" + funcName + "'s comments @Param should have at least 4 params")
 				}
 				para.Name = p[0]
 				switch p[1] {
@@ -513,7 +509,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				case "body":
 					break
 				default:
-					ColorLog("[WARN][%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+					logger.Warnf("[%s.%s] Unknown param location: %s. Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
 				}
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
@@ -544,7 +540,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						paraType = typeFormat[0]
 						paraFormat = typeFormat[1]
 					} else {
-						ColorLog("[WARN][%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
+						logger.Warnf("[%s.%s] Unknown param type: %s\n", controllerName, funcName, typ)
 					}
 					if isArray {
 						para.Type = "array"
@@ -697,7 +693,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 		}
 	}
 	if m.Title == "" {
-		ColorLog("[WARN]can't find the object: %s\n", str)
+		logger.Warnf("Cannot find the object: %s", str)
 		// TODO remove when all type have been supported
 		//os.Exit(1)
 	}
@@ -712,8 +708,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
-		ColorLog("Unknown type without TypeSec: %v\n", d)
-		os.Exit(1)
+		logger.Fatalf("Unknown type without TypeSec: %v\n", d)
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	st, ok := ts.Type.(*ast.StructType)
@@ -789,7 +784,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 						mp.Default = str2RealType(res[1], realType)
 
 					} else {
-						ColorLog("[WARN] Invalid default value: %s\n", defaultValue)
+						logger.Warnf("Invalid default value: %s", defaultValue)
 					}
 				}
 
@@ -933,7 +928,7 @@ func str2RealType(s string, typ string) interface{} {
 	}
 
 	if err != nil {
-		ColorLog("[WARN] Invalid default value type(%s): %s\n", typ, s)
+		logger.Warnf("Invalid default value type '%s': %s", typ, s)
 		return s
 	}
 

@@ -78,7 +78,7 @@ func getBeegoVersion() string {
 		return ""
 	}
 	if gopath == "" {
-		err = fmt.Errorf("You should set GOPATH env variable")
+		err = fmt.Errorf("You need to set GOPATH environment variable")
 		return ""
 	}
 	wgopath := path.SplitList(gopath)
@@ -90,11 +90,11 @@ func getBeegoVersion() string {
 			if os.IsNotExist(err) {
 				continue
 			}
-			ColorLog("[ERRO] Get `beego.go` has error\n")
+			logger.Error("Error while getting stats of 'beego.go'")
 		}
 		fd, err := os.Open(filename)
 		if err != nil {
-			ColorLog("[ERRO] Open `beego.go` has error\n")
+			logger.Error("Error while reading 'beego.go'")
 			continue
 		}
 		reader := bufio.NewReader(fd)
@@ -114,7 +114,7 @@ func getBeegoVersion() string {
 		}
 
 	}
-	return "Beego not installed. Please install it first: https://github.com/astaxie/beego"
+	return "Beego is not installed. Please do consider installing it first: https://github.com/astaxie/beego"
 }
 
 func getGoVersion() string {
@@ -124,8 +124,7 @@ func getGoVersion() string {
 	)
 
 	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
-		fmt.Fprintln(os.Stderr, "There was an error running go version command:", err)
-		os.Exit(2)
+		logger.Fatalf("There was an error running go version command: %s", err)
 	}
 	return strings.Split(string(cmdOut), " ")[2]
 }
