@@ -61,7 +61,6 @@ type LogRecord struct {
 var (
 	logRecordTemplate      *template.Template
 	debugLogRecordTemplate *template.Template
-	debugLogFormat         string
 )
 
 func init() {
@@ -141,6 +140,10 @@ func (l *BeeLogger) getColorLevel(level int) string {
 // mustLog logs the message according to the specified level and arguments.
 // It panics in case of an error.
 func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
+	// Acquire the lock
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	// Create the logging record and pass into the output
 	record := LogRecord{
 		ID:      fmt.Sprintf("%04d", atomic.AddUint64(&sequenceNo, 1)),

@@ -558,8 +558,7 @@ func createapi(cmd *Command, args []string) int {
 
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		logger.Fatalf("%s", err)
 	}
 	if driver == "" {
 		driver = "mysql"
