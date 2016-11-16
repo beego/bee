@@ -39,7 +39,8 @@ const (
 
 var (
 	sequenceNo uint64
-	logger     *BeeLogger
+	instance   *BeeLogger
+	once       sync.Once
 )
 
 // BeeLogger logs logging records to the specified io.Writer
@@ -79,9 +80,15 @@ func init() {
 	MustCheck(err)
 	debugLogRecordTemplate, err = template.New("dbgLogRecordTemplate").Funcs(funcs).Parse(debugLogFormat)
 	MustCheck(err)
+}
 
-	// Initialize the logger instance with a NewColorWriter output
-	logger = &BeeLogger{output: NewColorWriter(os.Stdout)}
+// GetBeeLogger initializes the logger instance with a NewColorWriter output
+// and returns a singleton
+func GetBeeLogger(w io.Writer) *BeeLogger {
+	once.Do(func() {
+		instance = &BeeLogger{output: NewColorWriter(w)}
+	})
+	return instance
 }
 
 // SetOutput sets the logger output destination
