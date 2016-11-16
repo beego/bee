@@ -1038,7 +1038,15 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	for k, v := range query {
 		// rewrite dot-notation to Object__Attribute
 		k = strings.Replace(k, ".", "__", -1)
-		qs = qs.Filter(k, v)
+		if strings.Contains(k, "isnull") {
+			var v2 bool
+			if v == "true" || v == "1" {
+				v2 = true
+			}
+			qs = qs.Filter(k, v2)
+		} else {
+			qs = qs.Filter(k, v)
+		}
 	}
 	// order by:
 	var sortFields []string
