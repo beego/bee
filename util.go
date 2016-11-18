@@ -262,3 +262,15 @@ func IsDebugEnabled() bool {
 	debugMode := os.Getenv("DEBUG_ENABLED")
 	return map[string]bool{"1": true, "0": false}[debugMode]
 }
+
+// __FILE__ returns the file name in which the function was invoked
+func __FILE__() string {
+	_, file, _, _ := runtime.Caller(1)
+	return file
+}
+
+// __LINE__ returns the line number at which the function was invoked
+func __LINE__() int {
+	_, _, line, _ := runtime.Caller(1)
+	return line
+}

@@ -56,7 +56,7 @@ func testApp(cmd *Command, args []string) int {
 
 	currpath, _ := os.Getwd()
 
-	logger.Debugf("Current path: %s", currpath)
+	logger.Debugf("Current path: %s", __FILE__(), __LINE__(), currpath)
 
 	err := loadConfig()
 	if err != nil {

@@ -73,7 +73,7 @@ func runMigration(cmd *Command, args []string) int {
 
 	gopath := gps[0]
 
-	logger.Debugf("GOPATH: %s", gopath)
+	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
 
 	// Load the configuration
 	err := loadConfig()

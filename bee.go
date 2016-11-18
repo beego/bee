@@ -90,6 +90,8 @@ var commands = []*Command{
 	cmdFix,
 }
 
+var logger = GetBeeLogger(os.Stdout)
+
 func main() {
 	flag.Usage = usage
 	flag.Parse()

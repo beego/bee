@@ -99,7 +99,7 @@ func runApp(cmd *Command, args []string) int {
 
 	logger.Infof("Using '%s' as 'appname'", appname)
 
-	logger.Debugf("Current path: %s", currpath)
+	logger.Debugf("Current path: %s", __FILE__(), __LINE__(), currpath)
 
 	if runmode == "prod" || runmode == "dev" {
 		os.Setenv("BEEGO_RUNMODE", runmode)

@@ -19,7 +19,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -40,7 +39,8 @@ const (
 
 var (
 	sequenceNo uint64
-	logger     *BeeLogger
+	instance   *BeeLogger
+	once       sync.Once
 )
 
 // BeeLogger logs logging records to the specified io.Writer
@@ -62,7 +62,6 @@ type LogRecord struct {
 var (
 	logRecordTemplate      *template.Template
 	debugLogRecordTemplate *template.Template
-	debugLogFormat         string
 )
 
 func init() {
@@ -81,9 +80,15 @@ func init() {
 	MustCheck(err)
 	debugLogRecordTemplate, err = template.New("dbgLogRecordTemplate").Funcs(funcs).Parse(debugLogFormat)
 	MustCheck(err)
+}
 
-	// Initialize the logger instance with a NewColorWriter output
-	logger = &BeeLogger{output: NewColorWriter(os.Stdout)}
+// GetBeeLogger initializes the logger instance with a NewColorWriter output
+// and returns a singleton
+func GetBeeLogger(w io.Writer) *BeeLogger {
+	once.Do(func() {
+		instance = &BeeLogger{output: NewColorWriter(w)}
+	})
+	return instance
 }
 
 // SetOutput sets the logger output destination
@@ -142,6 +147,10 @@ func (l *BeeLogger) getColorLevel(level int) string {
 // mustLog logs the message according to the specified level and arguments.
 // It panics in case of an error.
 func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
+	// Acquire the lock
+	l.mu.Lock()
+	defer l.mu.Unlock()
+
 	// Create the logging record and pass into the output
 	record := LogRecord{
 		ID:      fmt.Sprintf("%04d", atomic.AddUint64(&sequenceNo, 1)),
@@ -155,7 +164,7 @@ func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
 
 // mustLogDebug logs a debug message only if debug mode
 // is enabled. i.e. DEBUG_ENABLED="1"
-func (l *BeeLogger) mustLogDebug(message string, args ...interface{}) {
+func (l *BeeLogger) mustLogDebug(message string, file string, line int, args ...interface{}) {
 	if !IsDebugEnabled() {
 		return
 	}
@@ -163,9 +172,7 @@ func (l *BeeLogger) mustLogDebug(message string, args ...interface{}) {
 	// Change the output to Stderr
 	l.SetOutput(os.Stderr)
 
-	// Create the log record and Get the filename
-	// and the line number of the caller
-	_, file, line, _ := runtime.Caller(1)
+	// Create the log record
 	record := LogRecord{
 		ID:       fmt.Sprintf("%04d", atomic.AddUint64(&sequenceNo, 1)),
 		Level:    l.getColorLevel(levelDebug),
@@ -178,13 +185,13 @@ func (l *BeeLogger) mustLogDebug(message string, args ...interface{}) {
 }
 
 // Debug outputs a debug log message
-func (l *BeeLogger) Debug(message string) {
-	l.mustLogDebug(message)
+func (l *BeeLogger) Debug(message string, file string, line int) {
+	l.mustLogDebug(message, file, line)
 }
 
 // Debugf outputs a formatted debug log message
-func (l *BeeLogger) Debugf(message string, vars ...interface{}) {
-	l.mustLogDebug(message, vars...)
+func (l *BeeLogger) Debugf(message string, file string, line int, vars ...interface{}) {
+	l.mustLogDebug(message, file, line, vars...)
 }
 
 // Info outputs an information log message

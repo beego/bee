@@ -954,7 +954,7 @@ func getPackagePath(curpath string) (packpath string) {
 		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 
-	logger.Debugf("GOPATH: %s", gopath)
+	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
 
 	appsrcpath := ""
 	haspath := false
