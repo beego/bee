@@ -70,24 +70,34 @@ func GetGOPATHs() []string {
 func isBeegoProject(thePath string) bool {
 	mainFiles := []string{}
 	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
+	c := make(chan error)
 	// Walk the application path tree to look for main files.
 	// Main files must satisfy the 'hasBeegoRegex' regular expression.
-	err := filepath.Walk(thePath, func(fpath string, f os.FileInfo, err error) error {
-		if !f.IsDir() { // Skip sub-directories
-			data, _err := ioutil.ReadFile(fpath)
-			if _err != nil {
-				return _err
+	go func() {
+		filepath.Walk(thePath, func(fpath string, f os.FileInfo, err error) error {
+			if err != nil {
+				return nil
 			}
-			if len(hasBeegoRegex.Find(data)) > 0 {
-				mainFiles = append(mainFiles, fpath)
-			}
-		}
-		return nil
-	})
+			// Skip sub-directories
+			if !f.IsDir() {
+				var data []byte
+				data, err = ioutil.ReadFile(fpath)
+				if err != nil {
+					c <- err
+					return nil
+				}
 
-	if err != nil {
-		log.Fatalf("Unable to walk '%s' tree: %v", thePath, err)
-		return false
+				if len(hasBeegoRegex.Find(data)) > 0 {
+					mainFiles = append(mainFiles, fpath)
+				}
+			}
+			return nil
+		})
+		close(c)
+	}()
+
+	if err := <-c; err != nil {
+		logger.Fatalf("Unable to walk '%s' tree: %s", thePath, err)
 	}
 
 	if len(mainFiles) > 0 {
