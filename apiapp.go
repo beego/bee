@@ -69,16 +69,15 @@ EnableDocs = true
 var apiMaingo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
 )
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
+	if beego.BConfig.RunMode == "dev" {
+		beego.BConfig.WebConfig.DirectoryIndex = true
+		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 	beego.Run()
 }
@@ -87,7 +86,6 @@ func main() {
 var apiMainconngo = `package main
 
 import (
-	_ "{{.Appname}}/docs"
 	_ "{{.Appname}}/routers"
 
 	"github.com/astaxie/beego"
@@ -100,9 +98,9 @@ func init() {
 }
 
 func main() {
-	if beego.RunMode == "dev" {
-		beego.DirectoryIndex = true
-		beego.StaticDir["/swagger"] = "swagger"
+	if beego.BConfig.RunMode == "dev" {
+		beego.BConfig.WebConfig.DirectoryIndex = true
+		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
 	}
 	beego.Run()
 }
@@ -298,7 +296,7 @@ type ObjectController struct {
 	beego.Controller
 }
 
-// @Title create
+// @Title Create
 // @Description create object
 // @Param	body		body 	models.Object	true		"The object content"
 // @Success 200 {string} models.Object.Id
@@ -309,7 +307,7 @@ func (o *ObjectController) Post() {
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 	objectid := models.AddOne(ob)
 	o.Data["json"] = map[string]string{"ObjectId": objectid}
-	o.ServeJson()
+	o.ServeJSON()
 }
 
 // @Title Get
@@ -319,16 +317,16 @@ func (o *ObjectController) Post() {
 // @Failure 403 :objectId is empty
 // @router /:objectId [get]
 func (o *ObjectController) Get() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	if objectId != "" {
 		ob, err := models.GetOne(objectId)
 		if err != nil {
-			o.Data["json"] = err
+			o.Data["json"] = err.Error()
 		} else {
 			o.Data["json"] = ob
 		}
 	}
-	o.ServeJson()
+	o.ServeJSON()
 }
 
 // @Title GetAll
@@ -339,10 +337,10 @@ func (o *ObjectController) Get() {
 func (o *ObjectController) GetAll() {
 	obs := models.GetAll()
 	o.Data["json"] = obs
-	o.ServeJson()
+	o.ServeJSON()
 }
 
-// @Title update
+// @Title Update
 // @Description update the object
 // @Param	objectId		path 	string	true		"The objectid you want to update"
 // @Param	body		body 	models.Object	true		"The body"
@@ -350,30 +348,30 @@ func (o *ObjectController) GetAll() {
 // @Failure 403 :objectId is empty
 // @router /:objectId [put]
 func (o *ObjectController) Put() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	var ob models.Object
 	json.Unmarshal(o.Ctx.Input.RequestBody, &ob)
 
 	err := models.Update(objectId, ob.Score)
 	if err != nil {
-		o.Data["json"] = err
+		o.Data["json"] = err.Error()
 	} else {
 		o.Data["json"] = "update success!"
 	}
-	o.ServeJson()
+	o.ServeJSON()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the object
 // @Param	objectId		path 	string	true		"The objectId you want to delete"
 // @Success 200 {string} delete success!
 // @Failure 403 objectId is empty
 // @router /:objectId [delete]
 func (o *ObjectController) Delete() {
-	objectId := o.Ctx.Input.Params[":objectId"]
+	objectId := o.Ctx.Input.Param(":objectId")
 	models.Delete(objectId)
 	o.Data["json"] = "delete success!"
-	o.ServeJson()
+	o.ServeJSON()
 }
 
 `
@@ -391,7 +389,7 @@ type UserController struct {
 	beego.Controller
 }
 
-// @Title createUser
+// @Title CreateUser
 // @Description create users
 // @Param	body		body 	models.User	true		"body for user content"
 // @Success 200 {int} models.User.Id
@@ -402,17 +400,17 @@ func (u *UserController) Post() {
 	json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 	uid := models.AddUser(user)
 	u.Data["json"] = map[string]string{"uid": uid}
-	u.ServeJson()
+	u.ServeJSON()
 }
 
-// @Title Get
+// @Title GetAll
 // @Description get all Users
 // @Success 200 {object} models.User
 // @router / [get]
 func (u *UserController) GetAll() {
 	users := models.GetAllUsers()
 	u.Data["json"] = users
-	u.ServeJson()
+	u.ServeJSON()
 }
 
 // @Title Get
@@ -426,15 +424,15 @@ func (u *UserController) Get() {
 	if uid != "" {
 		user, err := models.GetUser(uid)
 		if err != nil {
-			u.Data["json"] = err
+			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = user
 		}
 	}
-	u.ServeJson()
+	u.ServeJSON()
 }
 
-// @Title update
+// @Title Update
 // @Description update the user
 // @Param	uid		path 	string	true		"The uid you want to update"
 // @Param	body		body 	models.User	true		"body for user content"
@@ -448,15 +446,15 @@ func (u *UserController) Put() {
 		json.Unmarshal(u.Ctx.Input.RequestBody, &user)
 		uu, err := models.UpdateUser(uid, &user)
 		if err != nil {
-			u.Data["json"] = err
+			u.Data["json"] = err.Error()
 		} else {
 			u.Data["json"] = uu
 		}
 	}
-	u.ServeJson()
+	u.ServeJSON()
 }
 
-// @Title delete
+// @Title Delete
 // @Description delete the user
 // @Param	uid		path 	string	true		"The uid you want to delete"
 // @Success 200 {string} delete success!
@@ -466,10 +464,10 @@ func (u *UserController) Delete() {
 	uid := u.GetString(":uid")
 	models.DeleteUser(uid)
 	u.Data["json"] = "delete success!"
-	u.ServeJson()
+	u.ServeJSON()
 }
 
-// @Title login
+// @Title Login
 // @Description Logs user into the system
 // @Param	username		query 	string	true		"The username for login"
 // @Param	password		query 	string	true		"The password for login"
@@ -484,7 +482,7 @@ func (u *UserController) Login() {
 	} else {
 		u.Data["json"] = "user not exist"
 	}
-	u.ServeJson()
+	u.ServeJSON()
 }
 
 // @Title logout
@@ -493,7 +491,7 @@ func (u *UserController) Login() {
 // @router /logout [get]
 func (u *UserController) Logout() {
 	u.Data["json"] = "logout success"
-	u.ServeJson()
+	u.ServeJSON()
 }
 
 `
@@ -546,14 +544,19 @@ func init() {
 }
 
 func createapi(cmd *Command, args []string) int {
-	curpath, _ := os.Getwd()
+	ShowShortVersionBanner()
+
+	w := NewColorWriter(os.Stdout)
+
 	if len(args) < 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
+
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
 	}
+
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
 		fmt.Println(err)
@@ -564,23 +567,23 @@ func createapi(cmd *Command, args []string) int {
 	}
 	if conn == "" {
 	}
-	os.MkdirAll(apppath, 0755)
-	fmt.Println("create app folder:", apppath)
-	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println("create conf:", path.Join(apppath, "conf"))
-	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println("create controllers:", path.Join(apppath, "controllers"))
-	os.Mkdir(path.Join(apppath, "docs"), 0755)
-	fmt.Println("create docs:", path.Join(apppath, "docs"))
-	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println("create tests:", path.Join(apppath, "tests"))
 
-	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"),
-		strings.Replace(apiconf, "{{.Appname}}", args[0], -1))
+	ColorLog("[INFO] Creating API...\n")
+
+	os.MkdirAll(apppath, 0755)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
+	os.Mkdir(path.Join(apppath, "conf"), 0755)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
+	os.Mkdir(path.Join(apppath, "controllers"), 0755)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
+	os.Mkdir(path.Join(apppath, "tests"), 0755)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "conf", "app.conf"),
+		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if conn != "" {
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
 		if driver == "mysql" {
@@ -588,7 +591,7 @@ func createapi(cmd *Command, args []string) int {
 		} else if driver == "postgres" {
 			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
 		}
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(
 				maingoContent,
 				"{{.conn}}",
@@ -599,90 +602,73 @@ func createapi(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
-		generateAppcode(string(driver), string(conn), "3", string(tables), path.Join(curpath, args[0]))
+		generateAppcode(string(driver), string(conn), "3", string(tables), apppath)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Println("create models:", path.Join(apppath, "models"))
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers")+string(path.Separator), "\x1b[0m")
 
-		fmt.Println("create controllers object.go:", path.Join(apppath, "controllers", "object.go"))
-		writetofile(path.Join(apppath, "controllers", "object.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "object.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "controllers", "object.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create controllers user.go:", path.Join(apppath, "controllers", "user.go"))
-		writetofile(path.Join(apppath, "controllers", "user.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "user.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "controllers", "user.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create tests default.go:", path.Join(apppath, "tests", "default_test.go"))
-		writetofile(path.Join(apppath, "tests", "default_test.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "tests", "default_test.go"),
 			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create routers router.go:", path.Join(apppath, "routers", "router.go"))
-		writetofile(path.Join(apppath, "routers", "router.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "routers", "router.go"),
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
-		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
-		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Println("create docs doc.go:", path.Join(apppath, "docs", "doc.go"))
-		writetofile(path.Join(apppath, "docs", "doc.go"), "package docs")
-
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-		writetofile(path.Join(apppath, "main.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
+	ColorLog("[SUCC] New API successfully created!\n")
 	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
-	curpath, err := os.Getwd()
-	if err != nil {
-		return
+	gps := GetGOPATHs()
+	if len(gps) == 0 {
+		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
+		os.Exit(2)
 	}
-
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		err = fmt.Errorf("you should set GOPATH in the env")
-		return
-	}
-
-	appsrcpath := ""
-	haspath := false
-	wgopath := path.SplitList(gopath)
-	for _, wg := range wgopath {
-		wg = path.Join(wg, "src")
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
-		}
-
-		wg, _ = path.EvalSymlinks(wg)
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
+	currpath, _ := os.Getwd()
+	currpath = path.Join(currpath, appname)
+	for _, gpath := range gps {
+		gsrcpath := path.Join(gpath, "src")
+		if strings.HasPrefix(currpath, gsrcpath) {
+			packpath = strings.Replace(currpath[len(gsrcpath)+1:], string(path.Separator), "/", -1)
+			return currpath, packpath, nil
 		}
 	}
 
-	if !haspath {
-		err = fmt.Errorf("can't create application outside of GOPATH `%s`\n"+
-			"you first should `cd $GOPATH%ssrc` then use create\n", gopath, string(path.Separator))
-		return
-	}
-	apppath = path.Join(curpath, appname)
+	// In case of multiple paths in the GOPATH, by default
+	// we use the first path
+	gopath := gps[0]
+	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
+	Debugf("GOPATH: %s", gopath)
+
+	gosrcpath := path.Join(gopath, "src")
+	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
-		err = fmt.Errorf("path `%s` exists, can not create app without remove it\n", apppath)
+		err = fmt.Errorf("Cannot create application without removing '%s' first.", apppath)
+		ColorLog("[ERRO] Path '%s' already exists\n", apppath)
 		return
 	}
-	packpath = strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/")
+	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")
 	return
 }

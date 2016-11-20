@@ -28,7 +28,7 @@ var cmdHproseapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "hprose [appname]",
 	Short:     "create an rpc application use hprose base on beego framework",
-	Long: `	
+	Long: `
 create an rpc application use hprose base on beego framework
 
 bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
@@ -37,7 +37,7 @@ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:330
     -conn:   the connection string used by the driver, the default is ''
              e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
              e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-	
+
 if conn is empty will create a example rpc application. otherwise generate rpc application use hprose based on an existing database.
 
 In the current path, will create a folder named [appname]
@@ -255,6 +255,10 @@ func init() {
 }
 
 func createhprose(cmd *Command, args []string) int {
+	ShowShortVersionBanner()
+
+	w := NewColorWriter(os.Stdout)
+
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])
@@ -269,12 +273,15 @@ func createhprose(cmd *Command, args []string) int {
 	}
 	if conn == "" {
 	}
+
+	ColorLog("[INFO] Creating Hprose application...\n")
+
 	os.MkdirAll(apppath, 0755)
-	fmt.Println("create app folder:", apppath)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println("create conf:", path.Join(apppath, "conf"))
-	fmt.Println("create conf app.conf:", path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"),
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
 
 	if conn != "" {
@@ -282,7 +289,7 @@ func createhprose(cmd *Command, args []string) int {
 		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
 		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
 		generateHproseAppcode(string(driver), string(conn), "1", string(tables), path.Join(curpath, args[0]))
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		maingoContent := strings.Replace(hproseMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
 		maingoContent = strings.Replace(maingoContent, "{{HproseFunctionList}}", strings.Join(hproseAddFunctions, ""), -1)
@@ -291,7 +298,7 @@ func createhprose(cmd *Command, args []string) int {
 		} else if driver == "postgres" {
 			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
 		}
-		writetofile(path.Join(apppath, "main.go"),
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(
 				maingoContent,
 				"{{.conn}}",
@@ -301,17 +308,18 @@ func createhprose(cmd *Command, args []string) int {
 		)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Println("create models:", path.Join(apppath, "models"))
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
 
-		fmt.Println("create models object.go:", path.Join(apppath, "models", "object.go"))
-		writetofile(path.Join(apppath, "models", "object.go"), apiModels)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
-		fmt.Println("create models user.go:", path.Join(apppath, "models", "user.go"))
-		writetofile(path.Join(apppath, "models", "user.go"), apiModels2)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Println("create main.go:", path.Join(apppath, "main.go"))
-		writetofile(path.Join(apppath, "main.go"),
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(hproseMaingo, "{{.Appname}}", packpath, -1))
 	}
+	ColorLog("[SUCC] New Hprose application successfully created!\n")
 	return 0
 }

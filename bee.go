@@ -25,7 +25,7 @@ import (
 	"strings"
 )
 
-const version = "1.3.0"
+const version = "1.5.2"
 
 type Command struct {
 	// Run runs the command.
@@ -85,6 +85,7 @@ var commands = []*Command{
 	cmdGenerate,
 	//cmdRundocs,
 	cmdMigrate,
+	cmdFix,
 }
 
 func main() {

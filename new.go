@@ -55,100 +55,67 @@ func init() {
 }
 
 func createApp(cmd *Command, args []string) int {
-	curpath, _ := os.Getwd()
+	ShowShortVersionBanner()
+	w := NewColorWriter(os.Stdout)
 	if len(args) != 1 {
 		ColorLog("[ERRO] Argument [appname] is missing\n")
 		os.Exit(2)
 	}
-
-	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
-	if gopath == "" {
-		ColorLog("[ERRO] $GOPATH not found\n")
-		ColorLog("[HINT] Set $GOPATH in your environment vairables\n")
+	apppath, packpath, err := checkEnv(args[0])
+	if err != nil {
+		fmt.Println(err)
 		os.Exit(2)
 	}
-	haspath := false
-	appsrcpath := ""
-
-	wgopath := path.SplitList(gopath)
-	for _, wg := range wgopath {
-
-		wg = path.Join(wg, "src")
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
-		}
-
-		wg, _ = path.EvalSymlinks(wg)
-
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
-			haspath = true
-			appsrcpath = wg
-			break
-		}
-
-	}
-
-	if !haspath {
-		ColorLog("[ERRO] Unable to create an application outside of $GOPATH%ssrc(%s%ssrc)\n", string(path.Separator), gopath, string(path.Separator))
-		ColorLog("[HINT] Change your work directory by `cd ($GOPATH%ssrc)`\n", string(path.Separator))
-		os.Exit(2)
-	}
-
-	apppath := path.Join(curpath, args[0])
 
 	if isExist(apppath) {
 		ColorLog("[ERRO] Path (%s) already exists\n", apppath)
-		ColorLog("[WARN] Do you want to overwrite it? [yes|no]]")
+		ColorLog("[WARN] Do you want to overwrite it? [Yes|No] ")
 		if !askForConfirmation() {
 			os.Exit(2)
 		}
 	}
 
-	fmt.Println("[INFO] Creating application...")
+	ColorLog("[INFO] Creating application...\n")
 
 	os.MkdirAll(apppath, 0755)
-	fmt.Println(apppath + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Println(path.Join(apppath, "conf") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Println(path.Join(apppath, "controllers") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "models"), 0755)
-	fmt.Println(path.Join(apppath, "models") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "routers"), 0755)
-	fmt.Println(path.Join(apppath, "routers") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Println(path.Join(apppath, "tests") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static"), 0755)
-	fmt.Println(path.Join(apppath, "static") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
-	fmt.Println(path.Join(apppath, "static", "js") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static", "js")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static", "css"), 0755)
-	fmt.Println(path.Join(apppath, "static", "css") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static", "css")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static", "img"), 0755)
-	fmt.Println(path.Join(apppath, "static", "img") + string(path.Separator))
-	fmt.Println(path.Join(apppath, "views") + string(path.Separator))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static", "img")+string(path.Separator), "\x1b[0m")
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "views")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "views"), 0755)
-	fmt.Println(path.Join(apppath, "conf", "app.conf"))
-	writetofile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", args[0], -1))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "conf", "app.conf"), strings.Replace(appconf, "{{.Appname}}", path.Base(args[0]), -1))
 
-	fmt.Println(path.Join(apppath, "controllers", "default.go"))
-	writetofile(path.Join(apppath, "controllers", "default.go"), controllers)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "default.go"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "controllers", "default.go"), controllers)
 
-	fmt.Println(path.Join(apppath, "views", "index.tpl"))
-	writetofile(path.Join(apppath, "views", "index.tpl"), indextpl)
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "views", "index.tpl"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "views", "index.tpl"), indextpl)
 
-	fmt.Println(path.Join(apppath, "routers", "router.go"))
-	writetofile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "routers", "router.go"), strings.Replace(router, "{{.Appname}}", packpath, -1))
 
-	fmt.Println(path.Join(apppath, "tests", "default_test.go"))
-	writetofile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "tests", "default_test.go"), strings.Replace(test, "{{.Appname}}", packpath, -1))
 
-	fmt.Println(path.Join(apppath, "main.go"))
-	writetofile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", strings.Join(strings.Split(apppath[len(appsrcpath)+1:], string(path.Separator)), "/"), -1))
+	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", packpath, -1))
 
 	ColorLog("[SUCC] New application successfully created!\n")
 	return 0
@@ -237,7 +204,7 @@ type MainController struct {
 func (c *MainController) Get() {
 	c.Data["Website"] = "beego.me"
 	c.Data["Email"] = "astaxie@gmail.com"
-	c.TplNames = "index.tpl"
+	c.TplName = "index.tpl"
 }
 `
 
@@ -336,11 +303,12 @@ var indextpl = `<!DOCTYPE html>
 </html>
 `
 
-func writetofile(filename, content string) {
+// WriteToFile creates a file and writes content to it
+func WriteToFile(filename, content string) {
 	f, err := os.Create(filename)
+	defer CloseFile(f)
 	if err != nil {
 		panic(err)
 	}
-	defer f.Close()
 	f.WriteString(content)
 }

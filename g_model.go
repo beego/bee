@@ -1,13 +1,30 @@
+// Copyright 2013 bee authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
+
 package main
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path"
 	"strings"
 )
 
-func generateModel(mname, fields, crupath string) {
+func generateModel(mname, fields, currpath string) {
+	w := NewColorWriter(os.Stdout)
+
 	p, f := path.Split(mname)
 	modelName := strings.Title(f)
 	packageName := "models"
@@ -15,24 +32,28 @@ func generateModel(mname, fields, crupath string) {
 		i := strings.LastIndex(p[:len(p)-1], "/")
 		packageName = p[i+1 : len(p)-1]
 	}
-	modelStruct, err, hastime := getStruct(modelName, fields)
+
+	modelStruct, hastime, err := getStruct(modelName, fields)
 	if err != nil {
-		ColorLog("[ERRO] Could not genrate models struct: %s\n", err)
+		ColorLog("[ERRO] Could not generate the model struct: %s\n", err)
 		os.Exit(2)
 	}
+
 	ColorLog("[INFO] Using '%s' as model name\n", modelName)
 	ColorLog("[INFO] Using '%s' as package name\n", packageName)
-	fp := path.Join(crupath, "models", p)
+
+	fp := path.Join(currpath, "models", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
-		// create controller directory
+		// Create the model's directory
 		if err := os.MkdirAll(fp, 0777); err != nil {
-			ColorLog("[ERRO] Could not create models directory: %s\n", err)
+			ColorLog("[ERRO] Could not create the model directory: %s\n", err)
 			os.Exit(2)
 		}
 	}
+
 	fpath := path.Join(fp, strings.ToLower(modelName)+".go")
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
-		defer f.Close()
+		defer CloseFile(f)
 		content := strings.Replace(modelTpl, "{{packageName}}", packageName, -1)
 		content = strings.Replace(content, "{{modelName}}", modelName, -1)
 		content = strings.Replace(content, "{{modelStruct}}", modelStruct, -1)
@@ -42,42 +63,45 @@ func generateModel(mname, fields, crupath string) {
 			content = strings.Replace(content, "{{timePkg}}", "", -1)
 		}
 		f.WriteString(content)
-		// gofmt generated source code
+		// Run 'gofmt' on the generated source code
 		formatSourceCode(fpath)
-		ColorLog("[INFO] model file generated: %s\n", fpath)
+		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		// error creating file
 		ColorLog("[ERRO] Could not create model file: %s\n", err)
 		os.Exit(2)
 	}
 }
 
-func getStruct(structname, fields string) (string, error, bool) {
+func getStruct(structname, fields string) (string, bool, error) {
 	if fields == "" {
-		return "", errors.New("fields can't empty"), false
+		return "", false, errors.New("fields cannot be empty")
 	}
+
 	hastime := false
 	structStr := "type " + structname + " struct{\n"
 	fds := strings.Split(fields, ",")
 	for i, v := range fds {
 		kv := strings.SplitN(v, ":", 2)
 		if len(kv) != 2 {
-			return "", errors.New("the filds format is wrong. should key:type,key:type " + v), false
+			return "", false, errors.New("the fields format is wrong. Should be key:type,key:type " + v)
 		}
+
 		typ, tag, hastimeinner := getType(kv[1])
 		if typ == "" {
-			return "", errors.New("the filds format is wrong. should key:type,key:type " + v), false
+			return "", false, errors.New("the fields format is wrong. Should be key:type,key:type " + v)
 		}
+
 		if i == 0 && strings.ToLower(kv[0]) != "id" {
 			structStr = structStr + "Id     int64     `orm:\"auto\"`\n"
 		}
+
 		if hastimeinner {
 			hastime = true
 		}
 		structStr = structStr + camelString(kv[0]) + "       " + typ + "     " + tag + "\n"
 	}
 	structStr += "}\n"
-	return structStr, nil, hastime
+	return structStr, hastime, nil
 }
 
 // fields support type
@@ -88,9 +112,8 @@ func getType(ktype string) (kt, tag string, hasTime bool) {
 	case "string":
 		if len(kv) == 2 {
 			return "string", "`orm:\"size(" + kv[1] + ")\"`", false
-		} else {
-			return "string", "`orm:\"size(128)\"`", false
 		}
+		return "string", "`orm:\"size(128)\"`", false
 	case "text":
 		return "string", "`orm:\"type(longtext)\"`", false
 	case "auto":
@@ -140,7 +163,7 @@ func Add{{modelName}}(m *{{modelName}}) (id int64, err error) {
 
 // Get{{modelName}}ById retrieves {{modelName}} by Id. Returns error if
 // Id doesn't exist
-func Get{{modelName}}ById(id int) (v *{{modelName}}, err error) {
+func Get{{modelName}}ById(id int64) (v *{{modelName}}, err error) {
 	o := orm.NewOrm()
 	v = &{{modelName}}{Id: id}
 	if err = o.Read(v); err == nil {
@@ -202,7 +225,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 
 	var l []{{modelName}}
 	qs = qs.OrderBy(sortFields...)
-	if _, err := qs.Limit(limit, offset).All(&l, fields...); err == nil {
+	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
 				ml = append(ml, v)
@@ -240,7 +263,7 @@ func Update{{modelName}}ById(m *{{modelName}}) (err error) {
 
 // Delete{{modelName}} deletes {{modelName}} by Id and returns error if
 // the record to be deleted doesn't exist
-func Delete{{modelName}}(id int) (err error) {
+func Delete{{modelName}}(id int64) (err error) {
 	o := orm.NewOrm()
 	v := {{modelName}}{Id: id}
 	// ascertain id exists in the database
