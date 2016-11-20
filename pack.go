@@ -101,6 +101,7 @@ func init() {
 	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
+	cmdPack.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	w = NewColorWriter(os.Stdout)
 }
 
@@ -449,8 +450,6 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 }
 
 func packApp(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -597,11 +596,13 @@ func packApp(cmd *Command, args []string) int {
 		}
 	}
 
+	logger.Infof("Writing to output: %s", outputP)
+
 	err = packDirectory(exp, exs, exr, tmpdir, thePath)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
 
-	logger.Infof("Writing to output: %s", outputP)
+	logger.Success("Application packed!")
 	return 0
 }

@@ -80,9 +80,7 @@ func init() {
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
-	curPath, _ := os.Getwd()
 	astPkgs = map[string]*ast.Package{}
-	parsePackagesFromDir(curPath)
 }
 
 func parsePackagesFromDir(dirpath string) {

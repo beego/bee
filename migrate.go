@@ -56,14 +56,13 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
+	cmdMigrate.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	currpath, _ := os.Getwd()
 
 	gps := GetGOPATHs()

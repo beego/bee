@@ -32,7 +32,7 @@ var cmdBale = &Command{
 	Long: `
 Bale command compress all the static files in to a single binary file.
 
-This is usefull to not have to carry static files including js, css, images
+This is useful to not have to carry static files including js, css, images
 and views when publishing a project.
 
 auto-generate unpack function to main package then run it during the runtime.
@@ -43,11 +43,10 @@ This is mainly used for zealots who are requiring 100% Go code.
 
 func init() {
 	cmdBale.Run = runBale
+	cmdBale.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func runBale(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	err := loadConfig()
 	if err != nil {
 		logger.Fatalf("Failed to load configuration: %s", err)

@@ -23,12 +23,12 @@ bee fix help to upgrade the application to beego 1.6
 
 func init() {
 	cmdFix.Run = runFix
+	cmdFix.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func runFix(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	logger.Info("Upgrading the application...")
+
 	dir, err := os.Getwd()
 	if err != nil {
 		logger.Fatalf("Error while getting the current working directory: %s", err)

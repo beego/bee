@@ -538,14 +538,13 @@ func TestGet(t *testing.T) {
 
 func init() {
 	cmdApiapp.Run = createapi
+	cmdApiapp.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
 	cmdApiapp.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
 	cmdApiapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 func createapi(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	w := NewColorWriter(os.Stdout)
 
 	if len(args) < 1 {
@@ -656,7 +655,7 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	// we use the first path
 	gopath := gps[0]
 
-	logger.Warn("You current workdir is not inside $GOPATH/src")
+	logger.Warn("You current workdir is not inside $GOPATH/src.")
 	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
 
 	gosrcpath := path.Join(gopath, "src")
