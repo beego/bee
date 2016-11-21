@@ -478,10 +478,6 @@ func packApp(cmd *Command, args []string) int {
 		logger.Fatalf("Application path does not exist: %s", thePath)
 	}
 
-	if isBeegoProject(thePath) == false {
-		logger.Fatal("Bee does not support non Beego project")
-	}
-
 	logger.Infof("Packaging application on '%s'...", thePath)
 
 	appName := path.Base(thePath)

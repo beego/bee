@@ -76,7 +76,7 @@ func runApp(cmd *Command, args []string) int {
 			appname = path.Base(currpath)
 			currentGoPath = _gopath
 		} else {
-			logger.Fatalf("No Beego application '%s' found in your GOPATH", currpath)
+			logger.Fatalf("No application '%s' found in your GOPATH", currpath)
 		}
 	} else {
 		// Check if passed Bee application path/name exists in the GOPATH(s)
@@ -85,7 +85,7 @@ func runApp(cmd *Command, args []string) int {
 			currentGoPath = _gopath
 			appname = path.Base(currpath)
 		} else {
-			logger.Fatalf("No Beego application '%s' found in your GOPATH", args[0])
+			logger.Fatalf("No application '%s' found in your GOPATH", args[0])
 		}
 
 		if strings.HasSuffix(appname, ".go") && isExist(currpath) {
