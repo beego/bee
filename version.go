@@ -124,7 +124,7 @@ func getGoVersion() string {
 	)
 
 	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
-		logger.Fatalf("There was an error running go version command: %s", err)
+		logger.Fatalf("There was an error running 'go version' command: %s", err)
 	}
 	return strings.Split(string(cmdOut), " ")[2]
 }

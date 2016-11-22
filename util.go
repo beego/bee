@@ -17,7 +17,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path"
@@ -67,7 +66,8 @@ func GetGOPATHs() []string {
 	return paths
 }
 
-func isBeegoProject(thePath string) bool {
+// IsBeegoProject checks whether the current path is a Beego application or not
+func IsBeegoProject(thePath string) bool {
 	mainFiles := []string{}
 	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
 	// Walk the application path tree to look for main files.
@@ -86,7 +86,7 @@ func isBeegoProject(thePath string) bool {
 	})
 
 	if err != nil {
-		log.Fatalf("Unable to walk '%s' tree: %v", thePath, err)
+		logger.Fatalf("Unable to walk '%s' tree: %v", thePath, err)
 		return false
 	}
 
@@ -116,9 +116,6 @@ func SearchGOPATHs(app string) (bool, string, string) {
 		}
 
 		if isExist(currentPath) {
-			if !isBeegoProject(currentPath) {
-				continue
-			}
 			return true, gopath, currentPath
 		}
 	}
@@ -134,7 +131,7 @@ func askForConfirmation() bool {
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalf("%s", err)
 	}
 	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
 	nokayResponses := []string{"n", "N", "no", "No", "NO"}
