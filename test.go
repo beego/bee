@@ -31,6 +31,7 @@ var cmdTest = &Command{
 
 func init() {
 	cmdTest.Run = testApp
+	cmdTest.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func safePathAppend(arr []string, paths ...string) []string {

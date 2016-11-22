@@ -53,6 +53,7 @@ var docport docValue
 
 func init() {
 	cmdRundocs.Run = runDocs
+	cmdRundocs.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdRundocs.Flag.Var(&isDownload, "isDownload", "weather download the Swagger Docs")
 	cmdRundocs.Flag.Var(&docport, "docport", "doc server port")
 }
