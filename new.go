@@ -52,24 +52,24 @@ the following files/directories structure:
 
 func init() {
 	cmdNew.Run = createApp
+	cmdNew.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func createApp(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
 	w := NewColorWriter(os.Stdout)
+
 	if len(args) != 1 {
-		logger.Error("Argument [appname] is missing")
-		os.Exit(2)
+		logger.Fatal("Argument [appname] is missing")
 	}
+
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		logger.Fatalf("%s", err)
 	}
 
 	if isExist(apppath) {
-		logger.Errorf("Path (%s) already exists", apppath)
-		logger.Warn("Do you want to overwrite it? [Yes|No] ")
+		logger.Errorf(bold("Application '%s' already exists"), apppath)
+		logger.Warn(bold("Do you want to overwrite it? [Yes|No] "))
 		if !askForConfirmation() {
 			os.Exit(2)
 		}

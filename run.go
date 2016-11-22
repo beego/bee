@@ -56,6 +56,7 @@ var (
 
 func init() {
 	cmdRun.Run = runApp
+	cmdRun.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
 	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
 	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
@@ -67,8 +68,6 @@ func init() {
 }
 
 func runApp(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	if len(args) == 0 || args[0] == "watchall" {
 		currpath, _ = os.Getwd()
 

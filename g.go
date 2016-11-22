@@ -69,6 +69,7 @@ var fields docValue
 
 func init() {
 	cmdGenerate.Run = generateCode
+	cmdGenerate.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdGenerate.Flag.Var(&tables, "tables", "specify tables to generate model")
 	cmdGenerate.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
 	cmdGenerate.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
@@ -77,8 +78,6 @@ func init() {
 }
 
 func generateCode(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	currpath, _ := os.Getwd()
 	if len(args) < 1 {
 		logger.Fatal("Command is missing")

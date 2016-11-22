@@ -64,28 +64,26 @@ var (
 	debugLogRecordTemplate *template.Template
 )
 
-func init() {
-	var (
-		err             error
-		simpleLogFormat = `{{Now "2006/01/02 15:04:05"}} {{.Level}} ▶ {{.ID}} {{.Message}}{{EndLine}}`
-		debugLogFormat  = `{{Now "2006/01/02 15:04:05"}} {{.Level}} ▶ {{.ID}} {{.Filename}}:{{.LineNo}} {{.Message}}{{EndLine}}`
-	)
-
-	// Initialize and parse logging templates
-	funcs := template.FuncMap{
-		"Now":     Now,
-		"EndLine": EndLine,
-	}
-	logRecordTemplate, err = template.New("logRecordTemplate").Funcs(funcs).Parse(simpleLogFormat)
-	MustCheck(err)
-	debugLogRecordTemplate, err = template.New("dbgLogRecordTemplate").Funcs(funcs).Parse(debugLogFormat)
-	MustCheck(err)
-}
-
 // GetBeeLogger initializes the logger instance with a NewColorWriter output
 // and returns a singleton
 func GetBeeLogger(w io.Writer) *BeeLogger {
 	once.Do(func() {
+		var (
+			err             error
+			simpleLogFormat = `{{Now "2006/01/02 15:04:05"}} {{.Level}} ▶ {{.ID}} {{.Message}}{{EndLine}}`
+			debugLogFormat  = `{{Now "2006/01/02 15:04:05"}} {{.Level}} ▶ {{.ID}} {{.Filename}}:{{.LineNo}} {{.Message}}{{EndLine}}`
+		)
+
+		// Initialize and parse logging templates
+		funcs := template.FuncMap{
+			"Now":     Now,
+			"EndLine": EndLine,
+		}
+		logRecordTemplate, err = template.New("simpleLogFormat").Funcs(funcs).Parse(simpleLogFormat)
+		MustCheck(err)
+		debugLogRecordTemplate, err = template.New("debugLogFormat").Funcs(funcs).Parse(debugLogFormat)
+		MustCheck(err)
+
 		instance = &BeeLogger{output: NewColorWriter(w)}
 	})
 	return instance

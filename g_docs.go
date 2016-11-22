@@ -32,8 +32,6 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"io/ioutil"
-
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
 )
@@ -82,44 +80,60 @@ func init() {
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
-	curPath, _ := os.Getwd()
 	astPkgs = map[string]*ast.Package{}
-	parsePackagesFromDir(curPath)
 }
 
-func parsePackagesFromDir(path string) {
-	parsePackageFromDir(path)
-	list, err := ioutil.ReadDir(path)
-	if err != nil {
-		logger.Fatalf("Cannot read directory '%s': %s", path, err)
-	}
-	for _, item := range list {
-		if item.IsDir() && item.Name() != "vendor" {
-			parsePackagesFromDir(path + "/" + item.Name())
-		}
+func parsePackagesFromDir(dirpath string) {
+	c := make(chan error)
+
+	go func() {
+		filepath.Walk(dirpath, func(fpath string, fileInfo os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !fileInfo.IsDir() {
+				return nil
+			}
+
+			if fileInfo.Name() != "vendor" {
+				err = parsePackageFromDir(fpath)
+				if err != nil {
+					// Send the error to through the channel and continue walking
+					c <- fmt.Errorf("Error while parsing directory: %s", err.Error())
+					return nil
+				}
+			}
+			return nil
+		})
+		close(c)
+	}()
+
+	for err := range c {
+		logger.Warnf("%s", err)
 	}
 }
 
-func parsePackageFromDir(path string) {
+func parsePackageFromDir(path string) error {
 	fileSet := token.NewFileSet()
 	folderPkgs, err := parser.ParseDir(fileSet, path, func(info os.FileInfo) bool {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
 	if err != nil {
-		logger.Fatalf("Error while parsing dir at '%s': %s", path, err)
+		return err
 	}
 
 	for k, v := range folderPkgs {
 		astPkgs[k] = v
 	}
+
+	return nil
 }
 
 func generateDocs(curpath string) {
 	fset := token.NewFileSet()
 
 	f, err := parser.ParseFile(fset, path.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
-
 	if err != nil {
 		logger.Fatalf("Error while parsing router.go: %s", err)
 	}
@@ -147,13 +161,13 @@ func generateDocs(curpath string) {
 					rootapi.Infos.Contact.URL = strings.TrimSpace(s[len("@URL"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
 					if rootapi.Infos.License == nil {
-					        rootapi.Infos.License = &swagger.License{URL: strings.TrimSpace(s[len("@LicenseUrl"):])}
+						rootapi.Infos.License = &swagger.License{URL: strings.TrimSpace(s[len("@LicenseUrl"):])}
 					} else {
-					        rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+						rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
 					}
 				} else if strings.HasPrefix(s, "@License") {
 					if rootapi.Infos.License == nil {
-					        rootapi.Infos.License = &swagger.License{Name: strings.TrimSpace(s[len("@License"):])}
+						rootapi.Infos.License = &swagger.License{Name: strings.TrimSpace(s[len("@License"):])}
 					} else {
 						rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
 					}
