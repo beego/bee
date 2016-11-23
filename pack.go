@@ -21,7 +21,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	path "path/filepath"
@@ -102,12 +101,8 @@ func init() {
 	fs.BoolVar(&verbose, "v", false, "verbose")
 	cmdPack.Flag = *fs
 	cmdPack.Run = packApp
+	cmdPack.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	w = NewColorWriter(os.Stdout)
-}
-
-func exitPrint(con string) {
-	fmt.Fprintln(os.Stderr, con)
-	os.Exit(2)
 }
 
 type walker interface {
@@ -398,10 +393,10 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 func packDirectory(excludePrefix []string, excludeSuffix []string,
 	excludeRegexp []*regexp.Regexp, includePath ...string) (err error) {
 
-	ColorLog("Excluding relpath prefix: %s\n", strings.Join(excludePrefix, ":"))
-	ColorLog("Excluding relpath suffix: %s\n", strings.Join(excludeSuffix, ":"))
+	logger.Infof("Excluding relpath prefix: %s", strings.Join(excludePrefix, ":"))
+	logger.Infof("Excluding relpath suffix: %s", strings.Join(excludeSuffix, ":"))
 	if len(excludeRegexp) > 0 {
-		ColorLog("Excluding filename regex: `%s`\n", strings.Join(excludeR, "`, `"))
+		logger.Infof("Excluding filename regex: `%s`", strings.Join(excludeR, "`, `"))
 	}
 
 	w, err := os.OpenFile(outputP, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
@@ -454,27 +449,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 	return
 }
 
-func isBeegoProject(thePath string) bool {
-	fh, _ := os.Open(thePath)
-	fis, _ := fh.Readdir(-1)
-	regex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
-	for _, fi := range fis {
-		if fi.IsDir() == false && strings.HasSuffix(fi.Name(), ".go") {
-			data, err := ioutil.ReadFile(path.Join(thePath, fi.Name()))
-			if err != nil {
-				continue
-			}
-			if len(regex.Find(data)) > 0 {
-				return true
-			}
-		}
-	}
-	return false
-}
-
 func packApp(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -496,17 +471,13 @@ func packApp(cmd *Command, args []string) int {
 
 	thePath, err := path.Abs(appPath)
 	if err != nil {
-		exitPrint(fmt.Sprintf("Wrong app path: %s", thePath))
+		logger.Fatalf("Wrong application path: %s", thePath)
 	}
 	if stat, err := os.Stat(thePath); os.IsNotExist(err) || stat.IsDir() == false {
-		exitPrint(fmt.Sprintf("App path does not exist: %s", thePath))
+		logger.Fatalf("Application path does not exist: %s", thePath)
 	}
 
-	if isBeegoProject(thePath) == false {
-		exitPrint(fmt.Sprintf("Bee does not support non Beego project"))
-	}
-
-	ColorLog("Packaging application: %s\n", thePath)
+	logger.Infof("Packaging application on '%s'...", thePath)
 
 	appName := path.Base(thePath)
 
@@ -526,7 +497,7 @@ func packApp(cmd *Command, args []string) int {
 	os.Mkdir(tmpdir, 0700)
 
 	if build {
-		ColorLog("Building application...\n")
+		logger.Info("Building application...")
 		var envs []string
 		for _, env := range buildEnvs {
 			parts := strings.SplitN(env, "=", 2)
@@ -548,7 +519,7 @@ func packApp(cmd *Command, args []string) int {
 		os.Setenv("GOOS", goos)
 		os.Setenv("GOARCH", goarch)
 
-		ColorLog("Env: GOOS=%s GOARCH=%s\n", goos, goarch)
+		logger.Infof("Using: GOOS=%s GOARCH=%s", goos, goarch)
 
 		binPath := path.Join(tmpdir, appName)
 		if goos == "windows" {
@@ -571,10 +542,10 @@ func packApp(cmd *Command, args []string) int {
 		execmd.Dir = thePath
 		err = execmd.Run()
 		if err != nil {
-			exitPrint(err.Error())
+			logger.Fatal(err.Error())
 		}
 
-		ColorLog("Build successful\n")
+		logger.Success("Build successful!")
 	}
 
 	switch format {
@@ -592,7 +563,7 @@ func packApp(cmd *Command, args []string) int {
 	if _, err := os.Stat(outputP); err != nil {
 		err = os.MkdirAll(outputP, 0755)
 		if err != nil {
-			exitPrint(err.Error())
+			logger.Fatal(err.Error())
 		}
 	}
 
@@ -614,18 +585,20 @@ func packApp(cmd *Command, args []string) int {
 	for _, r := range excludeR {
 		if len(r) > 0 {
 			if re, err := regexp.Compile(r); err != nil {
-				exitPrint(err.Error())
+				logger.Fatal(err.Error())
 			} else {
 				exr = append(exr, re)
 			}
 		}
 	}
 
+	logger.Infof("Writing to output: %s", outputP)
+
 	err = packDirectory(exp, exs, exr, tmpdir, thePath)
 	if err != nil {
-		exitPrint(err.Error())
+		logger.Fatal(err.Error())
 	}
 
-	ColorLog("Writing to output: `%s`\n", outputP)
+	logger.Success("Application packed!")
 	return 0
 }

@@ -17,7 +17,6 @@ import (
 	"archive/zip"
 	"fmt"
 	"io"
-	"log"
 	"net/http"
 	"os"
 	"strings"
@@ -54,6 +53,7 @@ var docport docValue
 
 func init() {
 	cmdRundocs.Run = runDocs
+	cmdRundocs.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdRundocs.Flag.Var(&isDownload, "isDownload", "weather download the Swagger Docs")
 	cmdRundocs.Flag.Var(&docport, "docport", "doc server port")
 }
@@ -63,18 +63,22 @@ func runDocs(cmd *Command, args []string) int {
 		downloadFromURL(swaggerlink, "swagger.zip")
 		err := unzipAndDelete("swagger.zip")
 		if err != nil {
-			fmt.Println("has err exet unzipAndDelete", err)
+			logger.Errorf("Error while unzipping 'swagger.zip' file: %s", err)
 		}
 	}
 	if docport == "" {
 		docport = "8089"
 	}
 	if _, err := os.Stat("swagger"); err != nil && os.IsNotExist(err) {
-		fmt.Println("there's no swagger, please use bee rundocs -isDownload=true downlaod first")
-		os.Exit(2)
+		logger.Fatal("No Swagger dist found. Run: bee rundocs -isDownload=true")
 	}
-	fmt.Println("start the docs server on: http://127.0.0.1:" + docport)
-	log.Fatal(http.ListenAndServe(":"+string(docport), http.FileServer(http.Dir("swagger"))))
+
+	logger.Infof("Starting the docs server on: http://127.0.0.1:%s", docport)
+
+	err := http.ListenAndServe(":"+string(docport), http.FileServer(http.Dir("swagger")))
+	if err != nil {
+		logger.Fatalf("%s", err)
+	}
 	return 0
 }
 
@@ -85,36 +89,36 @@ func downloadFromURL(url, fileName string) {
 	} else if fd.Size() == int64(0) {
 		down = true
 	} else {
-		ColorLog("[%s] Filename %s already exist\n", INFO, fileName)
+		logger.Infof("'%s' already exists", fileName)
 		return
 	}
 	if down {
-		ColorLog("[%s]Downloading %s to %s\n", SUCC, url, fileName)
+		logger.Infof("Downloading '%s' to '%s'...", url, fileName)
 		output, err := os.Create(fileName)
 		if err != nil {
-			ColorLog("[%s]Error while creating %s: %s\n", ERRO, fileName, err)
+			logger.Errorf("Error while creating '%s': %s", fileName, err)
 			return
 		}
 		defer output.Close()
 
 		response, err := http.Get(url)
 		if err != nil {
-			ColorLog("[%s]Error while downloading %s:%s\n", ERRO, url, err)
+			logger.Errorf("Error while downloading '%s': %s", url, err)
 			return
 		}
 		defer response.Body.Close()
 
 		n, err := io.Copy(output, response.Body)
 		if err != nil {
-			ColorLog("[%s]Error while downloading %s:%s\n", ERRO, url, err)
+			logger.Errorf("Error while downloading '%s': %s", url, err)
 			return
 		}
-		ColorLog("[%s] %d bytes downloaded.\n", SUCC, n)
+		logger.Successf("%d bytes downloaded!", n)
 	}
 }
 
 func unzipAndDelete(src string) error {
-	ColorLog("[%s]start to unzip file from %s\n", INFO, src)
+	logger.Infof("Unzipping '%s'...", src)
 	r, err := zip.OpenReader(src)
 	if err != nil {
 		return err
@@ -146,6 +150,6 @@ func unzipAndDelete(src string) error {
 			}
 		}
 	}
-	ColorLog("[%s]Start delete src file %s\n", INFO, src)
+	logger.Successf("Done! Deleting '%s'...", src)
 	return os.RemoveAll(src)
 }

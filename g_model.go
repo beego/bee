@@ -35,19 +35,17 @@ func generateModel(mname, fields, currpath string) {
 
 	modelStruct, hastime, err := getStruct(modelName, fields)
 	if err != nil {
-		ColorLog("[ERRO] Could not generate the model struct: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not generate the model struct: %s", err)
 	}
 
-	ColorLog("[INFO] Using '%s' as model name\n", modelName)
-	ColorLog("[INFO] Using '%s' as package name\n", packageName)
+	logger.Infof("Using '%s' as model name", modelName)
+	logger.Infof("Using '%s' as package name", packageName)
 
 	fp := path.Join(currpath, "models", p)
 	if _, err := os.Stat(fp); os.IsNotExist(err) {
 		// Create the model's directory
 		if err := os.MkdirAll(fp, 0777); err != nil {
-			ColorLog("[ERRO] Could not create the model directory: %s\n", err)
-			os.Exit(2)
+			logger.Fatalf("Could not create the model directory: %s", err)
 		}
 	}
 
@@ -67,8 +65,7 @@ func generateModel(mname, fields, currpath string) {
 		formatSourceCode(fpath)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	} else {
-		ColorLog("[ERRO] Could not create model file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create model file: %s", err)
 	}
 }
 

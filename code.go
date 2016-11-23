@@ -109,12 +109,12 @@ func (v *annotationVisitor) Visit(n ast.Node) ast.Visitor {
 		v.ignoreName()
 		ast.Walk(v, n.Type)
 	case *ast.Field:
-		for _ = range n.Names {
+		for range n.Names {
 			v.ignoreName()
 		}
 		ast.Walk(v, n.Type)
 	case *ast.ValueSpec:
-		for _ = range n.Names {
+		for range n.Names {
 			v.add(AnchorAnnotation, "")
 		}
 		if n.Type != nil {

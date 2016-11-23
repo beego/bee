@@ -14,7 +14,10 @@
 
 package main
 
-import "io"
+import (
+	"fmt"
+	"io"
+)
 
 type outputMode int
 
@@ -48,4 +51,78 @@ func NewModeColorWriter(w io.Writer, mode outputMode) io.Writer {
 		}
 	}
 	return w
+}
+
+func bold(message string) string {
+	return fmt.Sprintf("\x1b[1m%s\x1b[21m", message)
+}
+
+// Cyan returns a cyan string
+func Cyan(message string) string {
+	return fmt.Sprintf("\x1b[36m%s\x1b[0m", message)
+}
+
+// Blue returns a blue string
+func Blue(message string) string {
+	return fmt.Sprintf("\x1b[34m%s\x1b[0m", message)
+}
+
+// Red returns a red string
+func Red(message string) string {
+	return fmt.Sprintf("\x1b[31m%s\x1b[0m", message)
+}
+
+// Green returns a green string
+func Green(message string) string {
+	return fmt.Sprintf("\x1b[32m%s\x1b[0m", message)
+}
+
+// Yellow returns a yellow string
+func Yellow(message string) string {
+	return fmt.Sprintf("\x1b[33m%s\x1b[0m", message)
+}
+
+// Gray returns a gray string
+func Gray(message string) string {
+	return fmt.Sprintf("\x1b[37m%s\x1b[0m", message)
+}
+
+// Magenta returns a magenta string
+func Magenta(message string) string {
+	return fmt.Sprintf("\x1b[35m%s\x1b[0m", message)
+}
+
+// CyanBold returns a cyan bold string
+func CyanBold(message string) string {
+	return fmt.Sprintf("\x1b[36m%s\x1b[0m", bold(message))
+}
+
+// BlueBold returns a blue bold string
+func BlueBold(message string) string {
+	return fmt.Sprintf("\x1b[34m%s\x1b[0m", bold(message))
+}
+
+// RedBold returns a red bold string
+func RedBold(message string) string {
+	return fmt.Sprintf("\x1b[31m%s\x1b[0m", bold(message))
+}
+
+// GreenBold returns a green bold string
+func GreenBold(message string) string {
+	return fmt.Sprintf("\x1b[32m%s\x1b[0m", bold(message))
+}
+
+// YellowBold returns a yellow bold string
+func YellowBold(message string) string {
+	return fmt.Sprintf("\x1b[33m%s\x1b[0m", bold(message))
+}
+
+// GrayBold returns a gray bold string
+func GrayBold(message string) string {
+	return fmt.Sprintf("\x1b[37m%s\x1b[0m", bold(message))
+}
+
+// MagentaBold returns a magenta bold string
+func MagentaBold(message string) string {
+	return fmt.Sprintf("\x1b[35m%s\x1b[0m", bold(message))
 }

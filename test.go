@@ -31,6 +31,7 @@ var cmdTest = &Command{
 
 func init() {
 	cmdTest.Run = testApp
+	cmdTest.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func safePathAppend(arr []string, paths ...string) []string {
@@ -51,19 +52,19 @@ var started = make(chan bool)
 
 func testApp(cmd *Command, args []string) int {
 	if len(args) != 1 {
-		ColorLog("[ERRO] Cannot start running[ %s ]\n",
-			"argument 'appname' is missing")
-		os.Exit(2)
+		logger.Fatalf("Failed to start: %s", "argument 'appname' is missing")
 	}
-	crupath, _ := os.Getwd()
-	Debugf("current path:%s\n", crupath)
+
+	currpath, _ := os.Getwd()
+
+	logger.Debugf("Current path: %s", __FILE__(), __LINE__(), currpath)
 
 	err := loadConfig()
 	if err != nil {
-		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		logger.Fatalf("Failed to load configuration: %s", err)
 	}
 	var paths []string
-	readAppDirectories(crupath, &paths)
+	readAppDirectories(currpath, &paths)
 
 	NewWatcher(paths, nil, false)
 	appname = args[0]
@@ -76,7 +77,7 @@ func testApp(cmd *Command, args []string) int {
 }
 
 func runTest() {
-	ColorLog("[INFO] Start testing...\n")
+	logger.Info("Start testing...")
 	time.Sleep(time.Second * 1)
 	crupwd, _ := os.Getwd()
 	testDir := path.Join(crupwd, "tests")
@@ -88,14 +89,14 @@ func runTest() {
 	icmd := exec.Command("go", "test")
 	icmd.Stdout = os.Stdout
 	icmd.Stderr = os.Stderr
-	ColorLog("[TRAC] ============== Test Begin ===================\n")
+	logger.Info("============== Test Begin ===================")
 	err = icmd.Run()
-	ColorLog("[TRAC] ============== Test End ===================\n")
+	logger.Info("============== Test End =====================")
 
 	if err != nil {
-		ColorLog("[ERRO] ============== Test failed ===================\n")
-		ColorLog("[ERRO] %s", err)
+		logger.Error("============== Test failed ===================")
+		logger.Errorf("Cause: %s", err)
 		return
 	}
-	ColorLog("[SUCC] Test finish\n")
+	logger.Success("Test Completed")
 }

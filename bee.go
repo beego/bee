@@ -25,12 +25,16 @@ import (
 	"strings"
 )
 
-const version = "1.5.1"
+const version = "1.5.2"
 
+// Command is the unit of execution
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
 	Run func(cmd *Command, args []string) int
+
+	// PreRun performs an operation before running the command
+	PreRun func(cmd *Command, args []string)
 
 	// UsageLine is the one-line usage message.
 	// The first word in the line is taken to be the command name.
@@ -60,6 +64,7 @@ func (c *Command) Name() string {
 	return name
 }
 
+// Usage puts out the usage for the command.
 func (c *Command) Usage() {
 	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
 	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(string(c.Long)))
@@ -88,7 +93,11 @@ var commands = []*Command{
 	cmdFix,
 }
 
+var logger = GetBeeLogger(os.Stdout)
+
 func main() {
+	currentpath, _ := os.Getwd()
+
 	flag.Usage = usage
 	flag.Parse()
 	log.SetFlags(0)
@@ -112,6 +121,17 @@ func main() {
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
+
+			if cmd.PreRun != nil {
+				cmd.PreRun(cmd, args)
+			}
+
+			// Check if current directory is inside the GOPATH,
+			// if so parse the packages inside it.
+			if strings.Contains(currentpath, GetGOPATHs()[0]+"/src") {
+				parsePackagesFromDir(currentpath)
+			}
+
 			os.Exit(cmd.Run(cmd, args))
 			return
 		}
@@ -138,7 +158,6 @@ Additional help topics:
     {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
 
 Use "bee help [topic]" for more information about that topic.
-
 `
 
 var helpTemplate = `{{if .Runnable}}usage: bee {{.UsageLine}}

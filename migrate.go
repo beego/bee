@@ -16,10 +16,10 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
 	"os"
 	"os/exec"
 	"path"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -56,30 +56,31 @@ var mConn docValue
 
 func init() {
 	cmdMigrate.Run = runMigration
+	cmdMigrate.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
 	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
 }
 
 // runMigration is the entry point for starting a migration
 func runMigration(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
 	currpath, _ := os.Getwd()
 
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
-	gopath := gps[0]
-	Debugf("GOPATH: %s", gopath)
 
-	// load config
+	gopath := gps[0]
+
+	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
+
+	// Load the configuration
 	err := loadConfig()
 	if err != nil {
-		ColorLog("[ERRO] Fail to parse bee.json[ %s ]\n", err)
+		logger.Errorf("Failed to load configuration: %s", err)
 	}
-	// getting command line arguments
+
+	// Getting command line arguments
 	if len(args) != 0 {
 		cmd.Flag.Parse(args[1:])
 	}
@@ -95,31 +96,30 @@ func runMigration(cmd *Command, args []string) int {
 			mConn = "root:@tcp(127.0.0.1:3306)/test"
 		}
 	}
-	ColorLog("[INFO] Using '%s' as 'driver'\n", mDriver)
-	ColorLog("[INFO] Using '%s' as 'conn'\n", mConn)
+	logger.Infof("Using '%s' as 'driver'", mDriver)
+	logger.Infof("Using '%s' as 'conn'", mConn)
 	driverStr, connStr := string(mDriver), string(mConn)
 	if len(args) == 0 {
 		// run all outstanding migrations
-		ColorLog("[INFO] Running all outstanding migrations\n")
+		logger.Info("Running all outstanding migrations")
 		migrateUpdate(currpath, driverStr, connStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
-			ColorLog("[INFO] Rolling back the last migration operation\n")
+			logger.Info("Rolling back the last migration operation")
 			migrateRollback(currpath, driverStr, connStr)
 		case "reset":
-			ColorLog("[INFO] Reseting all migrations\n")
+			logger.Info("Reseting all migrations")
 			migrateReset(currpath, driverStr, connStr)
 		case "refresh":
-			ColorLog("[INFO] Refreshing all migrations\n")
+			logger.Info("Refreshing all migrations")
 			migrateRefresh(currpath, driverStr, connStr)
 		default:
-			ColorLog("[ERRO] Command is missing\n")
-			os.Exit(2)
+			logger.Fatal("Command is missing")
 		}
 	}
-	ColorLog("[SUCC] Migration successful!\n")
+	logger.Success("Migration successful!")
 	return 0
 }
 
@@ -146,16 +146,20 @@ func migrateRefresh(currpath, driver, connStr string) {
 // migrate generates source code, build it, and invoke the binary who does the actual migration
 func migrate(goal, currpath, driver, connStr string) {
 	dir := path.Join(currpath, "database", "migrations")
-	binary := "m"
+	postfix := ""
+	if runtime.GOOS == "windows" {
+		postfix = ".exe"
+	}
+	binary := "m" + postfix
 	source := binary + ".go"
-	// connect to database
+
+	// Connect to database
 	db, err := sql.Open(driver, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s: %s\n", driver, connStr)
-		ColorLog("[ERRO] Error: %v", err.Error())
-		os.Exit(2)
+		logger.Fatalf("Could not connect to database using '%s': %s", connStr, err)
 	}
 	defer db.Close()
+
 	checkForSchemaUpdateTable(db, driver)
 	latestName, latestTime := getLatestMigration(db, goal)
 	writeMigrationSourceFile(dir, source, driver, connStr, latestTime, latestName, goal)
@@ -170,50 +174,44 @@ func migrate(goal, currpath, driver, connStr string) {
 func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 	showTableSQL := showMigrationsTableSQL(driver)
 	if rows, err := db.Query(showTableSQL); err != nil {
-		ColorLog("[ERRO] Could not show migrations table: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not show migrations table: %s", err)
 	} else if !rows.Next() {
-		// no migrations table, create anew
+		// No migrations table, create new ones
 		createTableSQL := createMigrationsTableSQL(driver)
-		ColorLog("[INFO] Creating 'migrations' table...\n")
+
+		logger.Infof("Creating 'migrations' table...")
+
 		if _, err := db.Query(createTableSQL); err != nil {
-			ColorLog("[ERRO] Could not create migrations table: %s\n", err)
-			os.Exit(2)
+			logger.Fatalf("Could not create migrations table: %s", err)
 		}
 	}
 
-	// checking that migrations table schema are expected
+	// Checking that migrations table schema are expected
 	selectTableSQL := selectMigrationsTableSQL(driver)
 	if rows, err := db.Query(selectTableSQL); err != nil {
-		ColorLog("[ERRO] Could not show columns of migrations table: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not show columns of migrations table: %s", err)
 	} else {
 		for rows.Next() {
 			var fieldBytes, typeBytes, nullBytes, keyBytes, defaultBytes, extraBytes []byte
 			if err := rows.Scan(&fieldBytes, &typeBytes, &nullBytes, &keyBytes, &defaultBytes, &extraBytes); err != nil {
-				ColorLog("[ERRO] Could not read column information: %s\n", err)
-				os.Exit(2)
+				logger.Fatalf("Could not read column information: %s", err)
 			}
 			fieldStr, typeStr, nullStr, keyStr, defaultStr, extraStr :=
 				string(fieldBytes), string(typeBytes), string(nullBytes), string(keyBytes), string(defaultBytes), string(extraBytes)
 			if fieldStr == "id_migration" {
 				if keyStr != "PRI" || extraStr != "auto_increment" {
-					ColorLog("[ERRO] Column migration.id_migration type mismatch: KEY: %s, EXTRA: %s\n", keyStr, extraStr)
-					ColorLog("[HINT] Expecting KEY: PRI, EXTRA: auto_increment\n")
-					os.Exit(2)
+					logger.Hint("Expecting KEY: PRI, EXTRA: auto_increment")
+					logger.Fatalf("Column migration.id_migration type mismatch: KEY: %s, EXTRA: %s", keyStr, extraStr)
 				}
 			} else if fieldStr == "name" {
 				if !strings.HasPrefix(typeStr, "varchar") || nullStr != "YES" {
-					ColorLog("[ERRO] Column migration.name type mismatch: TYPE: %s, NULL: %s\n", typeStr, nullStr)
-					ColorLog("[HINT] Expecting TYPE: varchar, NULL: YES\n")
-					os.Exit(2)
+					logger.Hint("Expecting TYPE: varchar, NULL: YES")
+					logger.Fatalf("Column migration.name type mismatch: TYPE: %s, NULL: %s", typeStr, nullStr)
 				}
-
 			} else if fieldStr == "created_at" {
 				if typeStr != "timestamp" || defaultStr != "CURRENT_TIMESTAMP" {
-					ColorLog("[ERRO] Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s\n", typeStr, defaultStr)
-					ColorLog("[HINT] Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP\n")
-					os.Exit(2)
+					logger.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP")
+					logger.Fatalf("Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s", typeStr, defaultStr)
 				}
 			}
 		}
@@ -257,26 +255,22 @@ func selectMigrationsTableSQL(driver string) string {
 func getLatestMigration(db *sql.DB, goal string) (file string, createdAt int64) {
 	sql := "SELECT name FROM migrations where status = 'update' ORDER BY id_migration DESC LIMIT 1"
 	if rows, err := db.Query(sql); err != nil {
-		ColorLog("[ERRO] Could not retrieve migrations: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not retrieve migrations: %s", err)
 	} else {
 		if rows.Next() {
 			if err := rows.Scan(&file); err != nil {
-				ColorLog("[ERRO] Could not read migrations in database: %s\n", err)
-				os.Exit(2)
+				logger.Fatalf("Could not read migrations in database: %s", err)
 			}
 			createdAtStr := file[len(file)-15:]
 			if t, err := time.Parse("20060102_150405", createdAtStr); err != nil {
-				ColorLog("[ERRO] Could not parse time: %s\n", err)
-				os.Exit(2)
+				logger.Fatalf("Could not parse time: %s", err)
 			} else {
 				createdAt = t.Unix()
 			}
 		} else {
 			// migration table has no 'update' record, no point rolling back
 			if goal == "rollback" {
-				ColorLog("[ERRO] There is nothing to rollback\n")
-				os.Exit(2)
+				logger.Fatal("There is nothing to rollback")
 			}
 			file, createdAt = "", 0
 		}
@@ -288,8 +282,7 @@ func getLatestMigration(db *sql.DB, goal string) (file string, createdAt int64) 
 func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime int64, latestName string, task string) {
 	changeDir(dir)
 	if f, err := os.OpenFile(source, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err != nil {
-		ColorLog("[ERRO] Could not create file: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not create file: %s", err)
 	} else {
 		content := strings.Replace(MigrationMainTPL, "{{DBDriver}}", driver, -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
@@ -297,8 +290,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
 		content = strings.Replace(content, "{{Task}}", task, -1)
 		if _, err := f.WriteString(content); err != nil {
-			ColorLog("[ERRO] Could not write to file: %s\n", err)
-			os.Exit(2)
+			logger.Fatalf("Could not write to file: %s", err)
 		}
 		CloseFile(f)
 	}
@@ -309,7 +301,7 @@ func buildMigrationBinary(dir, binary string) {
 	changeDir(dir)
 	cmd := exec.Command("go", "build", "-o", binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
-		ColorLog("[ERRO] Could not build migration binary: %s\n", err)
+		logger.Errorf("Could not build migration binary: %s", err)
 		formatShellErrOutput(string(out))
 		removeTempFile(dir, binary)
 		removeTempFile(dir, binary+".go")
@@ -323,7 +315,7 @@ func runMigrationBinary(dir, binary string) {
 	cmd := exec.Command("./" + binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		formatShellOutput(string(out))
-		ColorLog("[ERRO] Could not run migration binary: %s\n", err)
+		logger.Errorf("Could not run migration binary: %s", err)
 		removeTempFile(dir, binary)
 		removeTempFile(dir, binary+".go")
 		os.Exit(2)
@@ -336,8 +328,7 @@ func runMigrationBinary(dir, binary string) {
 // It exits the system when encouter an error
 func changeDir(dir string) {
 	if err := os.Chdir(dir); err != nil {
-		ColorLog("[ERRO] Could not find migration directory: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not find migration directory: %s", err)
 	}
 }
 
@@ -345,7 +336,7 @@ func changeDir(dir string) {
 func removeTempFile(dir, file string) {
 	changeDir(dir)
 	if err := os.Remove(file); err != nil {
-		ColorLog("[WARN] Could not remove temporary file: %s\n", err)
+		logger.Warnf("Could not remove temporary file: %s", err)
 	}
 }
 
@@ -353,8 +344,7 @@ func removeTempFile(dir, file string) {
 func formatShellErrOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
-			ColorLog("[ERRO] -| ")
-			fmt.Println(line)
+			logger.Errorf("|> %s", line)
 		}
 	}
 }
@@ -363,13 +353,13 @@ func formatShellErrOutput(o string) {
 func formatShellOutput(o string) {
 	for _, line := range strings.Split(o, "\n") {
 		if line != "" {
-			ColorLog("[INFO] -| ")
-			fmt.Println(line)
+			logger.Infof("|> %s", line)
 		}
 	}
 }
 
 const (
+	// MigrationMainTPL migration main template
 	MigrationMainTPL = `package main
 
 import(
@@ -409,6 +399,7 @@ func main(){
 }
 
 `
+	// MYSQLMigrationDDL MySQL migration SQL
 	MYSQLMigrationDDL = `
 CREATE TABLE migrations (
 	id_migration int(10) unsigned NOT NULL AUTO_INCREMENT COMMENT 'surrogate key',
@@ -420,7 +411,7 @@ CREATE TABLE migrations (
 	PRIMARY KEY (id_migration)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8
 `
-
+	// POSTGRESMigrationDDL Postgres migration SQL
 	POSTGRESMigrationDDL = `
 CREATE TYPE migrations_status AS ENUM('update', 'rollback');
 

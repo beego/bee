@@ -18,7 +18,6 @@ import (
 	"database/sql"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -39,7 +38,7 @@ type DbTransformer interface {
 	GetTableNames(conn *sql.DB) []string
 	GetConstraints(conn *sql.DB, table *Table, blackList map[string]bool)
 	GetColumns(conn *sql.DB, table *Table, blackList map[string]bool)
-	GetGoDataType(sqlType string) string
+	GetGoDataType(sqlType string) (string, error)
 }
 
 // MysqlDB is the MySQL version of DbTransformer
@@ -265,9 +264,7 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	case "3":
 		mode = OModel | OController | ORouter
 	default:
-		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
-		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
-		os.Exit(2)
+		logger.Fatal("Invalid level value. Must be either \"1\", \"2\", or \"3\"")
 	}
 	var selectedTables map[string]bool
 	if tables != "" {
@@ -280,12 +277,9 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 	case "mysql":
 	case "postgres":
 	case "sqlite":
-		ColorLog("[ERRO] Generating app code from SQLite database is not supported yet.\n")
-		os.Exit(2)
+		logger.Fatal("Generating app code from SQLite database is not supported yet.")
 	default:
-		ColorLog("[ERRO] Unknown database driver: %s\n", driver)
-		ColorLog("[HINT] Driver must be one of mysql, postgres or sqlite\n")
-		os.Exit(2)
+		logger.Fatal("Unknown database driver. Must be either \"mysql\", \"postgres\" or \"sqlite\"")
 	}
 	gen(driver, connStr, mode, selectedTables, currpath)
 }
@@ -295,12 +289,11 @@ func generateAppcode(driver, connStr, level, tables, currpath string) {
 func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, apppath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
-		os.Exit(2)
+		logger.Fatalf("Could not connect to '%s' database using '%s': %s", dbms, connStr, err)
 	}
 	defer db.Close()
 	if trans, ok := dbDriver[dbms]; ok {
-		ColorLog("[INFO] Analyzing database tables...\n")
+		logger.Info("Analyzing database tables...")
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
@@ -311,25 +304,21 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, ap
 		pkgPath := getPackagePath(apppath)
 		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
-		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)
-		os.Exit(2)
+		logger.Fatalf("Generating app code from '%s' database is not supported yet.", dbms)
 	}
 }
 
-// getTables gets a list table names in current database
+// GetTableNames returns a slice of table names in the current database
 func (*MysqlDB) GetTableNames(db *sql.DB) (tables []string) {
 	rows, err := db.Query("SHOW TABLES")
 	if err != nil {
-		ColorLog("[ERRO] Could not show tables\n")
-		ColorLog("[HINT] Check your connection string\n")
-		os.Exit(2)
+		logger.Fatalf("Could not show tables: %s", err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			ColorLog("[ERRO] Could not show tables\n")
-			os.Exit(2)
+			logger.Fatalf("Could not show tables: %s", err)
 		}
 		tables = append(tables, name)
 	}
@@ -358,8 +347,8 @@ func getTableObjects(tableNames []string, db *sql.DB, dbTransformer DbTransforme
 	return
 }
 
-// getConstraints gets primary key, unique key and foreign keys of a table from information_schema
-// and fill in Table struct
+// GetConstraints gets primary key, unique key and foreign keys of a table from
+// information_schema and fill in the Table struct
 func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bool) {
 	rows, err := db.Query(
 		`SELECT
@@ -372,14 +361,12 @@ func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bo
 			c.table_schema = database() AND c.table_name = ? AND u.table_schema = database() AND u.table_name = ?`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
-		ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for PK/UK/FK information\n")
-		os.Exit(2)
+		logger.Fatal("Could not query INFORMATION_SCHEMA for PK/UK/FK information")
 	}
 	for rows.Next() {
 		var constraintTypeBytes, columnNameBytes, refTableSchemaBytes, refTableNameBytes, refColumnNameBytes, refOrdinalPosBytes []byte
 		if err := rows.Scan(&constraintTypeBytes, &columnNameBytes, &refTableSchemaBytes, &refTableNameBytes, &refColumnNameBytes, &refOrdinalPosBytes); err != nil {
-			ColorLog("[ERRO] Could not read INFORMATION_SCHEMA for PK/UK/FK information\n")
-			os.Exit(2)
+			logger.Fatal("Could not read INFORMATION_SCHEMA for PK/UK/FK information")
 		}
 		constraintType, columnName, refTableSchema, refTableName, refColumnName, refOrdinalPos :=
 			string(constraintTypeBytes), string(columnNameBytes), string(refTableSchemaBytes),
@@ -389,7 +376,7 @@ func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bo
 				table.Pk = columnName
 			} else {
 				table.Pk = ""
-				// add table to blacklist so that other struct will not reference it, because we are not
+				// Add table to blacklist so that other struct will not reference it, because we are not
 				// registering blacklisted tables
 				blackList[table.Name] = true
 			}
@@ -406,11 +393,11 @@ func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bo
 	}
 }
 
-// getColumns retrieve columns details from information_schema
-// and fill in the Column struct
+// GetColumns retrieves columns details from
+// information_schema and fill in the Column struct
 func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 	// retrieve columns
-	colDefRows, _ := db.Query(
+	colDefRows, err := db.Query(
 		`SELECT
 			column_name, data_type, column_type, is_nullable, column_default, extra
 		FROM
@@ -418,20 +405,28 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 		WHERE
 			table_schema = database() AND table_name = ?`,
 		table.Name)
+	if err != nil {
+		logger.Fatalf("Could not query the database: %s", err)
+	}
 	defer colDefRows.Close()
+
 	for colDefRows.Next() {
 		// datatype as bytes so that SQL <null> values can be retrieved
 		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes []byte
 		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes); err != nil {
-			ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for column information\n")
-			os.Exit(2)
+			logger.Fatal("Could not query INFORMATION_SCHEMA for column information")
 		}
 		colName, dataType, columnType, isNullable, columnDefault, extra :=
 			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes)
+
 		// create a column
 		col := new(Column)
 		col.Name = camelCase(colName)
-		col.Type = mysqlDB.GetGoDataType(dataType)
+		col.Type, err = mysqlDB.GetGoDataType(dataType)
+		if err != nil {
+			logger.Fatalf("%s", err)
+		}
+
 		// Tag info
 		tag := new(OrmTag)
 		tag.Column = colName
@@ -466,7 +461,10 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 				if isSQLSignedIntType(dataType) {
 					sign := extractIntSignness(columnType)
 					if sign == "unsigned" && extra != "auto_increment" {
-						col.Type = mysqlDB.GetGoDataType(dataType + " " + sign)
+						col.Type, err = mysqlDB.GetGoDataType(dataType + " " + sign)
+						if err != nil {
+							logger.Fatalf("%s", err)
+						}
 					}
 				}
 				if isSQLStringType(dataType) {
@@ -500,15 +498,13 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 }
 
 // GetGoDataType maps an SQL data type to Golang data type
-func (*MysqlDB) GetGoDataType(sqlType string) (goType string) {
+func (*MysqlDB) GetGoDataType(sqlType string) (string, error) {
 	var typeMapping = map[string]string{}
 	typeMapping = typeMappingMysql
 	if v, ok := typeMapping[sqlType]; ok {
-		return v
+		return v, nil
 	}
-	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-	os.Exit(2)
-	return goType
+	return "", fmt.Errorf("data type '%s' not found", sqlType)
 }
 
 // GetTableNames for PostgreSQL
@@ -519,16 +515,14 @@ func (*PostgresDB) GetTableNames(db *sql.DB) (tables []string) {
 		table_type = 'BASE TABLE' AND
 		table_schema NOT IN ('pg_catalog', 'information_schema')`)
 	if err != nil {
-		ColorLog("[ERRO] Could not show tables: %s\n", err)
-		ColorLog("[HINT] Check your connection string\n")
-		os.Exit(2)
+		logger.Fatalf("Could not show tables: %s", err)
 	}
 	defer rows.Close()
+
 	for rows.Next() {
 		var name string
 		if err := rows.Scan(&name); err != nil {
-			ColorLog("[ERRO] Could not show tables\n")
-			os.Exit(2)
+			logger.Fatalf("Could not show tables: %s", err)
 		}
 		tables = append(tables, name)
 	}
@@ -558,14 +552,13 @@ func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string
 			 AND u.table_name = $2`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
-		ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for PK/UK/FK information: %s\n", err)
-		os.Exit(2)
+		logger.Fatalf("Could not query INFORMATION_SCHEMA for PK/UK/FK information: %s", err)
 	}
+
 	for rows.Next() {
 		var constraintTypeBytes, columnNameBytes, refTableSchemaBytes, refTableNameBytes, refColumnNameBytes, refOrdinalPosBytes []byte
 		if err := rows.Scan(&constraintTypeBytes, &columnNameBytes, &refTableSchemaBytes, &refTableNameBytes, &refColumnNameBytes, &refOrdinalPosBytes); err != nil {
-			ColorLog("[ERRO] Could not read INFORMATION_SCHEMA for PK/UK/FK information\n")
-			os.Exit(2)
+			logger.Fatalf("Could not read INFORMATION_SCHEMA for PK/UK/FK information: %s", err)
 		}
 		constraintType, columnName, refTableSchema, refTableName, refColumnName, refOrdinalPos :=
 			string(constraintTypeBytes), string(columnNameBytes), string(refTableSchemaBytes),
@@ -595,7 +588,7 @@ func (*PostgresDB) GetConstraints(db *sql.DB, table *Table, blackList map[string
 // GetColumns for PostgreSQL
 func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map[string]bool) {
 	// retrieve columns
-	colDefRows, _ := db.Query(
+	colDefRows, err := db.Query(
 		`SELECT
 			column_name,
 			data_type,
@@ -614,20 +607,27 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 			table_catalog = current_database() AND table_schema NOT IN ('pg_catalog', 'information_schema')
 			 AND table_name = $1`,
 		table.Name)
+	if err != nil {
+		logger.Fatalf("Could not query INFORMATION_SCHEMA for column information: %s", err)
+	}
 	defer colDefRows.Close()
+
 	for colDefRows.Next() {
 		// datatype as bytes so that SQL <null> values can be retrieved
 		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes []byte
 		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes); err != nil {
-			ColorLog("[ERRO] Could not query INFORMATION_SCHEMA for column information\n")
-			os.Exit(2)
+			logger.Fatalf("Could not query INFORMATION_SCHEMA for column information: %s", err)
 		}
 		colName, dataType, columnType, isNullable, columnDefault, extra :=
 			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes)
-		// create a column
+		// Create a column
 		col := new(Column)
 		col.Name = camelCase(colName)
-		col.Type = postgresDB.GetGoDataType(dataType)
+		col.Type, err = postgresDB.GetGoDataType(dataType)
+		if err != nil {
+			logger.Fatalf("%s", err)
+		}
+
 		// Tag info
 		tag := new(OrmTag)
 		tag.Column = colName
@@ -690,13 +690,11 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 }
 
 // GetGoDataType returns the Go type from the mapped Postgres type
-func (*PostgresDB) GetGoDataType(sqlType string) (goType string) {
+func (*PostgresDB) GetGoDataType(sqlType string) (string, error) {
 	if v, ok := typeMappingPostgres[sqlType]; ok {
-		return v
+		return v, nil
 	}
-	ColorLog("[ERRO] data type (%s) not found!\n", sqlType)
-	os.Exit(2)
-	return goType
+	return "", fmt.Errorf("data type '%s' not found", sqlType)
 }
 
 // deleteAndRecreatePaths removes several directories completely
@@ -717,15 +715,15 @@ func createPaths(mode byte, paths *MvcPath) {
 // Newly geneated files will be inside these folders.
 func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
 	if (OModel & mode) == OModel {
-		ColorLog("[INFO] Creating model files...\n")
+		logger.Info("Creating model files...")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
 	}
 	if (OController & mode) == OController {
-		ColorLog("[INFO] Creating controller files...\n")
+		logger.Info("Creating controller files...")
 		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
 	}
 	if (ORouter & mode) == ORouter {
-		ColorLog("[INFO] Creating router files...\n")
+		logger.Info("Creating router files...")
 		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
 	}
 }
@@ -746,21 +744,21 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
+			logger.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
-					ColorLog("[WARN] %v\n", err)
+					logger.Warnf("%s", err)
 					continue
 				}
 			} else {
-				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
+				logger.Warnf("Skipped create file '%s'", fpath)
 				continue
 			}
 		} else {
 			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
-				ColorLog("[WARN] %v\n", err)
+				logger.Warnf("%s", err)
 				continue
 			}
 		}
@@ -773,7 +771,8 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		fileStr := strings.Replace(template, "{{modelStruct}}", tb.String(), 1)
 		fileStr = strings.Replace(fileStr, "{{modelName}}", camelCase(tb.Name), -1)
 		fileStr = strings.Replace(fileStr, "{{tableName}}", tb.Name, -1)
-		// if table contains time field, import time.Time package
+
+		// If table contains time field, import time.Time package
 		timePkg := ""
 		importTimePkg := ""
 		if tb.ImportTimePkg {
@@ -783,8 +782,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
 		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			ColorLog("[ERRO] Could not write model file to %s\n", fpath)
-			os.Exit(2)
+			logger.Fatalf("Could not write model file to '%s': %s", fpath, err)
 		}
 		CloseFile(f)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
@@ -797,7 +795,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 	w := NewColorWriter(os.Stdout)
 
 	for _, tb := range tables {
-		// if selectedTables map is not nil and this table is not selected, ignore it
+		// If selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
 			if _, selected := selectedTables[tb.Name]; !selected {
 				continue
@@ -811,29 +809,28 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
+			logger.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
-					ColorLog("[WARN] %v\n", err)
+					logger.Warnf("%s", err)
 					continue
 				}
 			} else {
-				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
+				logger.Warnf("Skipped create file '%s'", fpath)
 				continue
 			}
 		} else {
 			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
-				ColorLog("[WARN] %v\n", err)
+				logger.Warnf("%s", err)
 				continue
 			}
 		}
 		fileStr := strings.Replace(CtrlTPL, "{{ctrlName}}", camelCase(tb.Name), -1)
 		fileStr = strings.Replace(fileStr, "{{pkgPath}}", pkgPath, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			ColorLog("[ERRO] Could not write controller file to %s\n", fpath)
-			os.Exit(2)
+			logger.Fatalf("Could not write controller file to '%s': %s", fpath, err)
 		}
 		CloseFile(f)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
@@ -847,7 +844,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 
 	var nameSpaces []string
 	for _, tb := range tables {
-		// if selectedTables map is not nil and this table is not selected, ignore it
+		// If selectedTables map is not nil and this table is not selected, ignore it
 		if selectedTables != nil {
 			if _, selected := selectedTables[tb.Name]; !selected {
 				continue
@@ -856,61 +853,42 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		if tb.Pk == "" {
 			continue
 		}
-		// add namespaces
+		// Add namespaces
 		nameSpace := strings.Replace(NamespaceTPL, "{{nameSpace}}", tb.Name, -1)
 		nameSpace = strings.Replace(nameSpace, "{{ctrlName}}", camelCase(tb.Name), -1)
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
-	// add export controller
+	// Add export controller
 	fpath := path.Join(rPath, "router.go")
 	routerStr := strings.Replace(RouterTPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File
 	var err error
 	if isExist(fpath) {
-		ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
+		logger.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 		if askForConfirmation() {
 			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
-				ColorLog("[WARN] %v\n", err)
+				logger.Warnf("%s", err)
 				return
 			}
 		} else {
-			ColorLog("[WARN] Skipped create file '%s'\n", fpath)
+			logger.Warnf("Skipped create file '%s'", fpath)
 			return
 		}
 	} else {
 		f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 		if err != nil {
-			ColorLog("[WARN] %v\n", err)
+			logger.Warnf("%s", err)
 			return
 		}
 	}
 	if _, err := f.WriteString(routerStr); err != nil {
-		ColorLog("[ERRO] Could not write router file to '%s'\n", fpath)
-		os.Exit(2)
+		logger.Fatalf("Could not write router file to '%s': %s", fpath, err)
 	}
 	CloseFile(f)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
 	formatSourceCode(fpath)
-}
-
-// formatSourceCode formats source files
-func formatSourceCode(filename string) {
-	cmd := exec.Command("gofmt", "-w", filename)
-	if err := cmd.Run(); err != nil {
-		ColorLog("[WARN] gofmt err: %s\n", err)
-	}
-}
-
-// camelCase converts a _ delimited string to camel case
-// e.g. very_important_person => VeryImportantPerson
-func camelCase(in string) string {
-	tokens := strings.Split(in, "_")
-	for i := range tokens {
-		tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
-	}
-	return strings.Join(tokens, "")
 }
 
 func isSQLTemporalType(t string) bool {
@@ -972,11 +950,11 @@ func getFileName(tbName string) (filename string) {
 
 func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
-	Debugf("gopath:%s", gopath)
 	if gopath == "" {
-		ColorLog("[ERRO] You should set GOPATH in the env")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
+
+	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
 
 	appsrcpath := ""
 	haspath := false
@@ -993,13 +971,11 @@ func getPackagePath(curpath string) (packpath string) {
 	}
 
 	if !haspath {
-		ColorLog("[ERRO] Can't generate application code outside of GOPATH '%s'\n", gopath)
-		os.Exit(2)
+		logger.Fatalf("Cannot generate application code outside of GOPATH '%s'", gopath)
 	}
 
 	if curpath == appsrcpath {
-		ColorLog("[ERRO] Can't generate application code outside of application PATH \n")
-		os.Exit(2)
+		logger.Fatal("Cannot generate application code outside of application path")
 	}
 
 	packpath = strings.Join(strings.Split(curpath[len(appsrcpath)+1:], string(filepath.Separator)), "/")
@@ -1062,7 +1038,11 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	for k, v := range query {
 		// rewrite dot-notation to Object__Attribute
 		k = strings.Replace(k, ".", "__", -1)
-		qs = qs.Filter(k, v)
+		if strings.Contains(k, "isnull") {
+			qs = qs.Filter(k, (v == "true" || v == "1"))
+		} else {
+			qs = qs.Filter(k, v)
+		}
 	}
 	// order by:
 	var sortFields []string
@@ -1168,11 +1148,12 @@ import (
 	"github.com/astaxie/beego"
 )
 
-// oprations for {{ctrlName}}
+// {{ctrlName}}Controller oprations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
 
+// URLMapping ...
 func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Post", c.Post)
 	c.Mapping("GetOne", c.GetOne)
@@ -1181,6 +1162,7 @@ func (c *{{ctrlName}}Controller) URLMapping() {
 	c.Mapping("Delete", c.Delete)
 }
 
+// Post ...
 // @Title Post
 // @Description create {{ctrlName}}
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -1202,7 +1184,8 @@ func (c *{{ctrlName}}Controller) Post() {
 	c.ServeJSON()
 }
 
-// @Title Get
+// GetOne ...
+// @Title Get One
 // @Description get {{ctrlName}} by id
 // @Param	id		path 	string	true		"The key for staticblock"
 // @Success 200 {object} models.{{ctrlName}}
@@ -1220,6 +1203,7 @@ func (c *{{ctrlName}}Controller) GetOne() {
 	c.ServeJSON()
 }
 
+// GetAll ...
 // @Title Get All
 // @Description get {{ctrlName}}
 // @Param	query	query	string	false	"Filter. e.g. col1:v1,col2:v2 ..."
@@ -1235,9 +1219,9 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	var fields []string
 	var sortby []string
 	var order []string
-	var query map[string]string = make(map[string]string)
+	var query = make(map[string]string)
 	var limit int64 = 10
-	var offset int64 = 0
+	var offset int64
 
 	// fields: col1,col2,entity.col3
 	if v := c.GetString("fields"); v != "" {
@@ -1282,7 +1266,8 @@ func (c *{{ctrlName}}Controller) GetAll() {
 	c.ServeJSON()
 }
 
-// @Title Update
+// Put ...
+// @Title Put
 // @Description update the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to update"
 // @Param	body		body 	models.{{ctrlName}}	true		"body for {{ctrlName}} content"
@@ -1305,6 +1290,7 @@ func (c *{{ctrlName}}Controller) Put() {
 	c.ServeJSON()
 }
 
+// Delete ...
 // @Title Delete
 // @Description delete the {{ctrlName}}
 // @Param	id		path 	string	true		"The id you want to delete"

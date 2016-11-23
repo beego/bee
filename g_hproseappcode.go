@@ -38,9 +38,7 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	case "3":
 		mode = OModel | OController | ORouter
 	default:
-		ColorLog("[ERRO] Invalid 'level' option: %s\n", level)
-		ColorLog("[HINT] Level must be either 1, 2 or 3\n")
-		os.Exit(2)
+		logger.Fatal("Invalid 'level' option. Level must be either \"1\", \"2\" or \"3\"")
 	}
 	var selectedTables map[string]bool
 	if tables != "" {
@@ -53,12 +51,9 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 	case "mysql":
 	case "postgres":
 	case "sqlite":
-		ColorLog("[ERRO] Generating app code from SQLite database is not supported yet.\n")
-		os.Exit(2)
+		logger.Fatal("Generating app code from SQLite database is not supported yet")
 	default:
-		ColorLog("[ERRO] Unknown database driver: %s\n", driver)
-		ColorLog("[HINT] Driver must be one of mysql, postgres or sqlite\n")
-		os.Exit(2)
+		logger.Fatalf("Unknown database driver '%s'. Driver must be one of mysql, postgres or sqlite", driver)
 	}
 	genHprose(driver, connStr, mode, selectedTables, currpath)
 }
@@ -68,12 +63,11 @@ func generateHproseAppcode(driver, connStr, level, tables, currpath string) {
 func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bool, currpath string) {
 	db, err := sql.Open(dbms, connStr)
 	if err != nil {
-		ColorLog("[ERRO] Could not connect to %s database: %s, %s\n", dbms, connStr, err)
-		os.Exit(2)
+		logger.Fatalf("Could not connect to '%s' database using '%s': %s", dbms, connStr, err)
 	}
 	defer db.Close()
 	if trans, ok := dbDriver[dbms]; ok {
-		ColorLog("[INFO] Analyzing database tables...\n")
+		logger.Info("Analyzing database tables...")
 		tableNames := trans.GetTableNames(db)
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
@@ -82,8 +76,7 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 		pkgPath := getPackagePath(currpath)
 		writeHproseSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
 	} else {
-		ColorLog("[ERRO] Generating app code from %s database is not supported yet.\n", dbms)
-		os.Exit(2)
+		logger.Fatalf("Generating app code from '%s' database is not supported yet", dbms)
 	}
 }
 
@@ -92,7 +85,7 @@ func genHprose(dbms, connStr string, mode byte, selectedTableNames map[string]bo
 // Newly geneated files will be inside these folders.
 func writeHproseSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
 	if (OModel & mode) == OModel {
-		ColorLog("[INFO] Creating model files...\n")
+		logger.Info("Creating model files...")
 		writeHproseModelFiles(tables, paths.ModelPath, selectedTables)
 	}
 }
@@ -113,21 +106,21 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		var f *os.File
 		var err error
 		if isExist(fpath) {
-			ColorLog("[WARN] '%v' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
+			logger.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
 			if askForConfirmation() {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
-					ColorLog("[WARN] %v\n", err)
+					logger.Warnf("%s", err)
 					continue
 				}
 			} else {
-				ColorLog("[WARN] Skipped create file '%s'\n", fpath)
+				logger.Warnf("Skipped create file '%s'", fpath)
 				continue
 			}
 		} else {
 			f, err = os.OpenFile(fpath, os.O_CREATE|os.O_RDWR, 0666)
 			if err != nil {
-				ColorLog("[WARN] %v\n", err)
+				logger.Warnf("%s", err)
 				continue
 			}
 		}
@@ -150,8 +143,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 		fileStr = strings.Replace(fileStr, "{{timePkg}}", timePkg, -1)
 		fileStr = strings.Replace(fileStr, "{{importTimePkg}}", importTimePkg, -1)
 		if _, err := f.WriteString(fileStr); err != nil {
-			ColorLog("[ERRO] Could not write model file to '%s'\n", fpath)
-			os.Exit(2)
+			logger.Fatalf("Could not write model file to '%s'", fpath)
 		}
 		CloseFile(f)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")

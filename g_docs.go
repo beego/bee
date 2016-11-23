@@ -26,10 +26,11 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
-	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
@@ -48,6 +49,30 @@ var importlist map[string]string
 var controllerList map[string]map[string]*swagger.Item //controllername Paths items
 var modelsList map[string]map[string]swagger.Schema
 var rootapi swagger.Swagger
+var astPkgs map[string]*ast.Package
+
+// refer to builtin.go
+var basicTypes = map[string]string{
+	"bool":        "boolean:",
+	"uint":        "integer:int32",
+	"uint8":       "integer:int32",
+	"uint16":      "integer:int32",
+	"uint32":      "integer:int32",
+	"uint64":      "integer:int64",
+	"int":         "integer:int64",
+	"int8":        "integer:int32",
+	"int16:int32": "integer:int32",
+	"int32":       "integer:int32",
+	"int64":       "integer:int64",
+	"uintptr":     "integer:int64",
+	"float32":     "number:float",
+	"float64":     "number:double",
+	"string":      "string:",
+	"complex64":   "number:float",
+	"complex128":  "number:double",
+	"byte":        "string:byte",
+	"rune":        "string:byte",
+}
 
 func init() {
 	pkgCache = make(map[string]struct{})
@@ -55,21 +80,68 @@ func init() {
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
+	astPkgs = map[string]*ast.Package{}
+}
+
+func parsePackagesFromDir(dirpath string) {
+	c := make(chan error)
+
+	go func() {
+		filepath.Walk(dirpath, func(fpath string, fileInfo os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			if !fileInfo.IsDir() {
+				return nil
+			}
+
+			if fileInfo.Name() != "vendor" {
+				err = parsePackageFromDir(fpath)
+				if err != nil {
+					// Send the error to through the channel and continue walking
+					c <- fmt.Errorf("Error while parsing directory: %s", err.Error())
+					return nil
+				}
+			}
+			return nil
+		})
+		close(c)
+	}()
+
+	for err := range c {
+		logger.Warnf("%s", err)
+	}
+}
+
+func parsePackageFromDir(path string) error {
+	fileSet := token.NewFileSet()
+	folderPkgs, err := parser.ParseDir(fileSet, path, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	}, parser.ParseComments)
+	if err != nil {
+		return err
+	}
+
+	for k, v := range folderPkgs {
+		astPkgs[k] = v
+	}
+
+	return nil
 }
 
 func generateDocs(curpath string) {
 	fset := token.NewFileSet()
 
 	f, err := parser.ParseFile(fset, path.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
-
 	if err != nil {
-		ColorLog("[ERRO] parse router.go error\n")
-		os.Exit(2)
+		logger.Fatalf("Error while parsing router.go: %s", err)
 	}
 
 	rootapi.Infos = swagger.Information{}
 	rootapi.SwaggerVersion = "2.0"
-	//analysis API comments
+
+	// Analyse API comments
 	if f.Comments != nil {
 		for _, c := range f.Comments {
 			for _, s := range strings.Split(c.Text(), "\n") {
@@ -83,21 +155,38 @@ func generateDocs(curpath string) {
 					rootapi.Infos.TermsOfService = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
 					rootapi.Infos.Contact.EMail = strings.TrimSpace(s[len("@Contact"):])
-				} else if strings.HasPrefix(s, "@License") {
-					rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
+				} else if strings.HasPrefix(s, "@Name") {
+					rootapi.Infos.Contact.Name = strings.TrimSpace(s[len("@Name"):])
+				} else if strings.HasPrefix(s, "@URL") {
+					rootapi.Infos.Contact.URL = strings.TrimSpace(s[len("@URL"):])
 				} else if strings.HasPrefix(s, "@LicenseUrl") {
-					rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					if rootapi.Infos.License == nil {
+						rootapi.Infos.License = &swagger.License{URL: strings.TrimSpace(s[len("@LicenseUrl"):])}
+					} else {
+						rootapi.Infos.License.URL = strings.TrimSpace(s[len("@LicenseUrl"):])
+					}
+				} else if strings.HasPrefix(s, "@License") {
+					if rootapi.Infos.License == nil {
+						rootapi.Infos.License = &swagger.License{Name: strings.TrimSpace(s[len("@License"):])}
+					} else {
+						rootapi.Infos.License.Name = strings.TrimSpace(s[len("@License"):])
+					}
+				} else if strings.HasPrefix(s, "@Schemes") {
+					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
+				} else if strings.HasPrefix(s, "@Host") {
+					rootapi.Host = strings.TrimSpace(s[len("@Host"):])
 				}
 			}
 		}
 	}
-	// analisys controller package
+
+	// Analyse controller package
 	for _, im := range f.Imports {
 		localName := ""
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analisyscontrollerPkg(localName, im.Path.Value)
+		analyseControllerPkg(localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -107,11 +196,11 @@ func generateDocs(curpath string) {
 				case *ast.AssignStmt:
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
-							// analisys NewNamespace, it will return version and the subfunction
+							// Analyse NewNamespace, it will return version and the subfunction
 							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
 								continue
 							}
-							version, params := analisysNewNamespace(v)
+							version, params := analyseNewNamespace(v)
 							if rootapi.BasePath == "" && version != "" {
 								rootapi.BasePath = version
 							}
@@ -120,12 +209,12 @@ func generateDocs(curpath string) {
 								case *ast.CallExpr:
 									controllerName := ""
 									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
-										s, params := analisysNewNamespace(pp)
+										s, params := analyseNewNamespace(pp)
 										for _, sp := range params {
 											switch pp := sp.(type) {
 											case *ast.CallExpr:
 												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-													controllerName = analisysNSInclude(s, pp)
+													controllerName = analyseNSInclude(s, pp)
 													if v, ok := controllerComments[controllerName]; ok {
 														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
 															Name:        strings.Trim(s, "/"),
@@ -136,7 +225,7 @@ func generateDocs(curpath string) {
 											}
 										}
 									} else if selname == "NSInclude" {
-										controllerName = analisysNSInclude("", pp)
+										controllerName = analyseNSInclude("", pp)
 										if v, ok := controllerComments[controllerName]; ok {
 											rootapi.Tags = append(rootapi.Tags, swagger.Tag{
 												Name:        controllerName, // if the NSInclude has no prefix, we use the controllername as the tag
@@ -155,22 +244,26 @@ func generateDocs(curpath string) {
 	}
 	os.Mkdir(path.Join(curpath, "swagger"), 0755)
 	fd, err := os.Create(path.Join(curpath, "swagger", "swagger.json"))
+	fdyml, err := os.Create(path.Join(curpath, "swagger", "swagger.yml"))
 	if err != nil {
 		panic(err)
 	}
+	defer fdyml.Close()
 	defer fd.Close()
 	dt, err := json.MarshalIndent(rootapi, "", "    ")
-	if err != nil {
+	dtyml, erryml := yaml.Marshal(rootapi)
+	if err != nil || erryml != nil {
 		panic(err)
 	}
 	_, err = fd.Write(dt)
-	if err != nil {
+	_, erryml = fdyml.Write(dtyml)
+	if err != nil || erryml != nil {
 		panic(err)
 	}
 }
 
-// return version and the others params
-func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
+// analyseNewNamespace returns version and the others params
+func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	for i, p := range ce.Args {
 		if i == 0 {
 			switch pp := p.(type) {
@@ -184,7 +277,7 @@ func analisysNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	return
 }
 
-func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
+func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	cname := ""
 	for _, p := range ce.Args {
 		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
@@ -232,7 +325,7 @@ func analisysNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analisyscontrollerPkg(localName, pkgpath string) {
+func analyseControllerPkg(localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
@@ -248,7 +341,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 	}
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
-		panic("please set gopath")
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 	pkgRealpath := ""
 
@@ -266,18 +359,16 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		ColorLog("[ERRO] the %s pkg not exist in gopath\n", pkgpath)
-		os.Exit(1)
+		logger.Fatalf("Package '%s' does not exist in the GOPATH", pkgpath)
 	}
+
 	fileSet := token.NewFileSet()
 	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
-
 	if err != nil {
-		ColorLog("[ERRO] the %s pkg parser.ParseDir error\n", pkgpath)
-		os.Exit(1)
+		logger.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
@@ -286,7 +377,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 				case *ast.FuncDecl:
 					if specDecl.Recv != nil && len(specDecl.Recv.List) > 0 {
 						if t, ok := specDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
-							// parse controller method
+							// Parse controller method
 							parserComments(specDecl.Doc, specDecl.Name.String(), fmt.Sprint(t.X), pkgpath)
 						}
 					}
@@ -296,7 +387,7 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 							switch tp := s.(*ast.TypeSpec).Type.(type) {
 							case *ast.StructType:
 								_ = tp.Struct
-								//parse controller definition comments
+								// Parse controller definition comments
 								if strings.TrimSpace(specDecl.Doc.Text()) != "" {
 									controllerComments[pkgpath+s.(*ast.TypeSpec).Name.String()] = specDecl.Doc.Text()
 								}
@@ -310,10 +401,11 @@ func analisyscontrollerPkg(localName, pkgpath string) {
 }
 
 func isSystemPackage(pkgpath string) bool {
-	goroot := runtime.GOROOT()
+	goroot := os.Getenv("GOROOT")
 	if goroot == "" {
-		panic("goroot is empty, do you install Go right?")
+		logger.Fatalf("GOROOT environment variable is not set or empty")
 	}
+
 	wg, _ := filepath.EvalSymlinks(filepath.Join(goroot, "src", "pkg", pkgpath))
 	if utils.FileExists(wg) {
 		return true
@@ -379,8 +471,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					ss = strings.TrimSpace(ss[pos:])
 					schemaName, pos := peekNextSplitString(ss)
 					if schemaName == "" {
-						ColorLog("[ERRO][%s.%s] Schema must follow {object} or {array}\n", controllerName, funcName)
-						os.Exit(-1)
+						logger.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
 					}
 					if strings.HasPrefix(schemaName, "[]") {
 						schemaName = schemaName[2:]
@@ -392,13 +483,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						schema.Type = typeFormat[0]
 						schema.Format = typeFormat[1]
 					} else {
-						cmpath, m, mod, realTypes := getModel(schemaName)
+						m, mod, realTypes := getModel(schemaName)
 						schema.Ref = "#/definitions/" + m
 						if _, ok := modelsList[pkgpath+controllerName]; !ok {
 							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 						}
 						modelsList[pkgpath+controllerName][schemaName] = mod
-						appendModels(cmpath, pkgpath, controllerName, realTypes)
+						appendModels(pkgpath, controllerName, realTypes)
 					}
 					if isArray {
 						rs.Schema = &swagger.Schema{
@@ -417,7 +508,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
 				if len(p) < 4 {
-					panic(controllerName + "_" + funcName + "'s comments @Param at least should has 4 params")
+					logger.Fatal(controllerName + "_" + funcName + "'s comments @Param should have at least 4 params")
 				}
 				para.Name = p[0]
 				switch p[1] {
@@ -432,13 +523,13 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				case "body":
 					break
 				default:
-					ColorLog("[WARN][%s.%s] Unknow param location: %s, Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+					logger.Warnf("[%s.%s] Unknown param location: %s. Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
 				}
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
-					cmpath, m, mod, realTypes := getModel(p[2])
+					m, mod, realTypes := getModel(p[2])
 					para.Schema = &swagger.Schema{
 						Ref: "#/definitions/" + m,
 					}
@@ -446,7 +537,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema, 0)
 					}
 					modelsList[pkgpath+controllerName][typ] = mod
-					appendModels(cmpath, pkgpath, controllerName, realTypes)
+					appendModels(pkgpath, controllerName, realTypes)
 				} else {
 					isArray := false
 					paraType := ""
@@ -463,7 +554,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						paraType = typeFormat[0]
 						paraFormat = typeFormat[1]
 					} else {
-						ColorLog("[WARN][%s.%s] Unknow param type: %s\n", controllerName, funcName, typ)
+						logger.Warnf("[%s.%s] Unknown param type: %s\n", controllerName, funcName, typ)
 					}
 					if isArray {
 						para.Type = "array"
@@ -476,10 +567,15 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						para.Format = paraFormat
 					}
 				}
-				if len(p) > 4 {
+				switch len(p) {
+				case 5:
 					para.Required, _ = strconv.ParseBool(p[3])
 					para.Description = strings.Trim(p[4], `" `)
-				} else {
+				case 6:
+					para.Default = str2RealType(p[3], para.Type)
+					para.Required, _ = strconv.ParseBool(p[4])
+					para.Description = strings.Trim(p[5], `" `)
+				default:
 					para.Description = strings.Trim(p[3], `" `)
 				}
 				opts.Parameters = append(opts.Parameters, para)
@@ -565,16 +661,12 @@ func getparams(str string) []string {
 	var j int
 	var start bool
 	var r []string
-	for i, c := range []rune(str) {
-		if unicode.IsSpace(c) {
+	var quoted int8
+	for _, c := range []rune(str) {
+		if unicode.IsSpace(c) && quoted == 0 {
 			if !start {
 				continue
 			} else {
-				if j == 3 {
-					r = append(r, string(s))
-					r = append(r, strings.TrimSpace((str[i+1:])))
-					break
-				}
 				start = false
 				j++
 				r = append(r, string(s))
@@ -582,28 +674,24 @@ func getparams(str string) []string {
 				continue
 			}
 		}
+
 		start = true
+		if c == '"' {
+			quoted ^= 1
+			continue
+		}
 		s = append(s, c)
+	}
+	if len(s) > 0 {
+		r = append(r, string(s))
 	}
 	return r
 }
 
-func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTypes []string) {
+func getModel(str string) (objectname string, m swagger.Schema, realTypes []string) {
 	strs := strings.Split(str, ".")
 	objectname = strs[len(strs)-1]
-	pkgpath = strings.Join(strs[:len(strs)-1], "/")
-	curpath, _ := os.Getwd()
-	pkgRealpath := path.Join(curpath, pkgpath)
-	fileSet := token.NewFileSet()
-	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
-		name := info.Name()
-		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
-	}, parser.ParseComments)
-
-	if err != nil {
-		ColorLog("[ERRO] the model %s parser.ParseDir error\n", str)
-		os.Exit(1)
-	}
+	packageName := ""
 	m.Type = "object"
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
@@ -612,28 +700,29 @@ func getModel(str string) (pkgpath, objectname string, m swagger.Schema, realTyp
 					if k != objectname {
 						continue
 					}
-					parseObject(d, k, &m, &realTypes, astPkgs)
+					packageName = pkg.Name
+					parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
 				}
 			}
 		}
 	}
 	if m.Title == "" {
-		ColorLog("[WARN]can't find the object: %s\n", str)
+		logger.Warnf("Cannot find the object: %s", str)
 		// TODO remove when all type have been supported
 		//os.Exit(1)
 	}
 	if len(rootapi.Definitions) == 0 {
 		rootapi.Definitions = make(map[string]swagger.Schema)
 	}
+	objectname = packageName + "." + objectname
 	rootapi.Definitions[objectname] = m
 	return
 }
 
-func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package) {
+func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
-		ColorLog("Unknown type without TypeSec: %v\n", d)
-		os.Exit(1)
+		logger.Fatalf("Unknown type without TypeSec: %v\n", d)
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	st, ok := ts.Type.(*ast.StructType)
@@ -644,7 +733,18 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
 		for _, field := range st.Fields.List {
+			realType := ""
 			isSlice, realType, sType := typeAnalyser(field)
+			if (isSlice && isBasicType(realType)) || sType == "object" {
+				if len(strings.Split(realType, " ")) > 1 {
+					realType = strings.Replace(realType, " ", ".", -1)
+					realType = strings.Replace(realType, "&", "", -1)
+					realType = strings.Replace(realType, "{", "", -1)
+					realType = strings.Replace(realType, "}", "", -1)
+				} else {
+					realType = packageName + "." + realType
+				}
+			}
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
 			if isSlice {
@@ -661,12 +761,18 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					}
 				}
 			} else {
-				if isBasicType(realType) {
+				if sType == "object" {
+					mp.Ref = "#/definitions/" + realType
+				} else if isBasicType(realType) {
 					typeFormat := strings.Split(sType, ":")
 					mp.Type = typeFormat[0]
 					mp.Format = typeFormat[1]
-				} else if sType == "object" {
-					mp.Ref = "#/definitions/" + realType
+				} else if realType == "map" {
+					typeFormat := strings.Split(sType, ":")
+					mp.AdditionalProperties = &swagger.Propertie{
+						Type:   typeFormat[0],
+						Format: typeFormat[1],
+					}
 				}
 			}
 			if field.Names != nil {
@@ -681,7 +787,21 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 				}
 
 				var tagValues []string
+
 				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+
+				defaultValue := stag.Get("doc")
+				if defaultValue != "" {
+					r, _ := regexp.Compile(`default\((.*)\)`)
+					if r.MatchString(defaultValue) {
+						res := r.FindStringSubmatch(defaultValue)
+						mp.Default = str2RealType(res[1], realType)
+
+					} else {
+						logger.Warnf("Invalid default value: %s", defaultValue)
+					}
+				}
+
 				tag := stag.Get("json")
 
 				if tag != "" {
@@ -719,7 +839,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					for _, fl := range pkg.Files {
 						for nameOfObj, obj := range fl.Scope.Objects {
 							if obj.Name == fmt.Sprint(field.Type) {
-								parseObject(obj, nameOfObj, m, realTypes, astPkgs)
+								parseObject(obj, nameOfObj, m, realTypes, astPkgs, pkg.Name)
 							}
 						}
 					}
@@ -746,7 +866,11 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	case *ast.StarExpr:
 		return false, fmt.Sprint(t.X), "object"
 	case *ast.MapType:
-		return false, fmt.Sprint(t.Value), "object"
+		val := fmt.Sprintf("%v", t.Value)
+		if isBasicType(val) {
+			return false, "map", basicTypes[val]
+		}
+		return false, val, "object"
 	}
 	if k, ok := basicTypes[fmt.Sprint(f.Type)]; ok {
 		return false, fmt.Sprint(f.Type), k
@@ -761,18 +885,6 @@ func isBasicType(Type string) bool {
 	return false
 }
 
-// refer to builtin.go
-var basicTypes = map[string]string{
-	"bool": "boolean:",
-	"uint": "integer:int32", "uint8": "integer:int32", "uint16": "integer:int32", "uint32": "integer:int32", "uint64": "integer:int64",
-	"int": "integer:int64", "int8": "integer:int32", "int16:int32": "integer:int32", "int32": "integer:int32", "int64": "integer:int64",
-	"uintptr": "integer:int64",
-	"float32": "number:float", "float64": "number:double",
-	"string":    "string:",
-	"complex64": "number:float", "complex128": "number:double",
-	"byte": "string:byte", "rune": "string:byte",
-}
-
 // regexp get json tag
 func grepJSONTag(tag string) string {
 	r, _ := regexp.Compile(`json:"([^"]*)"`)
@@ -784,23 +896,16 @@ func grepJSONTag(tag string) string {
 }
 
 // append models
-func appendModels(cmpath, pkgpath, controllerName string, realTypes []string) {
-	var p string
-	if cmpath != "" {
-		p = strings.Join(strings.Split(cmpath, "/"), ".") + "."
-	} else {
-		p = ""
-	}
+func appendModels(pkgpath, controllerName string, realTypes []string) {
 	for _, realType := range realTypes {
 		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
 			!strings.HasPrefix(realType, "map") && !strings.HasPrefix(realType, "&") {
-			if _, ok := modelsList[pkgpath+controllerName][p+realType]; ok {
+			if _, ok := modelsList[pkgpath+controllerName][realType]; ok {
 				continue
 			}
-			//fmt.Printf(pkgpath + ":" + controllerName + ":" + cmpath + ":" + realType + "\n")
-			_, _, mod, newRealTypes := getModel(p + realType)
-			modelsList[pkgpath+controllerName][p+realType] = mod
-			appendModels(cmpath, pkgpath, controllerName, newRealTypes)
+			_, mod, newRealTypes := getModel(realType)
+			modelsList[pkgpath+controllerName][realType] = mod
+			appendModels(pkgpath, controllerName, newRealTypes)
 		}
 	}
 }
@@ -817,4 +922,29 @@ func urlReplace(src string) string {
 		}
 	}
 	return strings.Join(pt, "/")
+}
+
+func str2RealType(s string, typ string) interface{} {
+	var err error
+	var ret interface{}
+
+	switch typ {
+	case "int", "int64", "int32", "int16", "int8":
+		ret, err = strconv.Atoi(s)
+	case "bool":
+		ret, err = strconv.ParseBool(s)
+	case "float64":
+		ret, err = strconv.ParseFloat(s, 64)
+	case "float32":
+		ret, err = strconv.ParseFloat(s, 32)
+	default:
+		return s
+	}
+
+	if err != nil {
+		logger.Warnf("Invalid default value type '%s': %s", typ, s)
+		return s
+	}
+
+	return ret
 }

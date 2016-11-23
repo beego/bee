@@ -52,30 +52,30 @@ the following files/directories structure:
 
 func init() {
 	cmdNew.Run = createApp
+	cmdNew.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func createApp(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
 	w := NewColorWriter(os.Stdout)
+
 	if len(args) != 1 {
-		ColorLog("[ERRO] Argument [appname] is missing\n")
-		os.Exit(2)
+		logger.Fatal("Argument [appname] is missing")
 	}
+
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		logger.Fatalf("%s", err)
 	}
 
 	if isExist(apppath) {
-		ColorLog("[ERRO] Path (%s) already exists\n", apppath)
-		ColorLog("[WARN] Do you want to overwrite it? [Yes|No] ")
+		logger.Errorf(bold("Application '%s' already exists"), apppath)
+		logger.Warn(bold("Do you want to overwrite it? [Yes|No] "))
 		if !askForConfirmation() {
 			os.Exit(2)
 		}
 	}
 
-	ColorLog("[INFO] Creating application...\n")
+	logger.Info("Creating application...")
 
 	os.MkdirAll(apppath, 0755)
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath+string(path.Separator), "\x1b[0m")
@@ -117,7 +117,7 @@ func createApp(cmd *Command, args []string) int {
 	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 	WriteToFile(path.Join(apppath, "main.go"), strings.Replace(maingo, "{{.Appname}}", packpath, -1))
 
-	ColorLog("[SUCC] New application successfully created!\n")
+	logger.Success("New application successfully created!")
 	return 0
 }
 
@@ -171,13 +171,13 @@ func init() {
 }
 
 
-// TestMain is a sample to run an endpoint test
-func TestMain(t *testing.T) {
+// TestBeego is a sample to run an endpoint test
+func TestBeego(t *testing.T) {
 	r, _ := http.NewRequest("GET", "/", nil)
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	beego.Trace("testing", "TestMain", "Code[%d]\n%s", w.Code, w.Body.String())
+	beego.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
 
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
@@ -302,13 +302,3 @@ var indextpl = `<!DOCTYPE html>
 </body>
 </html>
 `
-
-// WriteToFile creates a file and writes content to it
-func WriteToFile(filename, content string) {
-	f, err := os.Create(filename)
-	defer CloseFile(f)
-	if err != nil {
-		panic(err)
-	}
-	f.WriteString(content)
-}
