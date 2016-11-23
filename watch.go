@@ -96,7 +96,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 
 }
 
-// getFileModTime retuens unix timestamp of `os.File.ModTime` by given path.
+// getFileModTime returns unix timestamp of `os.File.ModTime` for the given path.
 func getFileModTime(path string) int64 {
 	path = strings.Replace(path, "\\", "/", -1)
 	f, err := os.Open(path)
