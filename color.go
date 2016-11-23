@@ -57,6 +57,16 @@ func bold(message string) string {
 	return fmt.Sprintf("\x1b[1m%s\x1b[21m", message)
 }
 
+// Black returns a black string
+func Black(message string) string {
+	return fmt.Sprintf("\x1b[30m%s\x1b[0m", message)
+}
+
+// White returns a white string
+func White(message string) string {
+	return fmt.Sprintf("\x1b[37m%s\x1b[0m", message)
+}
+
 // Cyan returns a cyan string
 func Cyan(message string) string {
 	return fmt.Sprintf("\x1b[36m%s\x1b[0m", message)
@@ -90,6 +100,16 @@ func Gray(message string) string {
 // Magenta returns a magenta string
 func Magenta(message string) string {
 	return fmt.Sprintf("\x1b[35m%s\x1b[0m", message)
+}
+
+// BlackBold returns a black bold string
+func BlackBold(message string) string {
+	return fmt.Sprintf("\x1b[30m%s\x1b[0m", bold(message))
+}
+
+// WhiteBold returns a white bold string
+func WhiteBold(message string) string {
+	return fmt.Sprintf("\x1b[37m%s\x1b[0m", bold(message))
 }
 
 // CyanBold returns a cyan bold string
