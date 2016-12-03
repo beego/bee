@@ -287,11 +287,12 @@ func __LINE__() int {
 // BeeFuncMap returns a FuncMap of functions used in different templates.
 func BeeFuncMap() template.FuncMap {
 	return template.FuncMap{
-		"trim":      strings.TrimSpace,
-		"bold":      bold,
-		"headline":  MagentaBold,
-		"endline":   EndLine,
-		"tmpltostr": TmplToString,
+		"trim":       strings.TrimSpace,
+		"bold":       bold,
+		"headline":   MagentaBold,
+		"foldername": RedBold,
+		"endline":    EndLine,
+		"tmpltostr":  TmplToString,
 	}
 }
 

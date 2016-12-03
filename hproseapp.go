@@ -37,10 +37,10 @@ var cmdHproseapp = &Command{
 
   The command 'hprose' creates a folder named [appname] with the following structure:
 
-	    ├── conf
-	    │     └── app.conf
 	    ├── main.go
-	    └── models
+	    ├── {{"conf"|foldername}}
+	    │     └── app.conf
+	    └── {{"models"|foldername}}
 	          └── object.go
 	          └── user.go
 `,

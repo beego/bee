@@ -36,19 +36,19 @@ var cmdApiapp = &Command{
 
   The command 'api' creates a folder named [appname] with the following structure:
 
-	    ├── conf
-	    │   └── app.conf
-	    ├── controllers
-	    │   └── object.go
-	    │   └── user.go
-	    ├── routers
-	    │   └── router.go
-	    ├── tests
-	    │   └── default_test.go
 	    ├── main.go
-	    └── models
-	        └── object.go
-	        └── user.go
+	    ├── {{"conf"|foldername}}
+	    │     └── app.conf
+	    ├── {{"controllers"|foldername}}
+	    │     └── object.go
+	    │     └── user.go
+	    ├── {{"routers"|foldername}}
+	    │     └── router.go
+	    ├── {{"tests"|foldername}}
+	    │     └── default_test.go
+	    └── {{"models"|foldername}}
+	          └── object.go
+	          └── user.go
 `,
 	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
 	Run:    createapi,

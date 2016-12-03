@@ -29,22 +29,22 @@ Creates a Beego application for the given app name in the current directory.
 
   The command 'new' creates a folder named [appname] and generates the following structure:
 
-    |- main.go
-    |- conf
-         |-  app.conf
-    |- controllers
-         |- default.go
-    |- models
-    |- routers
-         |- router.go
-    |- tests
-         |- default_test.go
-    |- static
-         |- js
-         |- css
-         |- img
-    |- views
-        index.tpl
+            ├── main.go
+            ├── {{"conf"|foldername}}
+            │     └── app.conf
+            ├── {{"controllers"|foldername}}
+            │     └── default.go
+            ├── {{"models"|foldername}}
+            ├── {{"routers"|foldername}}
+            │     └── router.go
+            ├── {{"tests"|foldername}}
+            │     └── default_test.go
+            ├── {{"static"|foldername}}
+            │     └── {{"js"|foldername}}
+            │     └── {{"css"|foldername}}
+            │     └── {{"img"|foldername}}
+            └── {{"views"|foldername}}
+                  └── index.tpl
 
 `,
 	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
