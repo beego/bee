@@ -13,11 +13,11 @@ import (
 
 var cmdFix = &Command{
 	UsageLine: "fix",
-	Short:     "fix the beego application to make it compatible with beego 1.6",
-	Long: `
-As from beego1.6, there's some incompatible code with the old version.
+	Short:     "Fixes your application by making it compatible with newer versions of Beego",
+	Long: `As of {{"Beego 1.6"|bold}}, there are some backward compatibility issues.
 
-bee fix help to upgrade the application to beego 1.6
+  The command 'fix' will try to solve those issues by upgrading your code base
+  to be compatible  with Beego version 1.6+.
 `,
 }
 
@@ -27,6 +27,8 @@ func init() {
 }
 
 func runFix(cmd *Command, args []string) int {
+	output := cmd.Out()
+
 	logger.Info("Upgrading the application...")
 
 	dir, err := os.Getwd()
@@ -48,13 +50,13 @@ func runFix(cmd *Command, args []string) int {
 			return nil
 		}
 		err = fixFile(path)
-		fmt.Println("\tfix\t", path)
+		fmt.Fprintf(output, GreenBold("\tfix\t")+"%s\n", path)
 		if err != nil {
 			logger.Errorf("Could not fix file: %s", err)
 		}
 		return err
 	})
-	logger.Success("Upgrade done!")
+	logger.Success("Upgrade Done!")
 	return 0
 }
 

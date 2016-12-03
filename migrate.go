@@ -27,38 +27,35 @@ import (
 
 var cmdMigrate = &Command{
 	UsageLine: "migrate [Command]",
-	Short:     "run database migrations",
-	Long: `
-bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    run all outstanding migrations
-    -driver: [mysql | postgres | sqlite] (default: mysql)
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+	Short:     "Runs database migrations",
+	Long: `The command 'migrate' allows you to run database migrations to keep it up-to-date.
 
-bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback the last migration operation
-    -driver: [mysql | postgres | sqlite] (default: mysql)
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+  ▶ {{"To run all the migrations:"|bold}}
 
-bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback all migrations
-    -driver: [mysql | postgres | sqlite] (default: mysql)
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+    $ bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
-bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    rollback all migrations and run them all again
-    -driver: [mysql | postgres | sqlite] (default: mysql)
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
+  ▶ {{"To rollback the last migration:"|bold}}
+
+    $ bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+
+  ▶ {{"To do a reset, which will rollback all the migrations:"|bold}}
+
+    $ bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+
+  ▶ {{"To update your schema:"|bold}}
+
+    $ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    runMigration,
 }
 
 var mDriver docValue
 var mConn docValue
 
 func init() {
-	cmdMigrate.Run = runMigration
-	cmdMigrate.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
-	cmdMigrate.Flag.Var(&mDriver, "driver", "database driver: mysql, postgres, sqlite, etc.")
-	cmdMigrate.Flag.Var(&mConn, "conn", "connection string used by the driver to connect to a database instance")
+	cmdMigrate.Flag.Var(&mDriver, "driver", "Database driver. Either mysql, postgres or sqlite.")
+	cmdMigrate.Flag.Var(&mConn, "conn", "Connection string used by the driver to connect to a database instance.")
 }
 
 // runMigration is the entry point for starting a migration

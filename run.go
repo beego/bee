@@ -24,12 +24,13 @@ import (
 
 var cmdRun = &Command{
 	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
-	Short:     "run the app and start a Web server for development",
+	Short:     "Run the application by starting a local development server",
 	Long: `
-Run command will supervise the file system of the beego project using inotify,
-it will recompile and restart the app after any modifications.
+Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
 
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    runApp,
 }
 
 var (
@@ -55,15 +56,13 @@ var (
 )
 
 func init() {
-	cmdRun.Run = runApp
-	cmdRun.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
-	cmdRun.Flag.Var(&mainFiles, "main", "specify main go files")
-	cmdRun.Flag.Var(&gendoc, "gendoc", "auto generate the docs")
-	cmdRun.Flag.Var(&downdoc, "downdoc", "auto download swagger file when not exist")
-	cmdRun.Flag.Var(&excludedPaths, "e", "Excluded paths[].")
-	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Watch vendor folder")
-	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Build tags (https://golang.org/pkg/go/build/)")
-	cmdRun.Flag.StringVar(&runmode, "runmode", "", "Set BEEGO_RUNMODE env variable.")
+	cmdRun.Flag.Var(&mainFiles, "main", "Specify main go files.")
+	cmdRun.Flag.Var(&gendoc, "gendoc", "Enable auto-generate the docs.")
+	cmdRun.Flag.Var(&downdoc, "downdoc", "Enable auto-download of the swagger file if it does not exist.")
+	cmdRun.Flag.Var(&excludedPaths, "e", "List of paths to exclude.")
+	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Enable watch vendor folder")
+	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Set the build tags. See: https://golang.org/pkg/go/build/")
+	cmdRun.Flag.StringVar(&runmode, "runmode", "", "Set the Beego run mode.")
 	exit = make(chan bool)
 }
 

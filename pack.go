@@ -36,26 +36,15 @@ import (
 var cmdPack = &Command{
 	CustomFlags: true,
 	UsageLine:   "pack",
-	Short:       "Compress a beego project into a single file",
-	Long: `
-Pack is used to compress a beego project into a single file.
-This eases the deployment by extracting the zip file to a server.
+	Short:       "Compresses a Beego application into a single file",
+	Long: `Pack is used to compress Beego applications into a tarball/zip file.
+  This eases the deployment by extracting directly the file to a server.
 
--p            app path (default is the current path).
--b            build specify platform app (default: true).
--ba           additional args of go build
--be=[]        additional ENV Variables of go build. eg: GOARCH=arm
--o            compressed file output dir. default use current path
--f=""         format: tar.gz, zip (default: tar.gz)
--exp=""       relpath exclude prefix (default: .). use : as separator
--exs=""       relpath exclude suffix (default: .go:.DS_Store:.tmp). use : as separator
-              all path use : as separator
--exr=[]       file/directory name exclude by Regexp (default: ^).
--fs=false     follow symlink (default: false).
--ss=false     skip symlink (default: false)
-              default embed symlink into compressed file
--v=false      verbose
+  {{"Example:"|bold}}
+    $ bee pack -v -ba="-ldflags '-s -w'"
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    packApp,
 }
 
 var (
@@ -71,7 +60,6 @@ var (
 	buildEnvs ListOpts
 	verbose   bool
 	format    string
-	w         io.Writer
 )
 
 type ListOpts []string
@@ -87,22 +75,19 @@ func (opts *ListOpts) Set(value string) error {
 
 func init() {
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
-	fs.StringVar(&appPath, "p", "", "app path. default is current path")
-	fs.BoolVar(&build, "b", true, "build specify platform app")
-	fs.StringVar(&buildArgs, "ba", "", "additional args of go build")
-	fs.Var(&buildEnvs, "be", "additional ENV Variables of go build. eg: GOARCH=arm")
-	fs.StringVar(&outputP, "o", "", "compressed file output dir. default use current path")
-	fs.StringVar(&format, "f", "tar.gz", "format. [ tar.gz / zip ]")
-	fs.StringVar(&excludeP, "exp", ".", "path exclude prefix. use : as separator")
-	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "path exclude suffix. use : as separator")
-	fs.Var(&excludeR, "exr", "filename exclude by Regexp")
-	fs.BoolVar(&fsym, "fs", false, "follow symlink")
-	fs.BoolVar(&ssym, "ss", false, "skip symlink")
-	fs.BoolVar(&verbose, "v", false, "verbose")
+	fs.StringVar(&appPath, "p", "", "Set the application path. Defaults to the current path.")
+	fs.BoolVar(&build, "b", true, "Tell the command to do a build for the current platform. Defaults to true.")
+	fs.StringVar(&buildArgs, "ba", "", "Specify additional args for Go build.")
+	fs.Var(&buildEnvs, "be", "Specify additional env variables for Go build. e.g. GOARCH=arm.")
+	fs.StringVar(&outputP, "o", "", "Set the compressed file output path. Defaults to the current path.")
+	fs.StringVar(&format, "f", "tar.gz", "Set file format. Either tar.gz or zip. Defaults to tar.gz.")
+	fs.StringVar(&excludeP, "exp", ".", "Set prefixes of paths to be excluded. Uses a column (:) as separator.")
+	fs.StringVar(&excludeS, "exs", ".go:.DS_Store:.tmp", "Set suffixes of paths to be excluded. Uses a column (:) as separator.")
+	fs.Var(&excludeR, "exr", "Set a regular expression of files to be excluded.")
+	fs.BoolVar(&fsym, "fs", false, "Tell the command to follow symlinks. Defaults to false.")
+	fs.BoolVar(&ssym, "ss", false, "Tell the command to skip symlinks. Defaults to false.")
+	fs.BoolVar(&verbose, "v", false, "Be more verbose during the operation. Defaults to false.")
 	cmdPack.Flag = *fs
-	cmdPack.Run = packApp
-	cmdPack.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
-	w = NewColorWriter(os.Stdout)
 }
 
 type walker interface {
@@ -127,6 +112,7 @@ type walkFileTree struct {
 	excludeRegexp []*regexp.Regexp
 	excludeSuffix []string
 	allfiles      map[string]bool
+	output        *io.Writer
 }
 
 func (wft *walkFileTree) setPrefix(prefix string) {
@@ -239,7 +225,7 @@ func (wft *walkFileTree) walkLeaf(fpath string, fi os.FileInfo, err error) error
 
 	if added, err := wft.wak.compress(name, fpath, fi); added {
 		if verbose {
-			fmt.Fprintf(w, "\t%s%scompressed%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", name, "\x1b[0m")
+			fmt.Fprintf(*wft.output, "\t%s%scompressed%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", name, "\x1b[0m")
 		}
 		wft.allfiles[name] = true
 		return err
@@ -390,7 +376,7 @@ func (wft *zipWalk) compress(name, fpath string, fi os.FileInfo) (bool, error) {
 	return true, nil
 }
 
-func packDirectory(excludePrefix []string, excludeSuffix []string,
+func packDirectory(output io.Writer, excludePrefix []string, excludeSuffix []string,
 	excludeRegexp []*regexp.Regexp, includePath ...string) (err error) {
 
 	logger.Infof("Excluding relpath prefix: %s", strings.Join(excludePrefix, ":"))
@@ -408,6 +394,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 
 	if format == "zip" {
 		walk := new(zipWalk)
+		walk.output = &output
 		zw := zip.NewWriter(w)
 		defer func() {
 			zw.Close()
@@ -421,6 +408,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 		wft = walk
 	} else {
 		walk := new(tarWalk)
+		walk.output = &output
 		cw := gzip.NewWriter(w)
 		tw := tar.NewWriter(cw)
 
@@ -450,6 +438,7 @@ func packDirectory(excludePrefix []string, excludeSuffix []string,
 }
 
 func packApp(cmd *Command, args []string) int {
+	output := cmd.Out()
 	curPath, _ := os.Getwd()
 	thePath := ""
 
@@ -463,7 +452,7 @@ func packApp(cmd *Command, args []string) int {
 			nArgs = append(nArgs, a)
 		}
 	}
-	cmdPack.Flag.Parse(nArgs)
+	cmd.Flag.Parse(nArgs)
 
 	if path.IsAbs(appPath) == false {
 		appPath = path.Join(curPath, appPath)
@@ -532,7 +521,7 @@ func packApp(cmd *Command, args []string) int {
 		}
 
 		if verbose {
-			fmt.Fprintf(w, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
+			fmt.Fprintf(output, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
 
 		execmd := exec.Command("go", args...)
@@ -545,7 +534,7 @@ func packApp(cmd *Command, args []string) int {
 			logger.Fatal(err.Error())
 		}
 
-		logger.Success("Build successful!")
+		logger.Success("Build Successful!")
 	}
 
 	switch format {
@@ -594,7 +583,7 @@ func packApp(cmd *Command, args []string) int {
 
 	logger.Infof("Writing to output: %s", outputP)
 
-	err = packDirectory(exp, exs, exr, tmpdir, thePath)
+	err = packDirectory(output, exp, exs, exr, tmpdir, thePath)
 	if err != nil {
 		logger.Fatal(err.Error())
 	}
