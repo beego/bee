@@ -18,11 +18,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"text/template"
 )
 
 const version = "1.5.2"
@@ -41,10 +41,10 @@ type Command struct {
 	UsageLine string
 
 	// Short is the short description shown in the 'go help' output.
-	Short template.HTML
+	Short string
 
 	// Long is the long message shown in the 'go help <this-command>' output.
-	Long template.HTML
+	Long string
 
 	// Flag is a set of flags specific to this command.
 	Flag flag.FlagSet
@@ -189,7 +189,7 @@ var helpTemplate = `{{"USAGE" | headline}}
 {{if .Options}}{{endline}}{{"OPTIONS" | headline}}{{range $k,$v := .Options}}
   {{$k | printf "-%-11s" | bold}} {{$v}}{{end}}{{endline}}{{end}}
 {{"DESCRIPTION" | headline}}
-  {{.Long | trim}}
+  {{tmpltostr .Long . | trim}}
 `
 
 var errorTemplate = `bee: %s.
@@ -204,18 +204,11 @@ func usage() {
 func tmpl(text string, data interface{}) {
 	output := NewColorWriter(os.Stderr)
 
-	t := template.New("top")
-	t.Funcs(template.FuncMap{
-		"trim":     func(s template.HTML) template.HTML { return template.HTML(strings.TrimSpace(string(s))) },
-		"bold":     bold,
-		"headline": MagentaBold,
-		"endline":  EndLine,
-	})
-
+	t := template.New("usage").Funcs(BeeFuncMap())
 	template.Must(t.Parse(text))
-	if err := t.Execute(output, data); err != nil {
-		panic(err)
-	}
+
+	err := t.Execute(output, data)
+	MustCheck(err)
 }
 
 func help(args []string) {
