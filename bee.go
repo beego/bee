@@ -84,7 +84,7 @@ func (c *Command) Out() io.Writer {
 
 // Usage puts out the usage for the command.
 func (c *Command) Usage() {
-	tmpl(helpTemplate, c)
+	tmpl(cmdUsage, c)
 	os.Exit(2)
 }
 
@@ -97,7 +97,17 @@ func (c *Command) Runnable() bool {
 func (c *Command) Options() map[string]string {
 	options := make(map[string]string)
 	c.Flag.VisitAll(func(f *flag.Flag) {
-		options[f.Name] = f.Usage
+		defaultVal := f.DefValue
+		if len(defaultVal) > 0 {
+			if strings.Contains(defaultVal, ":") {
+				// Truncate the flag's default value by appending '...' at the end
+				options[f.Name+"="+strings.Split(defaultVal, ":")[0]+":..."] = f.Usage
+			} else {
+				options[f.Name+"="+defaultVal] = f.Usage
+			}
+		} else {
+			options[f.Name] = f.Usage
+		}
 	})
 	return options
 }
@@ -195,6 +205,8 @@ var helpTemplate = `{{"USAGE" | headline}}
 var errorTemplate = `bee: %s.
 Use {{"bee help" | bold}} for more information.
 `
+
+var cmdUsage = `Use {{printf "bee help %s" .Name | bold}} for more information.{{endline}}`
 
 func usage() {
 	tmpl(usageTemplate, availableCommands)
