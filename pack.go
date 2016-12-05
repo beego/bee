@@ -484,6 +484,13 @@ func packApp(cmd *Command, args []string) int {
 	tmpdir := path.Join(os.TempDir(), "beePack-"+str)
 
 	os.Mkdir(tmpdir, 0700)
+	defer func() {
+		// Remove the tmpdir once bee pack is done
+		err := os.RemoveAll(tmpdir)
+		if err != nil {
+			logger.Error("Failed to remove the generated temp dir")
+		}
+	}()
 
 	if build {
 		logger.Info("Building application...")
