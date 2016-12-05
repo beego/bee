@@ -197,7 +197,7 @@ Use {{"bee help [topic]" | bold}} for more information about that topic.
 var helpTemplate = `{{"USAGE" | headline}}
   {{.UsageLine | printf "bee %s" | bold}}
 {{if .Options}}{{endline}}{{"OPTIONS" | headline}}{{range $k,$v := .Options}}
-  {{$k | printf "-%-11s" | bold}} {{$v}}{{end}}{{endline}}{{end}}
+  {{$k | printf "-%-12s" | bold}} {{$v}}{{end}}{{endline}}{{end}}
 {{"DESCRIPTION" | headline}}
   {{tmpltostr .Long . | trim}}
 `
