@@ -15,6 +15,7 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -24,6 +25,7 @@ import (
 	"regexp"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
 )
 
@@ -280,4 +282,28 @@ func __FILE__() string {
 func __LINE__() int {
 	_, _, line, _ := runtime.Caller(1)
 	return line
+}
+
+// BeeFuncMap returns a FuncMap of functions used in different templates.
+func BeeFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"trim":       strings.TrimSpace,
+		"bold":       bold,
+		"headline":   MagentaBold,
+		"foldername": RedBold,
+		"endline":    EndLine,
+		"tmpltostr":  TmplToString,
+	}
+}
+
+// TmplToString parses a text template and return the result as a string.
+func TmplToString(tmpl string, data interface{}) string {
+	t := template.New("tmpl").Funcs(BeeFuncMap())
+	template.Must(t.Parse(tmpl))
+
+	var doc bytes.Buffer
+	err := t.Execute(&doc, data)
+	MustCheck(err)
+
+	return doc.String()
 }

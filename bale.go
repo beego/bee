@@ -28,22 +28,17 @@ import (
 
 var cmdBale = &Command{
 	UsageLine: "bale",
-	Short:     "packs non-Go files to Go source files",
-	Long: `
-Bale command compress all the static files in to a single binary file.
+	Short:     "Transforms non-Go files to Go source files",
+	Long: `Bale command compress all the static files in to a single binary file.
 
-This is useful to not have to carry static files including js, css, images
-and views when publishing a project.
+  This is useful to not have to carry static files including js, css, images and
+  views when deploying a Web application.
 
-auto-generate unpack function to main package then run it during the runtime.
-This is mainly used for zealots who are requiring 100% Go code.
-
+  It will auto-generate an unpack function to the main package then run it during the runtime.
+  This is mainly used for zealots who are requiring 100% Go code.
 `,
-}
-
-func init() {
-	cmdBale.Run = runBale
-	cmdBale.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    runBale,
 }
 
 func runBale(cmd *Command, args []string) int {

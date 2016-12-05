@@ -20,45 +20,42 @@ import (
 )
 
 var cmdGenerate = &Command{
-	UsageLine: "generate [Command]",
-	Short:     "source code generator",
-	Long: `
-bee generate scaffold [scaffoldname] [-fields=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
-    The generate scaffold command will do a number of things for you.
-    -fields: a list of table fields. Format: field:type, ...
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is root:@tcp(127.0.0.1:3306)/test
-    example: bee generate scaffold post -fields="title:string,body:text"
+	UsageLine: "generate [command]",
+	Short:     "Source code generator",
+	Long: `▶ {{"To scaffold out your entire application:"|bold}}
 
-bee generate model [modelname] [-fields=""]
-    generate RESTFul model based on fields
-    -fields: a list of table fields. Format: field:type, ...
+     $ bee generate scaffold [scaffoldname] [-fields="title:string,body:text"] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
-bee generate controller [controllerfile]
-    generate RESTful controllers
+  ▶ {{"To generate a Model based on fields:"|bold}}
 
-bee generate view [viewpath]
-    generate CRUD view in viewpath
+     $ bee generate model [modelname] [-fields="name:type"]
 
-bee generate migration [migrationfile] [-fields=""]
-    generate migration file for making database schema update
-    -fields: a list of table fields. Format: field:type, ...
+  ▶ {{"To generate a controller:"|bold}}
 
-bee generate docs
-    generate swagger doc file
+     $ bee generate controller [controllerfile]
 
-bee generate test [routerfile]
-    generate testcase
+  ▶ {{"To generate a CRUD view:"|bold}}
 
-bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
-    generate appcode based on an existing database
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver.
-             default for mysql:    root:@tcp(127.0.0.1:3306)/test
-             default for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
-    -level:  [1 | 2 | 3], 1 = models; 2 = models,controllers; 3 = models,controllers,router
+     $ bee generate view [viewpath]
+
+  ▶ {{"To generate a migration file for making database schema updates:"|bold}}
+
+     $ bee generate migration [migrationfile] [-fields="name:type"]
+
+  ▶ {{"To generate swagger doc file:"|bold}}
+
+     $ bee generate docs
+
+  ▶ {{"To generate a test case:"|bold}}
+
+     $ bee generate test [routerfile]
+
+  ▶ {{"To generate appcode based on an existing database:"|bold}}
+
+     $ bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    generateCode,
 }
 
 var driver docValue
@@ -68,13 +65,11 @@ var tables docValue
 var fields docValue
 
 func init() {
-	cmdGenerate.Run = generateCode
-	cmdGenerate.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
-	cmdGenerate.Flag.Var(&tables, "tables", "specify tables to generate model")
-	cmdGenerate.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
-	cmdGenerate.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
-	cmdGenerate.Flag.Var(&level, "level", "1 = models only; 2 = models and controllers; 3 = models, controllers and routers")
-	cmdGenerate.Flag.Var(&fields, "fields", "specify the fields want to generate.")
+	cmdGenerate.Flag.Var(&tables, "tables", "List of table names separated by a comma.")
+	cmdGenerate.Flag.Var(&driver, "driver", "Database driver. Either mysql, postgres or sqlite.")
+	cmdGenerate.Flag.Var(&conn, "conn", "Connection string used by the driver to connect to a database instance.")
+	cmdGenerate.Flag.Var(&level, "level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
+	cmdGenerate.Flag.Var(&fields, "fields", "List of table fields.")
 }
 
 func generateCode(cmd *Command, args []string) int {
