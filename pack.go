@@ -38,7 +38,7 @@ var cmdPack = &Command{
 	UsageLine:   "pack",
 	Short:       "Compresses a Beego application into a single file",
 	Long: `Pack is used to compress Beego applications into a tarball/zip file.
-  This eases the deployment by extracting directly the file to a server.
+  This eases the deployment by directly extracting the file to a server.
 
   {{"Example:"|bold}}
     $ bee pack -v -ba="-ldflags '-s -w'"
