@@ -24,7 +24,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/howeyc/fsnotify"
+	"github.com/fsnotify/fsnotify"
 )
 
 var (
@@ -44,7 +44,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 	go func() {
 		for {
 			select {
-			case e := <-watcher.Event:
+			case e := <-watcher.Events:
 				isbuild := true
 
 				// Skip ignored files
@@ -79,7 +79,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 						AutoBuild(files, isgenerate)
 					}()
 				}
-			case err := <-watcher.Error:
+			case err := <-watcher.Errors:
 				logger.Warnf("Watcher error: %s", err.Error()) // No need to exit here
 			}
 		}
@@ -88,7 +88,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 	logger.Info("Initializing watcher...")
 	for _, path := range paths {
 		logger.Infof(bold("Watching: ")+"%s", path)
-		err = watcher.Watch(path)
+		err = watcher.Add(path)
 		if err != nil {
 			logger.Fatalf("Failed to watch directory: %s", err)
 		}
