@@ -33,7 +33,7 @@ var defaultConf = `{
 		"enable": false,
 		"install": false
 	},
-	"go_install": false,
+	"go_install": true,
 	"watch_ext": [],
 	"dir_structure": {
 		"watch_all": false,
