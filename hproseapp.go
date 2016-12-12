@@ -1,19 +1,16 @@
-/**********************************************************\
-|                                                          |
-|                          hprose                          |
-|                                                          |
-| Official WebSite: http://www.hprose.com/                 |
-|                   http://www.hprose.org/                 |
-|                                                          |
-\**********************************************************/
-/**********************************************************\
- *                                                        *
- * Build rpc application use Hprose base on beego         *
- *                                                        *
- * LastModified: Oct 13, 2014                             *
- * Author: Liu jian <laoliu@lanmv.com>                    *
- *                                                        *
-\**********************************************************/
+// Copyright 2013 bee authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License"): you may
+// not use this file except in compliance with the License. You may obtain
+// a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+// WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+// License for the specific language governing permissions and limitations
+// under the License.
 
 package main
 
@@ -27,30 +24,28 @@ import (
 var cmdHproseapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "hprose [appname]",
-	Short:     "create an rpc application use hprose base on beego framework",
+	Short:     "Creates an RPC application based on Hprose and Beego frameworks",
 	Long: `
-create an rpc application use hprose base on beego framework
+  The command 'hprose' creates an RPC application based on both Beego and Hprose (http://hprose.com/).
 
-bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
-    -tables: a list of table names separated by ',', default is empty, indicating all tables
-    -driver: [mysql | postgres | sqlite], the default is mysql
-    -conn:   the connection string used by the driver, the default is ''
-             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
-             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
+  {{"To scaffold out your application, use:"|bold}}
 
-if conn is empty will create a example rpc application. otherwise generate rpc application use hprose based on an existing database.
+      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
 
-In the current path, will create a folder named [appname]
+  If 'conn' is empty, the command will generate a sample application. Otherwise the command
+  will connect to your database and generate models based on the existing tables.
 
-In the appname folder has the follow struct:
+  The command 'hprose' creates a folder named [appname] with the following structure:
 
-	├── conf
-	│   └── app.conf
-	├── main.go
-	└── models
-	    └── object.go
-	    └── user.go
+	    ├── main.go
+	    ├── {{"conf"|foldername}}
+	    │     └── app.conf
+	    └── {{"models"|foldername}}
+	          └── object.go
+	          └── user.go
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    createhprose,
 }
 
 var hproseconf = `appname = {{.Appname}}
@@ -63,16 +58,41 @@ EnableDocs = true
 var hproseMaingo = `package main
 
 import (
+	"fmt"
+	"reflect"
+
 	"{{.Appname}}/models"
-	"github.com/hprose/hprose-go/hprose"
+	"github.com/hprose/hprose-golang/rpc"
 
 	"github.com/astaxie/beego"
 )
 
+func logInvokeHandler(
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
+}
+
 func main() {
-	service := hprose.NewHttpService()
+	// Create WebSocketServer
+	// service := rpc.NewWebSocketService()
+
+	// Create Http Server
+	service := rpc.NewHTTPService()
+
+	// Use Logger Middleware
+	service.AddInvokeHandler(logInvokeHandler)
+
+	// Publish Functions
 	service.AddFunction("AddOne", models.AddOne)
 	service.AddFunction("GetOne", models.GetOne)
+
+	// Start Service
 	beego.Handler("/", service)
 	beego.Run()
 }
@@ -81,8 +101,11 @@ func main() {
 var hproseMainconngo = `package main
 
 import (
+	"fmt"
+	"reflect"
+
 	"{{.Appname}}/models"
-	"github.com/hprose/hprose-go/hprose"
+	"github.com/hprose/hprose-golang/rpc"
 
 	"github.com/astaxie/beego"
 	"github.com/astaxie/beego/orm"
@@ -93,9 +116,30 @@ func init() {
 	orm.RegisterDataBase("default", "{{.DriverName}}", "{{.conn}}")
 }
 
+func logInvokeHandler(
+	name string,
+	args []reflect.Value,
+	context rpc.Context,
+	next rpc.NextInvokeHandler) (results []reflect.Value, err error) {
+	fmt.Printf("%s(%v) = ", name, args)
+	results, err = next(name, args, context)
+	fmt.Printf("%v %v\r\n", results, err)
+	return
+}
+
 func main() {
-	service := hprose.NewHttpService()
+	// Create WebSocketServer
+	// service := rpc.NewWebSocketService()
+
+	// Create Http Server
+	service := rpc.NewHTTPService()
+
+	// Use Logger Middleware
+	service.AddInvokeHandler(logInvokeHandler)
+
 	{{HproseFunctionList}}
+
+	// Start Service
 	beego.Handler("/", service)
 	beego.Run()
 }
@@ -248,16 +292,13 @@ func DeleteUser(uid string) {
 var hproseAddFunctions = []string{}
 
 func init() {
-	cmdHproseapp.Run = createhprose
-	cmdHproseapp.Flag.Var(&tables, "tables", "specify tables to generate model")
-	cmdHproseapp.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
-	cmdHproseapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
+	cmdHproseapp.Flag.Var(&tables, "tables", "List of table names separated by a comma.")
+	cmdHproseapp.Flag.Var(&driver, "driver", "Database driver. Either mysql, postgres or sqlite.")
+	cmdHproseapp.Flag.Var(&conn, "conn", "Connection string used by the driver to connect to a database instance.")
 }
 
 func createhprose(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
-	w := NewColorWriter(os.Stdout)
+	output := cmd.Out()
 
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
@@ -265,8 +306,7 @@ func createhprose(cmd *Command, args []string) int {
 	}
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		logger.Fatalf("%s", err)
 	}
 	if driver == "" {
 		driver = "mysql"
@@ -274,22 +314,22 @@ func createhprose(cmd *Command, args []string) int {
 	if conn == "" {
 	}
 
-	ColorLog("[INFO] Creating Hprose application...\n")
+	logger.Info("Creating Hprose application...")
 
 	os.MkdirAll(apppath, 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
 	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(hproseconf, "{{.Appname}}", args[0], -1))
 
 	if conn != "" {
-		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
-		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
+		logger.Infof("Using '%s' as 'driver'", driver)
+		logger.Infof("Using '%s' as 'conn'", conn)
+		logger.Infof("Using '%s' as 'tables'", tables)
 		generateHproseAppcode(string(driver), string(conn), "1", string(tables), path.Join(curpath, args[0]))
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		maingoContent := strings.Replace(hproseMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
 		maingoContent = strings.Replace(maingoContent, "{{HproseFunctionList}}", strings.Join(hproseAddFunctions, ""), -1)
@@ -308,18 +348,18 @@ func createhprose(cmd *Command, args []string) int {
 		)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(hproseMaingo, "{{.Appname}}", packpath, -1))
 	}
-	ColorLog("[SUCC] New Hprose application successfully created!\n")
+	logger.Success("New Hprose application successfully created!")
 	return 0
 }

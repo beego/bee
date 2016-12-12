@@ -6,7 +6,6 @@ import (
 	"os"
 	"runtime"
 	"text/template"
-	"time"
 )
 
 type vars struct {
@@ -21,25 +20,17 @@ type vars struct {
 	BeegoVersion string
 }
 
-// Now returns the current local time in the specified layout
-func Now(layout string) string {
-	return time.Now().Format(layout)
-}
-
 // InitBanner loads the banner and prints it to output
 // All errors are ignored, the application will not
 // print the banner in case of error.
 func InitBanner(out io.Writer, in io.Reader) {
 	if in == nil {
-		ColorLog("[ERRO] The input is nil\n")
-		os.Exit(2)
+		logger.Fatal("The input is nil")
 	}
 
 	banner, err := ioutil.ReadAll(in)
 	if err != nil {
-		ColorLog("[ERRO] Error trying to read the banner\n")
-		ColorLog("[HINT] %v\n", err)
-		os.Exit(2)
+		logger.Fatalf("Error while trying to read the banner: %s", err)
 	}
 
 	show(out, string(banner))
@@ -51,13 +42,11 @@ func show(out io.Writer, content string) {
 		Parse(content)
 
 	if err != nil {
-		ColorLog("[ERRO] Cannot parse the banner template\n")
-		ColorLog("[HINT] %v\n", err)
-		os.Exit(2)
+		logger.Fatalf("Cannot parse the banner template: %s", err)
 	}
 
 	err = t.Execute(out, vars{
-		runtime.Version(),
+		getGoVersion(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		runtime.NumCPU(),
@@ -67,7 +56,5 @@ func show(out io.Writer, content string) {
 		version,
 		getBeegoVersion(),
 	})
-	if err != nil {
-		panic(err)
-	}
+	MustCheck(err)
 }

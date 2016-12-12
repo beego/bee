@@ -18,29 +18,33 @@ package main
 import (
 	"flag"
 	"fmt"
-	"html/template"
 	"io"
 	"log"
 	"os"
 	"strings"
+	"text/template"
 )
 
-const version = "1.5.2"
+const version = "1.6.0"
 
+// Command is the unit of execution
 type Command struct {
 	// Run runs the command.
 	// The args are the arguments after the command name.
 	Run func(cmd *Command, args []string) int
+
+	// PreRun performs an operation before running the command
+	PreRun func(cmd *Command, args []string)
 
 	// UsageLine is the one-line usage message.
 	// The first word in the line is taken to be the command name.
 	UsageLine string
 
 	// Short is the short description shown in the 'go help' output.
-	Short template.HTML
+	Short string
 
 	// Long is the long message shown in the 'go help <this-command>' output.
-	Long template.HTML
+	Long string
 
 	// Flag is a set of flags specific to this command.
 	Flag flag.FlagSet
@@ -48,6 +52,9 @@ type Command struct {
 	// CustomFlags indicates that the command will do its own
 	// flag parsing.
 	CustomFlags bool
+
+	// output out writer if set in SetOutput(w)
+	output *io.Writer
 }
 
 // Name returns the command's name: the first word in the usage line.
@@ -60,9 +67,24 @@ func (c *Command) Name() string {
 	return name
 }
 
+// SetOutput sets the destination for usage and error messages.
+// If output is nil, os.Stderr is used.
+func (c *Command) SetOutput(output io.Writer) {
+	c.output = &output
+}
+
+// Out returns the out writer of the current command.
+// If cmd.output is nil, os.Stderr is used.
+func (c *Command) Out() io.Writer {
+	if c.output != nil {
+		return *c.output
+	}
+	return NewColorWriter(os.Stderr)
+}
+
+// Usage puts out the usage for the command.
 func (c *Command) Usage() {
-	fmt.Fprintf(os.Stderr, "usage: %s\n\n", c.UsageLine)
-	fmt.Fprintf(os.Stderr, "%s\n", strings.TrimSpace(string(c.Long)))
+	tmpl(cmdUsage, c)
 	os.Exit(2)
 }
 
@@ -72,7 +94,25 @@ func (c *Command) Runnable() bool {
 	return c.Run != nil
 }
 
-var commands = []*Command{
+func (c *Command) Options() map[string]string {
+	options := make(map[string]string)
+	c.Flag.VisitAll(func(f *flag.Flag) {
+		defaultVal := f.DefValue
+		if len(defaultVal) > 0 {
+			if strings.Contains(defaultVal, ":") {
+				// Truncate the flag's default value by appending '...' at the end
+				options[f.Name+"="+strings.Split(defaultVal, ":")[0]+":..."] = f.Usage
+			} else {
+				options[f.Name+"="+defaultVal] = f.Usage
+			}
+		} else {
+			options[f.Name] = f.Usage
+		}
+	})
+	return options
+}
+
+var availableCommands = []*Command{
 	cmdNew,
 	cmdRun,
 	cmdPack,
@@ -88,12 +128,17 @@ var commands = []*Command{
 	cmdFix,
 }
 
+var logger = GetBeeLogger(os.Stdout)
+
 func main() {
+	currentpath, _ := os.Getwd()
+
 	flag.Usage = usage
 	flag.Parse()
 	log.SetFlags(0)
 
 	args := flag.Args()
+
 	if len(args) < 1 {
 		usage()
 	}
@@ -103,7 +148,7 @@ func main() {
 		return
 	}
 
-	for _, cmd := range commands {
+	for _, cmd := range availableCommands {
 		if cmd.Name() == args[0] && cmd.Run != nil {
 			cmd.Flag.Usage = func() { cmd.Usage() }
 			if cmd.CustomFlags {
@@ -112,77 +157,92 @@ func main() {
 				cmd.Flag.Parse(args[1:])
 				args = cmd.Flag.Args()
 			}
+
+			if cmd.PreRun != nil {
+				cmd.PreRun(cmd, args)
+			}
+
+			// Check if current directory is inside the GOPATH,
+			// if so parse the packages inside it.
+			if strings.Contains(currentpath, GetGOPATHs()[0]+"/src") {
+				parsePackagesFromDir(currentpath)
+			}
+
 			os.Exit(cmd.Run(cmd, args))
 			return
 		}
 	}
 
-	fmt.Fprintf(os.Stderr, "bee: unknown subcommand %q\nRun 'bee help' for usage.\n", args[0])
-	os.Exit(2)
+	printErrorAndExit("Unknown subcommand")
 }
 
-var usageTemplate = `Bee is a tool for managing beego framework.
+var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
 
-Usage:
+{{"USAGE" | headline}}
+    {{"bee command [arguments]" | bold}}
 
-	bee command [arguments]
-
-The commands are:
+{{"AVAILABLE COMMANDS" | headline}}
 {{range .}}{{if .Runnable}}
-    {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
+    {{.Name | printf "%-11s" | bold}} {{.Short}}{{end}}{{end}}
 
-Use "bee help [command]" for more information about a command.
+Use {{"bee help [command]" | bold}} for more information about a command.
 
-Additional help topics:
+{{"ADDITIONAL HELP TOPICS" | headline}}
 {{range .}}{{if not .Runnable}}
     {{.Name | printf "%-11s"}} {{.Short}}{{end}}{{end}}
 
-Use "bee help [topic]" for more information about that topic.
-
+Use {{"bee help [topic]" | bold}} for more information about that topic.
 `
 
-var helpTemplate = `{{if .Runnable}}usage: bee {{.UsageLine}}
-
-{{end}}{{.Long | trim}}
+var helpTemplate = `{{"USAGE" | headline}}
+  {{.UsageLine | printf "bee %s" | bold}}
+{{if .Options}}{{endline}}{{"OPTIONS" | headline}}{{range $k,$v := .Options}}
+  {{$k | printf "-%-12s" | bold}} {{$v}}{{end}}{{endline}}{{end}}
+{{"DESCRIPTION" | headline}}
+  {{tmpltostr .Long . | trim}}
 `
+
+var errorTemplate = `bee: %s.
+Use {{"bee help" | bold}} for more information.
+`
+
+var cmdUsage = `Use {{printf "bee help %s" .Name | bold}} for more information.{{endline}}`
 
 func usage() {
-	tmpl(os.Stdout, usageTemplate, commands)
+	tmpl(usageTemplate, availableCommands)
 	os.Exit(2)
 }
 
-func tmpl(w io.Writer, text string, data interface{}) {
-	t := template.New("top")
-	t.Funcs(template.FuncMap{"trim": func(s template.HTML) template.HTML {
-		return template.HTML(strings.TrimSpace(string(s)))
-	}})
+func tmpl(text string, data interface{}) {
+	output := NewColorWriter(os.Stderr)
+
+	t := template.New("usage").Funcs(BeeFuncMap())
 	template.Must(t.Parse(text))
-	if err := t.Execute(w, data); err != nil {
-		panic(err)
-	}
+
+	err := t.Execute(output, data)
+	MustCheck(err)
 }
 
 func help(args []string) {
 	if len(args) == 0 {
 		usage()
-		// not exit 2: succeeded at 'go help'.
-		return
 	}
 	if len(args) != 1 {
-		fmt.Fprintf(os.Stdout, "usage: bee help command\n\nToo many arguments given.\n")
-		os.Exit(2) // failed at 'bee help'
+		printErrorAndExit("Too many arguments")
 	}
 
 	arg := args[0]
 
-	for _, cmd := range commands {
+	for _, cmd := range availableCommands {
 		if cmd.Name() == arg {
-			tmpl(os.Stdout, helpTemplate, cmd)
-			// not exit 2: succeeded at 'go help cmd'.
+			tmpl(helpTemplate, cmd)
 			return
 		}
 	}
+	printErrorAndExit("Unknown help topic")
+}
 
-	fmt.Fprintf(os.Stdout, "Unknown help topic %#q.  Run 'bee help'.\n", arg)
-	os.Exit(2) // failed at 'bee help cmd'
+func printErrorAndExit(message string) {
+	tmpl(fmt.Sprintf(errorTemplate, message), nil)
+	os.Exit(2)
 }

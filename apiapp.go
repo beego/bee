@@ -24,39 +24,34 @@ import (
 var cmdApiapp = &Command{
 	// CustomFlags: true,
 	UsageLine: "api [appname]",
-	Short:     "create an API beego application",
+	Short:     "Creates a Beego API application",
 	Long: `
-Create an API beego application.
+  The command 'api' creates a Beego API application.
 
-bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
-    -tables: a list of table names separated by ',' (default is empty, indicating all tables)
-    -driver: [mysql | postgres | sqlite] (default: mysql)
-    -conn:   the connection string used by the driver, the default is ''
-             e.g. for mysql:    root:@tcp(127.0.0.1:3306)/test
-             e.g. for postgres: postgres://postgres:postgres@127.0.0.1:5432/postgres
+  {{"Example:"|bold}}
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
 
-If 'conn' argument is empty, bee api creates an example API application,
-when 'conn' argument is provided, bee api generates an API application based
-on the existing database.
+  If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
+  will connect to your database and generate models based on the existing tables.
 
-The command 'api' creates a folder named [appname] and inside the folder deploy
-the following files/directories structure:
+  The command 'api' creates a folder named [appname] with the following structure:
 
-	├── conf
-	│   └── app.conf
-	├── controllers
-	│   └── object.go
-	│   └── user.go
-	├── routers
-	│   └── router.go
-	├── tests
-	│   └── default_test.go
-	├── main.go
-	└── models
-	    └── object.go
-	    └── user.go
-
+	    ├── main.go
+	    ├── {{"conf"|foldername}}
+	    │     └── app.conf
+	    ├── {{"controllers"|foldername}}
+	    │     └── object.go
+	    │     └── user.go
+	    ├── {{"routers"|foldername}}
+	    │     └── router.go
+	    ├── {{"tests"|foldername}}
+	    │     └── default_test.go
+	    └── {{"models"|foldername}}
+	          └── object.go
+	          └── user.go
 `,
+	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
+	Run:    createapi,
 }
 
 var apiconf = `appname = {{.Appname}}
@@ -537,20 +532,16 @@ func TestGet(t *testing.T) {
 `
 
 func init() {
-	cmdApiapp.Run = createapi
-	cmdApiapp.Flag.Var(&tables, "tables", "specify tables to generate model")
-	cmdApiapp.Flag.Var(&driver, "driver", "database driver: mysql, postgresql, etc.")
-	cmdApiapp.Flag.Var(&conn, "conn", "connection string used by the driver to connect to a database instance")
+	cmdApiapp.Flag.Var(&tables, "tables", "List of table names separated by a comma.")
+	cmdApiapp.Flag.Var(&driver, "driver", "Database driver. Either mysql, postgres or sqlite.")
+	cmdApiapp.Flag.Var(&conn, "conn", "Connection string used by the driver to connect to a database instance.")
 }
 
 func createapi(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
-
-	w := NewColorWriter(os.Stdout)
+	output := cmd.Out()
 
 	if len(args) < 1 {
-		ColorLog("[ERRO] Argument [appname] is missing\n")
-		os.Exit(2)
+		logger.Fatal("Argument [appname] is missing")
 	}
 
 	if len(args) > 1 {
@@ -559,8 +550,7 @@ func createapi(cmd *Command, args []string) int {
 
 	apppath, packpath, err := checkEnv(args[0])
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(2)
+		logger.Fatalf("%s", err)
 	}
 	if driver == "" {
 		driver = "mysql"
@@ -568,22 +558,22 @@ func createapi(cmd *Command, args []string) int {
 	if conn == "" {
 	}
 
-	ColorLog("[INFO] Creating API...\n")
+	logger.Info("Creating API...")
 
 	os.MkdirAll(apppath, 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
-	fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
 	WriteToFile(path.Join(apppath, "conf", "app.conf"),
 		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if conn != "" {
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
 		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(driver), -1)
 		if driver == "mysql" {
@@ -599,51 +589,50 @@ func createapi(cmd *Command, args []string) int {
 				-1,
 			),
 		)
-		ColorLog("[INFO] Using '%s' as 'driver'\n", driver)
-		ColorLog("[INFO] Using '%s' as 'conn'\n", conn)
-		ColorLog("[INFO] Using '%s' as 'tables'\n", tables)
+		logger.Infof("Using '%s' as 'driver'", driver)
+		logger.Infof("Using '%s' as 'conn'", conn)
+		logger.Infof("Using '%s' as 'tables'", tables)
 		generateAppcode(string(driver), string(conn), "3", string(tables), apppath)
 	} else {
 		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
 		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers")+string(path.Separator), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers")+string(path.Separator), "\x1b[0m")
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "object.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "object.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "controllers", "object.go"),
 			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "user.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "controllers", "user.go"),
 			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "tests", "default_test.go"),
 			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "routers", "router.go"),
 			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "object.go"), apiModels)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "models", "user.go"), apiModels2)
 
-		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		WriteToFile(path.Join(apppath, "main.go"),
 			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
 	}
-	ColorLog("[SUCC] New API successfully created!\n")
+	logger.Success("New API successfully created!")
 	return 0
 }
 
 func checkEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start[ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
 	currpath = path.Join(currpath, appname)
@@ -658,15 +647,16 @@ func checkEnv(appname string) (apppath, packpath string, err error) {
 	// In case of multiple paths in the GOPATH, by default
 	// we use the first path
 	gopath := gps[0]
-	ColorLog("[%s]You current workdir is not a $GOPATH/src, bee will create the application in GOPATH: %s\n", WARN, gopath)
-	Debugf("GOPATH: %s", gopath)
+
+	logger.Warn("You current workdir is not inside $GOPATH/src.")
+	logger.Debugf("GOPATH: %s", __FILE__(), __LINE__(), gopath)
 
 	gosrcpath := path.Join(gopath, "src")
 	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); os.IsNotExist(e) == false {
 		err = fmt.Errorf("Cannot create application without removing '%s' first.", apppath)
-		ColorLog("[ERRO] Path '%s' already exists\n", apppath)
+		logger.Errorf("Path '%s' already exists", apppath)
 		return
 	}
 	packpath = strings.Join(strings.Split(apppath[len(gosrcpath)+1:], string(path.Separator)), "/")

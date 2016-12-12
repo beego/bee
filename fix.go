@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"go/parser"
 	"go/token"
 	"io/ioutil"
@@ -8,31 +9,33 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"fmt"
 )
 
 var cmdFix = &Command{
 	UsageLine: "fix",
-	Short:     "fix the beego application to make it compatible with beego 1.6",
-	Long: `
-As from beego1.6, there's some incompatible code with the old version.
+	Short:     "Fixes your application by making it compatible with newer versions of Beego",
+	Long: `As of {{"Beego 1.6"|bold}}, there are some backward compatibility issues.
 
-bee fix help to upgrade the application to beego 1.6
+  The command 'fix' will try to solve those issues by upgrading your code base
+  to be compatible  with Beego version 1.6+.
 `,
 }
 
 func init() {
 	cmdFix.Run = runFix
+	cmdFix.PreRun = func(cmd *Command, args []string) { ShowShortVersionBanner() }
 }
 
 func runFix(cmd *Command, args []string) int {
-	ShowShortVersionBanner()
+	output := cmd.Out()
 
-	ColorLog("[INFO] Upgrading the application...\n")
+	logger.Info("Upgrading the application...")
+
 	dir, err := os.Getwd()
 	if err != nil {
-		ColorLog("[ERRO] GetCurrent Path:%s\n", err)
+		logger.Fatalf("Error while getting the current working directory: %s", err)
 	}
+
 	filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if info.IsDir() {
 			if strings.HasPrefix(info.Name(), ".") {
@@ -47,13 +50,13 @@ func runFix(cmd *Command, args []string) int {
 			return nil
 		}
 		err = fixFile(path)
-		fmt.Println("\tfix\t", path)
+		fmt.Fprintf(output, GreenBold("\tfix\t")+"%s\n", path)
 		if err != nil {
-			ColorLog("[ERRO] Could not fix file: %s\n", err)
+			logger.Errorf("Could not fix file: %s", err)
 		}
 		return err
 	})
-	ColorLog("[INFO] Upgrade done!\n")
+	logger.Success("Upgrade Done!")
 	return 0
 }
 
@@ -167,18 +170,18 @@ func fixFile(file string) error {
 	}
 	fixed := rp.Replace(string(content))
 
-	// forword the RequestBody from the replace
+	// Forword the RequestBody from the replace
 	// "Input.Request", "Input.Context.Request",
 	fixed = strings.Replace(fixed, "Input.Context.RequestBody", "Input.RequestBody", -1)
 
-	// regexp replace
+	// Regexp replace
 	pareg := regexp.MustCompile(`(Input.Params\[")(.*)("])`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Param(\"$2\")")
 	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])(\s)(=)(\s)(.*)`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.SetData(\"$2\", $7)")
 	pareg = regexp.MustCompile(`(Input.Data\[\")(.*)(\"\])`)
 	fixed = pareg.ReplaceAllString(fixed, "Input.Data(\"$2\")")
-	// fix the cache object Put method
+	// Fix the cache object Put method
 	pareg = regexp.MustCompile(`(\.Put\(\")(.*)(\",)(\s)(.*)(,\s*)([^\*.]*)(\))`)
 	if pareg.MatchString(fixed) && strings.HasSuffix(file, ".go") {
 		fixed = pareg.ReplaceAllString(fixed, ".Put(\"$2\", $5, $7*time.Second)")
@@ -199,11 +202,11 @@ func fixFile(file string) error {
 			fixed = strings.Replace(fixed, "import (", "import (\n\t\"time\"", 1)
 		}
 	}
-	// replace the v.Apis in docs.go
+	// Replace the v.Apis in docs.go
 	if strings.Contains(file, "docs.go") {
 		fixed = strings.Replace(fixed, "v.Apis", "v.APIs", -1)
 	}
-	// replace the config file
+	// Replace the config file
 	if strings.HasSuffix(file, ".conf") {
 		fixed = strings.Replace(fixed, "HttpCertFile", "HTTPSCertFile", -1)
 		fixed = strings.Replace(fixed, "HttpKeyFile", "HTTPSKeyFile", -1)

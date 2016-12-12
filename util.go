@@ -15,14 +15,18 @@
 package main
 
 import (
-	"log"
+	"bytes"
+	"fmt"
+	"io/ioutil"
 	"os"
+	"os/exec"
+	"path"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
+	"text/template"
 	"time"
-	"path"
-	"fmt"
 )
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -35,124 +39,14 @@ func Go(f func() error) chan error {
 	return ch
 }
 
-// if os.env DEBUG set, debug is on
-func Debugf(format string, a ...interface{}) {
-	if os.Getenv("DEBUG") != "" {
-		_, file, line, ok := runtime.Caller(1)
-		if !ok {
-			file = "<unknown>"
-			line = -1
-		} else {
-			file = filepath.Base(file)
-		}
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("[debug] %s:%d %s\n", file, line, format), a...)
-	}
+// Now returns the current local time in the specified layout
+func Now(layout string) string {
+	return time.Now().Format(layout)
 }
 
-const (
-	Gray = uint8(iota + 90)
-	Red
-	Green
-	Yellow
-	Blue
-	Magenta
-	//NRed      = uint8(31) // Normal
-	EndColor = "\033[0m"
-
-	INFO = "INFO"
-	TRAC = "TRAC"
-	ERRO = "ERRO"
-	WARN = "WARN"
-	SUCC = "SUCC"
-)
-
-// ColorLog colors log and print to stdout.
-// See color rules in function 'ColorLogS'.
-func ColorLog(format string, a ...interface{}) {
-	fmt.Print(ColorLogS(format, a...))
-}
-
-// ColorLogS colors log and return colored content.
-// Log format: <level> <content [highlight][path]> [ error ].
-// Level: TRAC -> blue; ERRO -> red; WARN -> Magenta; SUCC -> green; others -> default.
-// Content: default; path: yellow; error -> red.
-// Level has to be surrounded by "[" and "]".
-// Highlights have to be surrounded by "# " and " #"(space), "#" will be deleted.
-// Paths have to be surrounded by "( " and " )"(space).
-// Errors have to be surrounded by "[ " and " ]"(space).
-// Note: it hasn't support windows yet, contribute is welcome.
-func ColorLogS(format string, a ...interface{}) string {
-	log := fmt.Sprintf(format, a...)
-
-	var clog string
-
-	if runtime.GOOS != "windows" {
-		// Level.
-		i := strings.Index(log, "]")
-		if log[0] == '[' && i > -1 {
-			clog += "[" + getColorLevel(log[1:i]) + "]"
-		}
-
-		log = log[i+1:]
-
-		// Error.
-		log = strings.Replace(log, "[ ", fmt.Sprintf("[\033[%dm", Red), -1)
-		log = strings.Replace(log, " ]", EndColor+"]", -1)
-
-		// Path.
-		log = strings.Replace(log, "( ", fmt.Sprintf("(\033[%dm", Yellow), -1)
-		log = strings.Replace(log, " )", EndColor+")", -1)
-
-		// Highlights.
-		log = strings.Replace(log, "# ", fmt.Sprintf("\033[%dm", Gray), -1)
-		log = strings.Replace(log, " #", EndColor, -1)
-
-		log = clog + log
-
-	} else {
-		// Level.
-		i := strings.Index(log, "]")
-		if log[0] == '[' && i > -1 {
-			clog += "[" + log[1:i] + "]"
-		}
-
-		log = log[i+1:]
-
-		// Error.
-		log = strings.Replace(log, "[ ", "[", -1)
-		log = strings.Replace(log, " ]", "]", -1)
-
-		// Path.
-		log = strings.Replace(log, "( ", "(", -1)
-		log = strings.Replace(log, " )", ")", -1)
-
-		// Highlights.
-		log = strings.Replace(log, "# ", "", -1)
-		log = strings.Replace(log, " #", "", -1)
-
-		log = clog + log
-	}
-
-	return time.Now().Format("2006/01/02 15:04:05 ") + log
-}
-
-// getColorLevel returns colored level string by given level.
-func getColorLevel(level string) string {
-	level = strings.ToUpper(level)
-	switch level {
-	case INFO:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
-	case TRAC:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Blue, level)
-	case ERRO:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Red, level)
-	case WARN:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Magenta, level)
-	case SUCC:
-		return fmt.Sprintf("\033[%dm%s\033[0m", Green, level)
-	default:
-		return level
-	}
+// EndLine returns the a newline escape character
+func EndLine() string {
+	return "\n"
 }
 
 // IsExist returns whether a file or directory exists.
@@ -174,11 +68,52 @@ func GetGOPATHs() []string {
 	return paths
 }
 
+// IsBeegoProject checks whether the current path is a Beego application or not
+func IsBeegoProject(thePath string) bool {
+	mainFiles := []string{}
+	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
+	c := make(chan error)
+	// Walk the application path tree to look for main files.
+	// Main files must satisfy the 'hasBeegoRegex' regular expression.
+	go func() {
+		filepath.Walk(thePath, func(fpath string, f os.FileInfo, err error) error {
+			if err != nil {
+				return nil
+			}
+			// Skip sub-directories
+			if !f.IsDir() {
+				var data []byte
+				data, err = ioutil.ReadFile(fpath)
+				if err != nil {
+					c <- err
+					return nil
+				}
+
+				if len(hasBeegoRegex.Find(data)) > 0 {
+					mainFiles = append(mainFiles, fpath)
+				}
+			}
+			return nil
+		})
+		close(c)
+	}()
+
+	if err := <-c; err != nil {
+		logger.Fatalf("Unable to walk '%s' tree: %s", thePath, err)
+	}
+
+	if len(mainFiles) > 0 {
+		return true
+	}
+	return false
+}
+
+// SearchGOPATHs searchs the user GOPATH(s) for the specified application name.
+// It returns a boolean, the application's GOPATH and its full path.
 func SearchGOPATHs(app string) (bool, string, string) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		ColorLog("[ERRO] Fail to start [ %s ]\n", "GOPATH environment variable is not set or empty")
-		os.Exit(2)
+		logger.Fatal("GOPATH environment variable is not set or empty")
 	}
 
 	// Lookup the application inside the user workspace(s)
@@ -193,9 +128,6 @@ func SearchGOPATHs(app string) (bool, string, string) {
 		}
 
 		if isExist(currentPath) {
-			if !isBeegoProject(currentPath) {
-				continue
-			}
 			return true, gopath, currentPath
 		}
 	}
@@ -211,7 +143,7 @@ func askForConfirmation() bool {
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		log.Fatal(err)
+		logger.Fatalf("%s", err)
 	}
 	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
 	nokayResponses := []string{"n", "N", "no", "No", "NO"}
@@ -249,7 +181,7 @@ func snakeString(s string) string {
 		}
 		data = append(data, d)
 	}
-	return strings.ToLower(string(data[:len(data)]))
+	return strings.ToLower(string(data[:]))
 }
 
 func camelString(s string) string {
@@ -273,7 +205,25 @@ func camelString(s string) string {
 		}
 		data = append(data, d)
 	}
-	return string(data[:len(data)])
+	return string(data[:])
+}
+
+// camelCase converts a _ delimited string to camel case
+// e.g. very_important_person => VeryImportantPerson
+func camelCase(in string) string {
+	tokens := strings.Split(in, "_")
+	for i := range tokens {
+		tokens[i] = strings.Title(strings.Trim(tokens[i], " "))
+	}
+	return strings.Join(tokens, "")
+}
+
+// formatSourceCode formats source files
+func formatSourceCode(filename string) {
+	cmd := exec.Command("gofmt", "-w", filename)
+	if err := cmd.Run(); err != nil {
+		logger.Warnf("Error while running gofmt: %s", err)
+	}
 }
 
 // The string flag list, implemented flag.Value interface
@@ -291,7 +241,69 @@ func (s *strFlags) Set(value string) error {
 // CloseFile attempts to close the passed file
 // or panics with the actual error
 func CloseFile(f *os.File) {
-	if err := f.Close(); err != nil {
+	err := f.Close()
+	MustCheck(err)
+}
+
+// MustCheck panics when the error is not nil
+func MustCheck(err error) {
+	if err != nil {
 		panic(err)
 	}
+}
+
+func exitPrint(con string) {
+	fmt.Fprintln(os.Stderr, con)
+	os.Exit(2)
+}
+
+// WriteToFile creates a file and writes content to it
+func WriteToFile(filename, content string) {
+	f, err := os.Create(filename)
+	MustCheck(err)
+	defer CloseFile(f)
+	_, err = f.WriteString(content)
+	MustCheck(err)
+}
+
+// IsDebugEnabled checks if DEBUG_ENABLED is set or not
+func IsDebugEnabled() bool {
+	debugMode := os.Getenv("DEBUG_ENABLED")
+	return map[string]bool{"1": true, "0": false}[debugMode]
+}
+
+// __FILE__ returns the file name in which the function was invoked
+func __FILE__() string {
+	_, file, _, _ := runtime.Caller(1)
+	return file
+}
+
+// __LINE__ returns the line number at which the function was invoked
+func __LINE__() int {
+	_, _, line, _ := runtime.Caller(1)
+	return line
+}
+
+// BeeFuncMap returns a FuncMap of functions used in different templates.
+func BeeFuncMap() template.FuncMap {
+	return template.FuncMap{
+		"trim":       strings.TrimSpace,
+		"bold":       bold,
+		"headline":   MagentaBold,
+		"foldername": RedBold,
+		"endline":    EndLine,
+		"tmpltostr":  TmplToString,
+	}
+}
+
+// TmplToString parses a text template and return the result as a string.
+func TmplToString(tmpl string, data interface{}) string {
+	t := template.New("tmpl").Funcs(BeeFuncMap())
+	template.Must(t.Parse(tmpl))
+
+	var doc bytes.Buffer
+	err := t.Execute(&doc, data)
+	MustCheck(err)
+
+	return doc.String()
 }

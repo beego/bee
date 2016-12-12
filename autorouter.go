@@ -66,7 +66,7 @@ func getControllerInfo(path string) (map[string][]string, error) {
 
 	files := make([]*source, 0, len(fis))
 	for _, fi := range fis {
-		// Only load go files.
+		// Only load Go files
 		if strings.HasSuffix(fi.Name(), ".go") {
 			f, err := os.Open(path + "/" + fi.Name())
 			if err != nil {
@@ -107,7 +107,7 @@ func getControllerInfo(path string) (map[string][]string, error) {
 	return cm, nil
 }
 
-// A source describles a source code file.
+// source represents a source code file.
 type source struct {
 	name string
 	data []byte
@@ -120,27 +120,25 @@ func (s *source) ModTime() time.Time { return time.Time{} }
 func (s *source) IsDir() bool        { return false }
 func (s *source) Sys() interface{}   { return nil }
 
-// A routerWalker holds the state used when building the documentation.
+// routerWalker holds the state used when building the documentation.
 type routerWalker struct {
 	pdoc *Package
-	srcs map[string]*source // Source files.
+	srcs map[string]*source // Source files
 	fset *token.FileSet
-	buf  []byte // scratch space for printNode method.
+	buf  []byte // scratch space for printNode method
 }
 
 // Package represents full information and documentation for a package.
 type Package struct {
 	ImportPath string
-
-	// Top-level declarations.
-	Types []*Type
+	Types      []*Type // Top-level declarations
 }
 
 // Type represents structs and interfaces.
 type Type struct {
-	Name    string // Type name.
+	Name    string // Type name
 	Decl    string
-	Methods []*Func // Exported methods.
+	Methods []*Func // Exported methods
 }
 
 // Func represents functions
@@ -150,7 +148,7 @@ type Func struct {
 
 // build generates data from source files.
 func (w *routerWalker) build(srcs []*source) (*Package, error) {
-	// Add source files to walker, I skipped references here.
+	// Add source files to walker, I skipped references here
 	w.srcs = make(map[string]*source)
 	for _, src := range srcs {
 		w.srcs[src.name] = src
@@ -158,7 +156,7 @@ func (w *routerWalker) build(srcs []*source) (*Package, error) {
 
 	w.fset = token.NewFileSet()
 
-	// Find the package and associated files.
+	// Find the package and associated files
 	ctxt := gobuild.Context{
 		GOOS:          runtime.GOOS,
 		GOARCH:        runtime.GOARCH,
@@ -174,7 +172,7 @@ func (w *routerWalker) build(srcs []*source) (*Package, error) {
 	}
 
 	bpkg, err := ctxt.ImportDir(w.pdoc.ImportPath, 0)
-	// Continue if there are no Go source files; we still want the directory info.
+	// Continue if there are no Go source files; we still want the directory info
 	_, nogo := err.(*gobuild.NoGoError)
 	if err != nil {
 		if nogo {
@@ -272,9 +270,8 @@ func simpleImporter(imports map[string]*ast.Object, path string) (*ast.Object, e
 		name = strings.TrimPrefix(name, "biogo.")
 
 		// It's also common for the last element of the path to contain an
-		// extra "go" prefix, but not always. TODO: examine unresolved ids to
-		// detect when trimming the "go" prefix is appropriate.
-
+		// extra "go" prefix, but not always.
+		// TODO: examine unresolved ids to detect when trimming the "go" prefix is appropriate.
 		pkg = ast.NewObj(ast.Pkg, name)
 		pkg.Data = ast.NewScope(nil)
 		imports[path] = pkg
