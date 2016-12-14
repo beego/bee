@@ -95,7 +95,7 @@ func parsePackagesFromDir(dirpath string) {
 				return nil
 			}
 
-			if !strings.Contains(fpath, "vendor") {
+			if !strings.Contains(fpath, "vendor") && !strings.Contains(fpath, "tests") {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
 					// Send the error to through the channel and continue walking
