@@ -455,11 +455,11 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					HTTPMethod = "GET"
 				}
 			} else if strings.HasPrefix(t, "@Title") {
-				opts.OperationID = controllerName + "." + strings.TrimSpace(t[len("@Title"):])
+				title := strings.TrimSpace(t[len("@Title"):])
+				opts.OperationID = controllerName + "." + title
+				opts.Summary = title
 			} else if strings.HasPrefix(t, "@Description") {
 				opts.Description = strings.TrimSpace(t[len("@Description"):])
-			} else if strings.HasPrefix(t, "@Summary") {
-				opts.Summary = strings.TrimSpace(t[len("@Summary"):])
 			} else if strings.HasPrefix(t, "@Success") {
 				ss := strings.TrimSpace(t[len("@Success"):])
 				rs := swagger.Response{}
