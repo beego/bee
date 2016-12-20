@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// Bee is a tool for developling applications based on beego framework.
+// Bee is a tool for developing applications based on beego framework.
 package main
 
 import (
@@ -89,7 +89,7 @@ func (c *Command) Usage() {
 }
 
 // Runnable reports whether the command can be run; otherwise
-// it is a documentation pseudo-command such as importpath.
+// it is a documentation pseudo-command such as import path.
 func (c *Command) Runnable() bool {
 	return c.Run != nil
 }
@@ -164,7 +164,7 @@ func main() {
 
 			// Check if current directory is inside the GOPATH,
 			// if so parse the packages inside it.
-			if strings.Contains(currentpath, GetGOPATHs()[0]+"/src") {
+			if strings.Contains(currentpath, GetGOPATHs()[0]+"/src") && isGenerateDocs(cmd.Name(), args) {
 				parsePackagesFromDir(currentpath)
 			}
 
@@ -174,6 +174,18 @@ func main() {
 	}
 
 	printErrorAndExit("Unknown subcommand")
+}
+
+func isGenerateDocs(name string, args []string) bool {
+	if name != "generate" {
+		return false
+	}
+	for _, a := range args {
+		if a == "docs" {
+			return true
+		}
+	}
+	return false
 }
 
 var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
