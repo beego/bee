@@ -15,6 +15,12 @@
 			"revisionTime": "2016-12-05T14:58:29Z"
 		},
 		{
+			"checksumSHA1": "hveFTNQ9YEyYRs6SWuXM+XU9qRI=",
+			"path": "github.com/fsnotify/fsnotify",
+			"revision": "fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197",
+			"revisionTime": "2016-10-26T20:31:22Z"
+		},
+		{
 			"checksumSHA1": "59kg2xC3rBxV0/5SIv+LA4qva08=",
 			"path": "github.com/go-sql-driver/mysql",
 			"revision": "6fd058ce0d6b7ee43174e80d5a3e7f483c4dfbe5",
@@ -73,6 +79,12 @@
 			"path": "github.com/smartystreets/goconvey/convey/reporting",
 			"revision": "a2d5d788f3afbce0989463251ccc5492fad832df",
 			"revisionTime": "2015-12-28T21:47:19Z"
+		},
+		{
+			"checksumSHA1": "NIg5qnKx/D8Th7YX882++siXTDY=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "131454b5606f5f11f6926156504d8ec772484f1d",
+			"revisionTime": "2015-09-10T19:29:23Z"
 		},
 		{
 			"checksumSHA1": "+OgOXBoiQ+X+C2dsAeiOHwBIEH0=",
