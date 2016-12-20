@@ -130,7 +130,8 @@ var typeMappingPostgres = map[string]string{
 	"USER-DEFINED":                "string",  // user defined
 	"uuid":                        "string",  // uuid
 	"json":                        "string",  // json
-	"jsonb":                       "string",
+	"jsonb":                       "string",  // jsonb
+	"inet":                        "string",  // ip address
 }
 
 // Table represent a table in a database
@@ -1148,7 +1149,7 @@ import (
 	"github.com/astaxie/beego"
 )
 
-// {{ctrlName}}Controller oprations for {{ctrlName}}
+// {{ctrlName}}Controller operations for {{ctrlName}}
 type {{ctrlName}}Controller struct {
 	beego.Controller
 }
