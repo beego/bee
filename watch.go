@@ -132,7 +132,14 @@ func AutoBuild(files []string, isgenerate bool) {
 	var err error
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
-	if conf.GoInstall || conf.Gopm.Install {
+	if conf.GoInstall {
+		icmd := exec.Command(cmdName, "install", "-v")
+		icmd.Stdout = os.Stdout
+		icmd.Stderr = os.Stderr
+		icmd.Env = append(os.Environ(), "GOGC=off")
+		icmd.Run()
+	}
+	if conf.Gopm.Install {
 		icmd := exec.Command("go", "list", "./...")
 		buf := bytes.NewBuffer([]byte(""))
 		icmd.Stdout = buf
