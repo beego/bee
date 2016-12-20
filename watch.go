@@ -120,8 +120,6 @@ func AutoBuild(files []string, isgenerate bool) {
 	state.Lock()
 	defer state.Unlock()
 
-	logger.Info("Start building...")
-
 	os.Chdir(currpath)
 
 	cmdName := "go"
@@ -129,7 +127,11 @@ func AutoBuild(files []string, isgenerate bool) {
 		cmdName = "gopm"
 	}
 
-	var err error
+	var (
+		err    error
+		stderr bytes.Buffer
+		stdout bytes.Buffer
+	)
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
 	if conf.GoInstall {
@@ -141,12 +143,11 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 	if conf.Gopm.Install {
 		icmd := exec.Command("go", "list", "./...")
-		buf := bytes.NewBuffer([]byte(""))
-		icmd.Stdout = buf
+		icmd.Stdout = &stdout
 		icmd.Env = append(os.Environ(), "GOGC=off")
 		err = icmd.Run()
 		if err == nil {
-			list := strings.Split(buf.String(), "\n")[1:]
+			list := strings.Split(stdout.String(), "\n")[1:]
 			for _, pkg := range list {
 				if len(pkg) == 0 {
 					continue
@@ -164,12 +165,15 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 
 	if isgenerate {
+		logger.Info("Generating the docs...")
 		icmd := exec.Command("bee", "generate", "docs")
 		icmd.Env = append(os.Environ(), "GOGC=off")
-		icmd.Stdout = os.Stdout
-		icmd.Stderr = os.Stderr
-		icmd.Run()
-		logger.Info("============== Generate Docs ===================")
+		err = icmd.Run()
+		if err != nil {
+			logger.Errorf("Failed to generate the docs.")
+			return
+		}
+		logger.Success("Docs generated!")
 	}
 
 	if err == nil {
@@ -187,15 +191,14 @@ func AutoBuild(files []string, isgenerate bool) {
 
 		bcmd := exec.Command(cmdName, args...)
 		bcmd.Env = append(os.Environ(), "GOGC=off")
-		bcmd.Stdout = os.Stdout
-		bcmd.Stderr = os.Stderr
+		bcmd.Stderr = &stderr
 		err = bcmd.Run()
+		if err != nil {
+			logger.Errorf("Failed to build the application: %s", stderr.String())
+			return
+		}
 	}
 
-	if err != nil {
-		logger.Error("============== Build Failed ===================")
-		return
-	}
 	logger.Success("Built Successfully!")
 	Restart(appname)
 }
