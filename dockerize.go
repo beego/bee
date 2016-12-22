@@ -34,10 +34,7 @@ var cmdDockerize = &Command{
 	Run:    dockerizeApp,
 }
 
-const dockerBuildTemplate = `FROM library/golang:latest
-
-# Get Beego Web Framework
-RUN go get github.com/astaxie/beego
+const dockerBuildTemplate = `FROM {{.BaseImage}}
 
 # Godep for vendoring
 RUN go get github.com/tools/godep
@@ -60,17 +57,20 @@ EXPOSE {{.Expose}}
 `
 
 type Dockerfile struct {
+	BaseImage  string
 	Appdir     string
 	Entrypoint string
 	Expose     string
 }
 
 var (
-	expose string
+	expose    string
+	baseImage string
 )
 
 func init() {
 	fs := flag.NewFlagSet("dockerize", flag.ContinueOnError)
+	fs.StringVar(&baseImage, "image", "library/golang", "Sets the base image of the Docker container.")
 	fs.StringVar(&expose, "expose", "8080", "Port to expose in the Docker container.")
 	cmdDockerize.Flag = *fs
 }
@@ -86,8 +86,10 @@ func dockerizeApp(cmd *Command, args []string) int {
 
 	appdir := strings.Replace(dir, gopath, "", 1)
 
+	// TODO: Check if the base image exists in Docker Hub
 	_, entrypoint := path.Split(appdir)
 	dockerfile := Dockerfile{
+		BaseImage:  baseImage,
 		Appdir:     appdir,
 		Entrypoint: entrypoint,
 		Expose:     expose,
