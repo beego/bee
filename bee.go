@@ -126,6 +126,7 @@ var availableCommands = []*Command{
 	//cmdRundocs,
 	cmdMigrate,
 	cmdFix,
+	cmdDockerize,
 }
 
 var logger = GetBeeLogger(os.Stdout)
