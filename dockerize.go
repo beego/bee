@@ -29,6 +29,9 @@ var cmdDockerize = &Command{
 	Short:       "Generates a Dockerfile for your Beego application",
 	Long: `Dockerize generates a Dockerfile for your Beego Web Application.
   The Dockerfile will compile, get the dependencies with {{"godep"|bold}}, and set the entrypoint.
+
+  {{"Example:"|bold}}
+    $ bee dockerize -expose="3000,80,25"
   `,
 	PreRun: func(cmd *Command, args []string) { ShowShortVersionBanner() },
 	Run:    dockerizeApp,
@@ -56,6 +59,7 @@ RUN CGO_ENABLED=0 godep go build -ldflags '-d -w -s'
 EXPOSE {{.Expose}}
 `
 
+// Dockerfile holds the information about the Docker container.
 type Dockerfile struct {
 	BaseImage  string
 	Appdir     string
@@ -70,13 +74,15 @@ var (
 
 func init() {
 	fs := flag.NewFlagSet("dockerize", flag.ContinueOnError)
-	fs.StringVar(&baseImage, "image", "library/golang", "Sets the base image of the Docker container.")
-	fs.StringVar(&expose, "expose", "8080", "Port to expose in the Docker container.")
+	fs.StringVar(&baseImage, "image", "", "Sets the base image of the Docker container.")
+	fs.StringVar(&expose, "expose", "8080", "Port(s) to expose in the Docker container.")
 	cmdDockerize.Flag = *fs
 }
 
 func dockerizeApp(cmd *Command, args []string) int {
-	cmd.Flag.Parse(args)
+	if err := cmd.Flag.Parse(args); err != nil {
+		logger.Fatalf("Error parsing flags: %v", err.Error())
+	}
 
 	logger.Info("Generating Dockerfile...")
 
@@ -84,9 +90,19 @@ func dockerizeApp(cmd *Command, args []string) int {
 	dir, err := filepath.Abs(".")
 	MustCheck(err)
 
+	if len(baseImage) == 0 {
+		baseImage = "library/golang:latest"
+	}
+
 	appdir := strings.Replace(dir, gopath, "", 1)
 
-	// TODO: Check if the base image exists in Docker Hub
+	// In case of multiple ports to expose inside the container,
+	// replace all the commas with whitespaces.
+	// See the verb EXPOSE in the Docker documentation.
+	if strings.Contains(expose, ",") {
+		expose = strings.Replace(expose, ",", " ", -1)
+	}
+
 	_, entrypoint := path.Split(appdir)
 	dockerfile := Dockerfile{
 		BaseImage:  baseImage,
