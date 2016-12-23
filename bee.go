@@ -99,12 +99,7 @@ func (c *Command) Options() map[string]string {
 	c.Flag.VisitAll(func(f *flag.Flag) {
 		defaultVal := f.DefValue
 		if len(defaultVal) > 0 {
-			if strings.Contains(defaultVal, ":") {
-				// Truncate the flag's default value by appending '...' at the end
-				options[f.Name+"="+strings.Split(defaultVal, ":")[0]+":..."] = f.Usage
-			} else {
-				options[f.Name+"="+defaultVal] = f.Usage
-			}
+			options[f.Name+"="+defaultVal] = f.Usage
 		} else {
 			options[f.Name] = f.Usage
 		}
@@ -126,6 +121,7 @@ var availableCommands = []*Command{
 	//cmdRundocs,
 	cmdMigrate,
 	cmdFix,
+	cmdDockerize,
 }
 
 var logger = GetBeeLogger(os.Stdout)
@@ -209,7 +205,9 @@ Use {{"bee help [topic]" | bold}} for more information about that topic.
 var helpTemplate = `{{"USAGE" | headline}}
   {{.UsageLine | printf "bee %s" | bold}}
 {{if .Options}}{{endline}}{{"OPTIONS" | headline}}{{range $k,$v := .Options}}
-  {{$k | printf "-%-12s" | bold}} {{$v}}{{end}}{{endline}}{{end}}
+  {{$k | printf "-%s" | bold}}
+      {{$v}}
+  {{end}}{{end}}
 {{"DESCRIPTION" | headline}}
   {{tmpltostr .Long . | trim}}
 `
