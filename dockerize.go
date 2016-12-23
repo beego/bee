@@ -74,7 +74,7 @@ var (
 
 func init() {
 	fs := flag.NewFlagSet("dockerize", flag.ContinueOnError)
-	fs.StringVar(&baseImage, "image", "", "Sets the base image of the Docker container.")
+	fs.StringVar(&baseImage, "image", "library/golang", "Set the base image of the Docker container.")
 	fs.StringVar(&expose, "expose", "8080", "Port(s) to expose in the Docker container.")
 	cmdDockerize.Flag = *fs
 }
@@ -89,10 +89,6 @@ func dockerizeApp(cmd *Command, args []string) int {
 	gopath := os.Getenv("GOPATH")
 	dir, err := filepath.Abs(".")
 	MustCheck(err)
-
-	if len(baseImage) == 0 {
-		baseImage = "library/golang:latest"
-	}
 
 	appdir := strings.Replace(dir, gopath, "", 1)
 
