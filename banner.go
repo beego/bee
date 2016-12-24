@@ -8,7 +8,8 @@ import (
 	"text/template"
 )
 
-type vars struct {
+// RuntimeInfo holds information about the current runtime.
+type RuntimeInfo struct {
 	GoVersion    string
 	GOOS         string
 	GOARCH       string
@@ -45,7 +46,7 @@ func show(out io.Writer, content string) {
 		logger.Fatalf("Cannot parse the banner template: %s", err)
 	}
 
-	err = t.Execute(out, vars{
+	err = t.Execute(out, RuntimeInfo{
 		getGoVersion(),
 		runtime.GOOS,
 		runtime.GOARCH,
