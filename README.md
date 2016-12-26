@@ -31,19 +31,22 @@ go get -u github.com/beego/bee
 
 ## Basic commands
 
-Bee provides a variety of commands which can be helpful at various stages of development. The top level commands include: 
+Bee provides a variety of commands which can be helpful at various stages of development. The top level commands include:
+
 ```
-    new         Create a Beego application
-    run         Run the app and start a Web server for development
-    pack        Compress a beego project into a single file
-    api         Create an API beego application
-    hprose      Create an rpc application use hprose base on beego framework
-    bale        Packs non-Go files to Go source files
+    new         Creates a Beego application
+    run         Run the application by starting a local development server
+    pack        Compresses a Beego application into a single file
+    api         Creates a Beego API application
+    hprose      Creates an RPC application based on Hprose and Beego frameworks
+    bale        Transforms non-Go files to Go source files
     version     Prints the current Bee version
     generate    Source code generator
-    migrate     Run database migrations
-    fix         Fix the Beego application to make it compatible with Beego 1.6
+    migrate     Runs database migrations
+    fix         Fixes your application by making it compatible with newer versions of Beego
+    dockerize   Generates a Dockerfile for your Beego application
 ```
+
 ### bee version
 
 To display the current version of `bee`, `beego` and `go` installed on your machine:
@@ -55,18 +58,37 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
+\____/  \___| \___| v1.6.2
 
-├── Beego     : 1.7.0
-├── GoVersion : go1.6.2
-├── GOOS      : windows
+├── Beego     : 1.7.2
+├── GoVersion : go1.7.4
+├── GOOS      : linux
 ├── GOARCH    : amd64
-├── NumCPU    : 4
-├── GOPATH    : C:\Users\beeuser\go
-├── GOROOT    : C:\go
+├── NumCPU    : 2
+├── GOPATH    : /home/beeuser/.go
+├── GOROOT    : /usr/lib/go
 ├── Compiler  : gc
-└── Date      : Monday, 22 Aug 2016
-``` 
+└── Date      : Monday, 26 Dec 2016
+```
+
+You can also change the output format using `-o` flag:
+
+```bash
+$ bee version -o json
+{
+    "GoVersion": "go1.7.4",
+    "GOOS": "linux",
+    "GOARCH": "amd64",
+    "NumCPU": 2,
+    "GOPATH": "/home/beeuser/.go",
+    "GOROOT": "/usr/lib/go",
+    "Compiler": "gc",
+    "BeeVersion": "1.6.2",
+    "BeegoVersion": "1.7.2"
+}
+```
+
+For more information on the usage, run `bee help version`.
 
 ### bee new
 
@@ -79,26 +101,26 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 14:53:45 [INFO] Creating application...
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\conf\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\controllers\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\models\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\routers\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\tests\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\js\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\css\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\static\img\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\views\
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\conf\app.conf
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\controllers\default.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\views\index.tpl
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\routers\router.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\tests\default_test.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app\main.go
-2016/08/22 14:53:45 [SUCC] New application successfully created!
+\____/  \___| \___| v1.6.2
+2016/12/26 22:28:11 INFO     ▶ 0001 Creating application...
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/conf/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/models/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/routers/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/tests/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/js/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/css/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/img/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/views/
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/conf/app.conf
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/default.go
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/views/index.tpl
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/routers/router.go
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/tests/default_test.go
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/main.go
+2016/12/26 22:28:11 SUCCESS  ▶ 0002 New application successfully created!
 ```
 
 For more information on the usage, run `bee help new`.
@@ -130,14 +152,15 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 15:11:01 Packaging application: C:\Users\beeuser\go\src\github.com\user\my-web-app
-2016/08/22 15:11:01 Building application...
-2016/08/22 15:11:01 Env: GOOS=windows GOARCH=amd64
-2016/08/22 15:11:08 Build successful
-2016/08/22 15:11:08 Excluding relpath prefix: .
-2016/08/22 15:11:08 Excluding relpath suffix: .go:.DS_Store:.tmp
-2016/08/22 15:11:10 Writing to output: `C:\Users\beeuser\go\src\github.com\user\my-web-app\my-web-app.tar.gz`
+\____/  \___| \___| v1.6.2
+2016/12/26 22:29:29 INFO     ▶ 0001 Packaging application on '/home/beeuser/.go/src/github.com/user/my-web-app'...
+2016/12/26 22:29:29 INFO     ▶ 0002 Building application...
+2016/12/26 22:29:29 INFO     ▶ 0003 Using: GOOS=linux GOARCH=amd64
+2016/12/26 22:29:31 SUCCESS  ▶ 0004 Build Successful!
+2016/12/26 22:29:31 INFO     ▶ 0005 Writing to output: /home/beeuser/.go/src/github.com/user/my-web-app/my-web-app.tar.gz
+2016/12/26 22:29:31 INFO     ▶ 0006 Excluding relpath prefix: .
+2016/12/26 22:29:31 INFO     ▶ 0007 Excluding relpath suffix: .go:.DS_Store:.tmp
+2016/12/26 22:29:32 SUCCESS  ▶ 0008 Application packed!
 ```
 
 For more information on the usage, run `bee help pack`.
@@ -153,23 +176,23 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 15:14:10 [INFO] Creating API...
-        create   C:\Users\beeuser\go\src\github.com\user\my-api
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\conf
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\tests
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\conf\app.conf
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\models
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\routers\
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers\object.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\controllers\user.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\tests\default_test.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\routers\router.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\models\object.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\models\user.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-api\main.go
-2016/08/22 15:14:10 [SUCC] New API successfully created!
+\____/  \___| \___| v1.6.2
+2016/12/26 22:30:12 INFO     ▶ 0001 Creating API...
+    create   /home/beeuser/.go/src/github.com/user/my-api
+    create   /home/beeuser/.go/src/github.com/user/my-api/conf
+    create   /home/beeuser/.go/src/github.com/user/my-api/controllers
+    create   /home/beeuser/.go/src/github.com/user/my-api/tests
+    create   /home/beeuser/.go/src/github.com/user/my-api/conf/app.conf
+    create   /home/beeuser/.go/src/github.com/user/my-api/models
+    create   /home/beeuser/.go/src/github.com/user/my-api/routers/
+    create   /home/beeuser/.go/src/github.com/user/my-api/controllers/object.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/controllers/user.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/tests/default_test.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/routers/router.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/models/object.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/models/user.go
+    create   /home/beeuser/.go/src/github.com/user/my-api/main.go
+2016/12/26 22:30:12 SUCCESS  ▶ 0002 New API successfully created!
 ```
 
 For more information on the usage, run `bee help api`.
@@ -185,16 +208,26 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 16:09:13 [INFO] Creating Hprose application...
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\conf
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\conf\app.conf
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models\object.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\models\user.go
-        create   C:\Users\beeuser\go\src\github.com\user\my-rpc-app\main.go
-2016/08/22 16:09:13 [SUCC] New Hprose application successfully created!
+\____/  \___| \___| v1.6.2
+2016/12/26 22:30:58 INFO     ▶ 0001 Creating application...
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/conf/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/controllers/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/models/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/routers/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/tests/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/js/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/css/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/img/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/views/
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/conf/app.conf
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/controllers/default.go
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/views/index.tpl
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/routers/router.go
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/tests/default_test.go
+    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/main.go
+2016/12/26 22:30:58 SUCCESS  ▶ 0002 New application successfully created!
 ```
 
 For more information on the usage, run `bee help hprose`.
@@ -210,11 +243,9 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 16:37:24 [INFO] Detected bee.json
-2016/08/22 16:37:24 [INFO] Packaging directory(static/js)
-2016/08/22 16:37:24 [INFO] Packaging directory(static/css)
-2016/08/22 16:37:24 [SUCC] Baled resources successfully!
+\____/  \___| \___| v1.6.2
+2016/12/26 22:32:41 INFO     ▶ 0001 Loading configuration from 'bee.json'...
+2016/12/26 22:32:41 SUCCESS  ▶ 0002 Baled resources successfully!
 ```
 
 For more information on the usage, run `bee help bale`.
@@ -238,14 +269,34 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.5.0
-2016/08/22 16:55:30 [INFO] Using 'Hello' as controller name
-2016/08/22 16:55:30 [INFO] Using 'controllers' as package name
-        create   C:\Users\beeuser\go\src\github.com\user\my-web-app/controllers/hello.go
-2016/08/22 16:55:30 [SUCC] Controller successfully generated!                                  
+\____/  \___| \___| v1.6.2
+2016/12/26 22:33:58 INFO     ▶ 0001 Using 'Hello' as controller name
+2016/12/26 22:33:58 INFO     ▶ 0002 Using 'controllers' as package name
+    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/hello.go
+2016/12/26 22:33:58 SUCCESS  ▶ 0003 Controller successfully generated!
 ```
 
 For more information on the usage, run `bee help generate`.
+
+### bee dockerize
+
+Bee also helps you dockerize your Beego application by generating a Dockerfile.
+
+For example, to generate a Dockerfile with `Go version 1.6.4` and exposing port `9000`:
+
+```bash
+$ bee dockerize -image="library/golang:1.6.4" -expose=9000
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.6.2
+2016/12/26 22:34:54 INFO     ▶ 0001 Generating Dockerfile...
+2016/12/26 22:34:54 SUCCESS  ▶ 0002 Dockerfile generated.
+```
+
+For more information on the usage, run `bee help dockerize`.
 
 ## Shortcuts
 
@@ -270,10 +321,33 @@ For instance, to get more information about the `run` command:
 
 ```bash
 $ bee help run
-usage: bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags]
+USAGE
+  bee run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]
 
-Run command will supervise the file system of the beego project using inotify,
-it will recompile and restart the app after any modifications.
+OPTIONS
+  -downdoc
+      Enable auto-download of the swagger file if it does not exist.
+
+  -e=[]
+      List of paths to exclude.
+
+  -gendoc
+      Enable auto-generate the docs.
+
+  -main=[]
+      Specify main go files.
+
+  -runmode
+      Set the Beego run mode.
+
+  -tags
+      Set the build tags. See: https://golang.org/pkg/go/build/
+
+  -vendor=false
+      Enable watch vendor folder.
+
+DESCRIPTION
+  Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
 ```
 
 ## Contributing
@@ -333,14 +407,14 @@ A feature should be made of commits splitted by **logical chunks** (no half-done
 how many commits your changes require.
 
 - Write insightful and descriptive commit messages. It lets us and future contributors quickly understand your changes
-without having to read your changes. Please provide a summary in the first line (50-72 characters) and eventually, 
+without having to read your changes. Please provide a summary in the first line (50-72 characters) and eventually,
 go to greater lengths in your message's body. A good example can be found in [Angular commit message format](https://github.com/angular/angular.js/blob/master/CONTRIBUTING.md#commit-message-format).
 
 - Please **include the appropriate test cases** for your patch.
 
 - Make sure all tests pass before submitting your changes.
 
-- Rebase your commits. It may be that new commits have been introduced on `develop`. 
+- Rebase your commits. It may be that new commits have been introduced on `develop`.
 Rebasing will update your branch with the most recent code and make your changes easier to review:
 
   ```
