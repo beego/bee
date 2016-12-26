@@ -90,7 +90,7 @@ func loadConfig() (err error) {
 
 		if fileInfo.Name() == "bee.json" {
 			logger.Info("Loading configuration from 'bee.json'...")
-			err = parseJSON(path, conf)
+			err = parseJSON(path, &conf)
 			if err != nil {
 				logger.Errorf("Failed to parse JSON file: %s", err)
 				return err
@@ -100,7 +100,7 @@ func loadConfig() (err error) {
 
 		if fileInfo.Name() == "Beefile" {
 			logger.Info("Loading configuration from 'Beefile'...")
-			err = parseYAML(path, conf)
+			err = parseYAML(path, &conf)
 			if err != nil {
 				logger.Errorf("Failed to parse YAML file: %s", err)
 				return err
@@ -151,7 +151,7 @@ func parseJSON(path string, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = json.Unmarshal(data, &v)
+	err = json.Unmarshal(data, v)
 	if err != nil {
 		return err
 	}
@@ -167,7 +167,7 @@ func parseYAML(path string, v interface{}) error {
 	if err != nil {
 		return err
 	}
-	err = yaml.Unmarshal(data, &v)
+	err = yaml.Unmarshal(data, v)
 	if err != nil {
 		return err
 	}
