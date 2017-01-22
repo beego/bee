@@ -145,6 +145,11 @@ func runApp(cmd *Command, args []string) int {
 		AutoBuild(files, false)
 	}
 
+	// Start the Reload server (if enabled)
+	if conf.EnableReload {
+		startReloadServer()
+	}
+
 	for {
 		select {
 		case <-exit:
