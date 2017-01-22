@@ -45,7 +45,8 @@ var defaultConf = `{
 	"envs": [],
 	"database": {
 		"driver": "mysql"
-	}
+	},
+	"enable_reload": false
 }
 `
 var conf struct {
@@ -75,6 +76,7 @@ var conf struct {
 		Driver string
 		Conn   string
 	}
+	EnableReload bool `json:"enable_reload" yaml:"enable_reload"`
 }
 
 // loadConfig loads customized configuration.
