@@ -13,3 +13,4 @@ cmd_args: []
 envs: []
 database:
   driver: "mysql"
+enable_reload: false
