@@ -87,6 +87,7 @@ func createApp(cmd *Command, args []string) int {
 	os.Mkdir(path.Join(apppath, "static"), 0755)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static", "js"), 0755)
+	WriteToFile(path.Join(apppath, "static", "js", "reload.min.js"), reloadJsClient)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static", "js")+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "static", "css"), 0755)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "static", "css")+string(path.Separator), "\x1b[0m")
@@ -294,6 +295,11 @@ var indextpl = `<!DOCTYPE html>
     </div>
   </footer>
   <div class="backdrop"></div>
+
+  <script src="/static/js/reload.min.js"></script>
 </body>
 </html>
+`
+
+var reloadJsClient = `function b(a){var c=new WebSocket(a);c.onclose=function(){setTimeout(function(){b(a)},2E3)};c.onmessage=function(){location.reload()}}try{if(window.WebSocket)try{b("ws://localhost:12450/reload")}catch(a){console.error(a)}else console.log("Your browser does not support WebSockets.")}catch(a){console.error("Exception during connecting to Reload:",a)};
 `

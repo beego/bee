@@ -16,5 +16,6 @@
 	"envs": [],
 	"database": {
 		"driver": "mysql"
-	}
+	},
+	"enable_reload": false
 }

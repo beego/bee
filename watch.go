@@ -51,7 +51,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 				if shouldIgnoreFile(e.Name) {
 					continue
 				}
-				if !checkIfWatchExt(e.Name) {
+				if !shouldWatchFileWithExtension(e.Name) {
 					continue
 				}
 
@@ -75,8 +75,11 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 							}
 							return
 						}
-
 						AutoBuild(files, isgenerate)
+
+						if conf.EnableReload {
+							sendReload(e.String())
+						}
 					}()
 				}
 			case err := <-watcher.Errors:
@@ -93,7 +96,6 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 			logger.Fatalf("Failed to watch directory: %s", err)
 		}
 	}
-
 }
 
 // getFileModTime returns unix timestamp of `os.File.ModTime` for the given path.
@@ -267,8 +269,9 @@ var ignoredFilesRegExps = []string{
 	`(\w+).tmp`,
 }
 
-// checkIfWatchExt returns true if the name HasSuffix <watch_ext>.
-func checkIfWatchExt(name string) bool {
+// shouldWatchFileWithExtension returns true if the name of the file
+// hash a suffix that should be watched.
+func shouldWatchFileWithExtension(name string) bool {
 	for _, s := range watchExts {
 		if strings.HasSuffix(name, s) {
 			return true
