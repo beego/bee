@@ -66,15 +66,9 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 				if isbuild {
 					logger.Infof("Event fired: %s", e)
 					go func() {
-						// Wait 1s before autobuild util there is no file change.
+						// Wait 1s before autobuild until there is no file change.
 						scheduleTime = time.Now().Add(1 * time.Second)
-						for {
-							time.Sleep(scheduleTime.Sub(time.Now()))
-							if time.Now().After(scheduleTime) {
-								break
-							}
-							return
-						}
+						time.Sleep(scheduleTime.Sub(time.Now()))
 						AutoBuild(files, isgenerate)
 
 						if conf.EnableReload {
