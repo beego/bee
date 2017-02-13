@@ -261,6 +261,7 @@ var ignoredFilesRegExps = []string{
 	`.(\w+).go.swp`,
 	`(\w+).go~`,
 	`(\w+).tmp`,
+	`policies_autogen.go`,
 }
 
 // shouldWatchFileWithExtension returns true if the name of the file

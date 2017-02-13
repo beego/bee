@@ -220,6 +220,9 @@ func generateDocs(curpath string) {
 															Name:        strings.Trim(s, "/"),
 															Description: v,
 														})
+														if policy := policyList[controllerName]; policy != nil {
+															policyPathList[version+s] = policy
+														}
 													}
 												}
 											}
@@ -260,6 +263,8 @@ func generateDocs(curpath string) {
 	if err != nil || erryml != nil {
 		panic(err)
 	}
+
+	generatePolicies(curpath)
 }
 
 // analyseNewNamespace returns version and the others params
@@ -390,6 +395,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 								// Parse controller definition comments
 								if strings.TrimSpace(specDecl.Doc.Text()) != "" {
 									controllerComments[pkgpath+s.(*ast.TypeSpec).Name.String()] = specDecl.Doc.Text()
+									controllerFindPolicies(specDecl.Doc, s.(*ast.TypeSpec).Name.Name, pkgpath)
 								}
 							}
 						}
@@ -438,6 +444,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 	opts := swagger.Operation{
 		Responses: make(map[string]swagger.Response),
 	}
+	policy := Policy{}
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
@@ -617,6 +624,11 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						opts.Produces = append(opts.Produces, ahtml)
 					}
 				}
+			} else if strings.HasPrefix(t, "@policy") {
+				policyFields := strings.FieldsFunc(t[len("@policy"):], func(c rune) bool {return !unicode.IsLetter(c) && !unicode.IsNumber(c) && c!='_'})
+				for _, val := range policyFields {
+					policy.Policies = append(policy.Policies, val)
+				}
 			}
 		}
 	}
@@ -649,6 +661,27 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 			item.Options = &opts
 		}
 		controllerList[pkgpath+controllerName][routerPath] = item
+
+		if len(policy.Policies) > 0 {
+			policy.Method = strings.ToLower(HTTPMethod)
+			if i := strings.Index(routerPath, ":"); i < 0 {
+				policy.Path = routerPath
+			} else {
+				policy.Path = routerPath[:i]
+			}
+			policyMethods := policyList[pkgpath+controllerName]
+			if policyMethods == nil {
+				policyMethods = make(map[string]*Policy)
+				policyList[pkgpath+controllerName] = policyMethods
+			}
+			if pm := policyMethods[policy.Method]; pm != nil {
+				for _, curPolicy := range policy.Policies {
+					pm.Policies = append(pm.Policies, curPolicy)
+				}
+			} else {
+				policyMethods[policy.Method] = &policy
+			}
+		}
 	}
 	return nil
 }
