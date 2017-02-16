@@ -90,7 +90,7 @@ func loadConfig() (err error) {
 
 		if fileInfo.Name() == "bee.json" {
 			logger.Info("Loading configuration from 'bee.json'...")
-			err = parseJSON(path, conf)
+			err = parseJSON(path, &conf)
 			if err != nil {
 				logger.Errorf("Failed to parse JSON file: %s", err)
 				return err
