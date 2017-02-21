@@ -26,6 +26,7 @@ import (
 	"path/filepath"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"unicode"
@@ -402,6 +403,9 @@ func analyseControllerPkg(localName, pkgpath string) {
 
 func isSystemPackage(pkgpath string) bool {
 	goroot := os.Getenv("GOROOT")
+	if goroot == "" {
+		goroot = runtime.GOROOT()
+	}
 	if goroot == "" {
 		logger.Fatalf("GOROOT environment variable is not set or empty")
 	}
