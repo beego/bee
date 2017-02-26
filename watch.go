@@ -55,7 +55,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 			case e := <-watcher.Events:
 				isBuild := true
 
-				if ifStaticFile(e.Name) || conf.EnableReload {
+				if ifStaticFile(e.Name) && conf.EnableReload {
 					sendReload(e.String())
 					continue
 				}
@@ -82,10 +82,6 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 						scheduleTime = time.Now().Add(1 * time.Second)
 						time.Sleep(scheduleTime.Sub(time.Now()))
 						AutoBuild(files, isgenerate)
-
-						if conf.EnableReload {
-							sendReload(e.String())
-						}
 					}()
 				}
 			case err := <-watcher.Errors:
