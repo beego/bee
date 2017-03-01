@@ -53,25 +53,31 @@ var astPkgs map[string]*ast.Package
 
 // refer to builtin.go
 var basicTypes = map[string]string{
-	"bool":        "boolean:",
-	"uint":        "integer:int32",
-	"uint8":       "integer:int32",
-	"uint16":      "integer:int32",
-	"uint32":      "integer:int32",
-	"uint64":      "integer:int64",
-	"int":         "integer:int64",
-	"int8":        "integer:int32",
-	"int16:int32": "integer:int32",
-	"int32":       "integer:int32",
-	"int64":       "integer:int64",
-	"uintptr":     "integer:int64",
-	"float32":     "number:float",
-	"float64":     "number:double",
-	"string":      "string:",
-	"complex64":   "number:float",
-	"complex128":  "number:double",
-	"byte":        "string:byte",
-	"rune":        "string:byte",
+	"bool":       "boolean:",
+	"uint":       "integer:int32",
+	"uint8":      "integer:int32",
+	"uint16":     "integer:int32",
+	"uint32":     "integer:int32",
+	"uint64":     "integer:int64",
+	"int":        "integer:int64",
+	"int8":       "integer:int32",
+	"int16":      "integer:int32",
+	"int32":      "integer:int32",
+	"int64":      "integer:int64",
+	"uintptr":    "integer:int64",
+	"float32":    "number:float",
+	"float64":    "number:double",
+	"string":     "string:",
+	"complex64":  "number:float",
+	"complex128": "number:double",
+	"byte":       "string:byte",
+	"rune":       "string:byte",
+	// builtin golang objects
+	"time.Time":  "string:string",
+}
+
+var stdlibObject = map[string]string{
+	"&{time Time}": "time.Time",
 }
 
 func init() {
@@ -872,10 +878,14 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 		}
 		return false, val, "object"
 	}
-	if k, ok := basicTypes[fmt.Sprint(f.Type)]; ok {
-		return false, fmt.Sprint(f.Type), k
+	basicType := fmt.Sprint(f.Type)
+	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+		basicType = object
 	}
-	return false, fmt.Sprint(f.Type), "object"
+	if k, ok := basicTypes[basicType]; ok {
+		return false, basicType, k
+	}
+	return false, basicType, "object"
 }
 
 func isBasicType(Type string) bool {
