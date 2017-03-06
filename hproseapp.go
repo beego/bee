@@ -300,6 +300,10 @@ func init() {
 func createhprose(cmd *Command, args []string) int {
 	output := cmd.Out()
 
+	if len(args) != 1 {
+		logger.Fatal("Argument [appname] is missing")
+	}
+
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
 		cmd.Flag.Parse(args[1:])

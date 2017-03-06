@@ -27,6 +27,12 @@
 			"revisionTime": "2016-01-13T11:48:05Z"
 		},
 		{
+			"checksumSHA1": "dyGQP5AipmInoTQmnqvbFmUORpk=",
+			"path": "github.com/gorilla/websocket",
+			"revision": "a68708917c6a4f06314ab4e52493cc61359c9d42",
+			"revisionTime": "2016-06-06T23:20:22Z"
+		},
+		{
 			"checksumSHA1": "ZxzYc1JwJ3U6kZbw/KGuPko5lSY=",
 			"path": "github.com/howeyc/fsnotify",
 			"revision": "f0c08ee9c60704c1879025f2ae0ff3e000082c13",

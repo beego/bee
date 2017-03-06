@@ -137,6 +137,11 @@ func runApp(cmd *Command, args []string) int {
 			}
 		}
 	}
+
+	// Start the Reload server (if enabled)
+	if conf.EnableReload {
+		startReloadServer()
+	}
 	if gendoc == "true" {
 		NewWatcher(paths, files, true)
 		AutoBuild(files, true)
@@ -185,7 +190,7 @@ func readAppDirectories(directory string, paths *[]string) {
 			continue
 		}
 
-		if path.Ext(fileInfo.Name()) == ".go" {
+		if path.Ext(fileInfo.Name()) == ".go" || (ifStaticFile(fileInfo.Name()) && conf.EnableReload) {
 			*paths = append(*paths, directory)
 			useDirectory = true
 		}

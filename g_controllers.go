@@ -165,7 +165,7 @@ import (
 	"github.com/astaxie/beego"
 )
 
-//  {{controllerName}}Controller oprations for {{controllerName}}
+//  {{controllerName}}Controller operations for {{controllerName}}
 type {{controllerName}}Controller struct {
 	beego.Controller
 }
