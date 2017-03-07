@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude]  [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-extra=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
 	Short:     "Run the application by starting a local development server",
 	Long: `
 Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
@@ -53,6 +53,8 @@ var (
 	currentGoPath string
 	// Current runmode
 	runmode string
+	// Extra directories
+	extraPackages strFlags
 )
 
 func init() {
@@ -63,13 +65,13 @@ func init() {
 	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Enable watch vendor folder.")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Set the build tags. See: https://golang.org/pkg/go/build/")
 	cmdRun.Flag.StringVar(&runmode, "runmode", "", "Set the Beego run mode.")
+	cmdRun.Flag.Var(&extraPackages, "extra", "List of extra package to watch.")
 	exit = make(chan bool)
 }
 
 func runApp(cmd *Command, args []string) int {
 	if len(args) == 0 || args[0] == "watchall" {
 		currpath, _ = os.Getwd()
-
 		if found, _gopath, _ := SearchGOPATHs(currpath); found {
 			appname = path.Base(currpath)
 			currentGoPath = _gopath
@@ -121,6 +123,30 @@ func runApp(cmd *Command, args []string) int {
 	// and ignore non-go files.
 	for _, p := range conf.DirStruct.Others {
 		paths = append(paths, strings.Replace(p, "$GOPATH", currentGoPath, -1))
+	}
+
+	if len(extraPackages) > 0 {
+		// get the full path
+		for _, packagePath := range extraPackages {
+			if found, _, _fullPath := SearchGOPATHs(packagePath); found {
+				logger.Warnf("%v", _fullPath)
+				readAppDirectories(_fullPath, &paths)
+				logger.Warnf("%v", paths)
+			} else {
+				logger.Warnf("No extra package '%s' found in your GOPATH", packagePath)
+			}
+		}
+		// let paths unique
+		strSet := make(map[string]struct{})
+		for _, p := range paths {
+			strSet[p] = struct{}{}
+		}
+		paths = make([]string, len(strSet))
+		index := 0
+		for i := range strSet {
+			paths[index] = i
+			index++
+		}
 	}
 
 	files := []string{}
