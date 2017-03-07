@@ -23,7 +23,7 @@ import (
 )
 
 var cmdRun = &Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-extra=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
+	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
 	Short:     "Run the application by starting a local development server",
 	Long: `
 Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
@@ -65,7 +65,7 @@ func init() {
 	cmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Enable watch vendor folder.")
 	cmdRun.Flag.StringVar(&buildTags, "tags", "", "Set the build tags. See: https://golang.org/pkg/go/build/")
 	cmdRun.Flag.StringVar(&runmode, "runmode", "", "Set the Beego run mode.")
-	cmdRun.Flag.Var(&extraPackages, "extra", "List of extra package to watch.")
+	cmdRun.Flag.Var(&extraPackages, "ex", "List of extra package to watch.")
 	exit = make(chan bool)
 }
 
@@ -129,9 +129,7 @@ func runApp(cmd *Command, args []string) int {
 		// get the full path
 		for _, packagePath := range extraPackages {
 			if found, _, _fullPath := SearchGOPATHs(packagePath); found {
-				logger.Warnf("%v", _fullPath)
 				readAppDirectories(_fullPath, &paths)
-				logger.Warnf("%v", paths)
 			} else {
 				logger.Warnf("No extra package '%s' found in your GOPATH", packagePath)
 			}
