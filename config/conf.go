@@ -47,7 +47,9 @@ var defaultConf = `{
 	"database": {
 		"driver": "mysql"
 	},
-	"enable_reload": false
+	"enable_reload": false,
+	"enable_notification": true
+
 }
 `
 var Conf struct {
@@ -77,7 +79,8 @@ var Conf struct {
 		Driver string
 		Conn   string
 	}
-	EnableReload bool `json:"enable_reload" yaml:"enable_reload"`
+	EnableReload       bool `json:"enable_reload" yaml:"enable_reload"`
+	EnableNotification bool `json:"enable_notification" yaml:"enable_notification"`
 }
 
 func init() {
