@@ -85,7 +85,12 @@ func init() {
 }
 
 // loadConfig loads customized configuration.
-func loadConfig() (err error) {
+func loadConfig() {
+	beeLogger.Log.Info("Loading default configuration...")
+	err := json.Unmarshal([]byte(defaultConf), &Conf)
+	if err != nil {
+		beeLogger.Log.Errorf(err.Error())
+	}
 	err = filepath.Walk(".", func(path string, fileInfo os.FileInfo, err error) error {
 		if err != nil {
 			return nil
@@ -116,20 +121,6 @@ func loadConfig() (err error) {
 		}
 		return nil
 	})
-
-	// In case no configuration file found or an error different than io.EOF,
-	// fallback to default configuration
-	if err != io.EOF {
-		beeLogger.Log.Info("Loading default configuration...")
-		err = json.Unmarshal([]byte(defaultConf), &Conf)
-		if err != nil {
-			return
-		}
-	}
-
-	// No need to return io.EOF error
-	err = nil
-
 	// Check format version
 	if Conf.Version != confVer {
 		beeLogger.Log.Warn("Your configuration file is outdated. Please do consider updating it.")
