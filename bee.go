@@ -160,7 +160,7 @@ func main() {
 
 			// Check if current directory is inside the GOPATH,
 			// if so parse the packages inside it.
-			if strings.Contains(currentpath, GetGOPATHs()[0]+"/src") && isGenerateDocs(cmd.Name(), args) {
+			if IsInGOPATH(currentpath) && isGenerateDocs(cmd.Name(), args) {
 				parsePackagesFromDir(currentpath)
 			}
 
