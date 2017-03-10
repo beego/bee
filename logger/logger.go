@@ -30,14 +30,14 @@ import (
 var errInvalidLogLevel = errors.New("logger: invalid log level")
 
 const (
-	levelCritical = iota
-	levelFatal
-	levelSuccess
-	levelHint
-	levelDebug
-	levelInfo
-	levelWarn
+	levelDebug = iota
 	levelError
+	levelFatal
+	levelCritical
+	levelSuccess
+	levelWarn
+	levelInfo
+	levelHint
 )
 
 var (
@@ -45,6 +45,9 @@ var (
 	instance   *BeeLogger
 	once       sync.Once
 )
+var debugMode = map[string]bool{"1": true, "0": false}[os.Getenv("DEBUG_ENABLED")]
+
+var logLevel = levelInfo
 
 // BeeLogger logs logging records to the specified io.Writer
 type BeeLogger struct {
@@ -164,6 +167,9 @@ func (l *BeeLogger) getColorLevel(level int) string {
 // mustLog logs the message according to the specified level and arguments.
 // It panics in case of an error.
 func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
+	if level > logLevel {
+		return
+	}
 	// Acquire the lock
 	l.mu.Lock()
 	defer l.mu.Unlock()
@@ -184,9 +190,9 @@ func (l *BeeLogger) mustLog(level int, message string, args ...interface{}) {
 // mustLogDebug logs a debug message only if debug mode
 // is enabled. i.e. DEBUG_ENABLED="1"
 func (l *BeeLogger) mustLogDebug(message string, file string, line int, args ...interface{}) {
-	//if !IsDebugEnabled() {
-	//	return
-	//}
+	if !debugMode {
+		return
+	}
 
 	// Change the output to Stderr
 	l.SetOutput(os.Stderr)
