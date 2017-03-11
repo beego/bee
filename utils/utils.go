@@ -320,7 +320,7 @@ func CheckEnv(appname string) (apppath, packpath string, err error) {
 	apppath = path.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); !os.IsNotExist(e) {
-		err = fmt.Errorf("Cannot create application without removing '%s' first.", apppath)
+		err = fmt.Errorf("Cannot create application without removing '%s' first", apppath)
 		beeLogger.Log.Errorf("Path '%s' already exists", apppath)
 		return
 	}

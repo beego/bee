@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"os"
 
-	"io"
 	"path/filepath"
 
 	beeLogger "github.com/beego/bee/logger"
@@ -98,32 +97,22 @@ func loadConfig() {
 		if err != nil {
 			return nil
 		}
-
 		if fileInfo.IsDir() {
 			return nil
 		}
-
-		if fileInfo.Name() == "bee.json" {
+		switch fileInfo.Name() {
+		case "bee.json":
 			beeLogger.Log.Info("Loading configuration from 'bee.json'...")
-			err = parseJSON(path, &Conf)
-			if err != nil {
-				beeLogger.Log.Errorf("Failed to parse JSON file: %s", err)
-				return err
-			}
-			return io.EOF
-		}
-
-		if fileInfo.Name() == "Beefile" {
+			return parseJSON(path, &Conf)
+		case "Beefile":
 			beeLogger.Log.Info("Loading configuration from 'Beefile'...")
-			err = parseYAML(path, &Conf)
-			if err != nil {
-				beeLogger.Log.Errorf("Failed to parse YAML file: %s", err)
-				return err
-			}
-			return io.EOF
+			return parseYAML(path, &Conf)
 		}
 		return nil
 	})
+	if err != nil {
+		beeLogger.Log.Errorf("Failed to parse config file: %s", err)
+	}
 	// Check format version
 	if Conf.Version != confVer {
 		beeLogger.Log.Warn("Your configuration file is outdated. Please do consider updating it.")

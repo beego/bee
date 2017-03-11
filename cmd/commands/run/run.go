@@ -178,10 +178,8 @@ func RunApp(cmd *commands.Command, args []string) int {
 	}
 
 	for {
-		select {
-		case <-exit:
-			runtime.Goexit()
-		}
+		<-exit
+		runtime.Goexit()
 	}
 }
 

@@ -57,7 +57,7 @@ var CmdApiapp = &commands.Command{
 	          └── user.go
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
-	Run:    createapi,
+	Run:    createAPI,
 }
 var apiconf = `appname = {{.Appname}}
 httpport = 8080
@@ -139,7 +139,7 @@ func init() {
 }
 `
 
-var ApiModels = `package models
+var APIModels = `package models
 
 import (
 	"errors"
@@ -194,7 +194,7 @@ func Delete(ObjectId string) {
 
 `
 
-var ApiModels2 = `package models
+var APIModels2 = `package models
 
 import (
 	"errors"
@@ -543,7 +543,7 @@ func init() {
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdApiapp)
 }
 
-func createapi(cmd *commands.Command, args []string) int {
+func createAPI(cmd *commands.Command, args []string) int {
 	output := cmd.Out()
 
 	if len(args) < 1 {
@@ -551,10 +551,13 @@ func createapi(cmd *commands.Command, args []string) int {
 	}
 
 	if len(args) > 1 {
-		cmd.Flag.Parse(args[1:])
+		err := cmd.Flag.Parse(args[1:])
+		if err != nil {
+			beeLogger.Log.Error(err.Error())
+		}
 	}
 
-	apppath, packpath, err := utils.CheckEnv(args[0])
+	appPath, packPath, err := utils.CheckEnv(args[0])
 	if err != nil {
 		beeLogger.Log.Fatalf("%s", err)
 	}
@@ -564,30 +567,30 @@ func createapi(cmd *commands.Command, args []string) int {
 
 	beeLogger.Log.Info("Creating API...")
 
-	os.MkdirAll(apppath, 0755)
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
-	os.Mkdir(path.Join(apppath, "conf"), 0755)
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf"), "\x1b[0m")
-	os.Mkdir(path.Join(apppath, "controllers"), 0755)
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers"), "\x1b[0m")
-	os.Mkdir(path.Join(apppath, "tests"), 0755)
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests"), "\x1b[0m")
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "conf", "app.conf"), "\x1b[0m")
-	utils.WriteToFile(path.Join(apppath, "conf", "app.conf"),
+	os.MkdirAll(appPath, 0755)
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", appPath, "\x1b[0m")
+	os.Mkdir(path.Join(appPath, "conf"), 0755)
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf"), "\x1b[0m")
+	os.Mkdir(path.Join(appPath, "controllers"), 0755)
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "controllers"), "\x1b[0m")
+	os.Mkdir(path.Join(appPath, "tests"), 0755)
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "tests"), "\x1b[0m")
+	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf", "app.conf"), "\x1b[0m")
+	utils.WriteToFile(path.Join(appPath, "conf", "app.conf"),
 		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if generate.SQLConn != "" {
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
-		maingoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packpath, -1)
-		maingoContent = strings.Replace(maingoContent, "{{.DriverName}}", string(generate.SQLDriver), -1)
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "main.go"), "\x1b[0m")
+		mainGoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packPath, -1)
+		mainGoContent = strings.Replace(mainGoContent, "{{.DriverName}}", string(generate.SQLDriver), -1)
 		if generate.SQLDriver == "mysql" {
-			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/go-sql-driver/mysql"`, -1)
+			mainGoContent = strings.Replace(mainGoContent, "{{.DriverPkg}}", `_ "github.com/go-sql-driver/mysql"`, -1)
 		} else if generate.SQLDriver == "postgres" {
-			maingoContent = strings.Replace(maingoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
+			mainGoContent = strings.Replace(mainGoContent, "{{.DriverPkg}}", `_ "github.com/lib/pq"`, -1)
 		}
-		utils.WriteToFile(path.Join(apppath, "main.go"),
+		utils.WriteToFile(path.Join(appPath, "main.go"),
 			strings.Replace(
-				maingoContent,
+				mainGoContent,
 				"{{.conn}}",
 				generate.SQLConn.String(),
 				-1,
@@ -596,38 +599,38 @@ func createapi(cmd *commands.Command, args []string) int {
 		beeLogger.Log.Infof("Using '%s' as 'driver'", generate.SQLDriver)
 		beeLogger.Log.Infof("Using '%s' as 'conn'", generate.SQLConn)
 		beeLogger.Log.Infof("Using '%s' as 'tables'", generate.Tables)
-		generate.GenerateAppcode(string(generate.SQLDriver), string(generate.SQLConn), "3", string(generate.Tables), apppath)
+		generate.GenerateAppcode(string(generate.SQLDriver), string(generate.SQLConn), "3", string(generate.Tables), appPath)
 	} else {
-		os.Mkdir(path.Join(apppath, "models"), 0755)
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
-		os.Mkdir(path.Join(apppath, "routers"), 0755)
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers")+string(path.Separator), "\x1b[0m")
+		os.Mkdir(path.Join(appPath, "models"), 0755)
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "models"), "\x1b[0m")
+		os.Mkdir(path.Join(appPath, "routers"), 0755)
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "routers")+string(path.Separator), "\x1b[0m")
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "object.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "controllers", "object.go"),
-			strings.Replace(apiControllers, "{{.Appname}}", packpath, -1))
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "controllers", "object.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "controllers", "object.go"),
+			strings.Replace(apiControllers, "{{.Appname}}", packPath, -1))
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "controllers", "user.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "controllers", "user.go"),
-			strings.Replace(apiControllers2, "{{.Appname}}", packpath, -1))
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "controllers", "user.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "controllers", "user.go"),
+			strings.Replace(apiControllers2, "{{.Appname}}", packPath, -1))
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "tests", "default_test.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "tests", "default_test.go"),
-			strings.Replace(apiTests, "{{.Appname}}", packpath, -1))
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "tests", "default_test.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "tests", "default_test.go"),
+			strings.Replace(apiTests, "{{.Appname}}", packPath, -1))
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "routers", "router.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "routers", "router.go"),
-			strings.Replace(apirouter, "{{.Appname}}", packpath, -1))
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "routers", "router.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "routers", "router.go"),
+			strings.Replace(apirouter, "{{.Appname}}", packPath, -1))
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "models", "object.go"), ApiModels)
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "models", "object.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "models", "object.go"), APIModels)
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "models", "user.go"), ApiModels2)
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "models", "user.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "models", "user.go"), APIModels2)
 
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "main.go"),
-			strings.Replace(apiMaingo, "{{.Appname}}", packpath, -1))
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "main.go"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "main.go"),
+			strings.Replace(apiMaingo, "{{.Appname}}", packPath, -1))
 	}
 	beeLogger.Log.Success("New API successfully created!")
 	return 0
