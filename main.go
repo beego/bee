@@ -23,6 +23,8 @@ func main() {
 
 	if len(args) < 1 {
 		cmd.Usage()
+		os.Exit(2)
+		return
 	}
 
 	if args[0] == "help" {

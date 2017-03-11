@@ -28,7 +28,7 @@ func Notify(text, title string) {
 }
 
 func osxNotify(text, title string) {
-	cmd := &exec.Cmd{}
+	var cmd *exec.Cmd
 	if existTerminalNotifier() {
 		cmd = exec.Command("terminal-notifier", "-title", appName, "-message", text, "-subtitle", title)
 	} else if MacOSVersionSupport() {
@@ -53,13 +53,9 @@ func existTerminalNotifier() bool {
 	err := cmd.Start()
 	if err != nil {
 		return false
-	} else {
-		err = cmd.Wait()
-		if err != nil {
-			return false
-		}
 	}
-	return true
+	err = cmd.Wait()
+	return err != nil
 }
 
 func MacOSVersionSupport() bool {
