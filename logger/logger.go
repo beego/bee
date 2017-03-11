@@ -45,7 +45,7 @@ var (
 	instance   *BeeLogger
 	once       sync.Once
 )
-var debugMode = map[string]bool{"1": true, "0": false}[os.Getenv("DEBUG_ENABLED")]
+var debugMode = os.Getenv("DEBUG_ENABLED") == "1"
 
 var logLevel = levelInfo
 
