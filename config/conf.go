@@ -79,8 +79,9 @@ var Conf struct {
 		Driver string
 		Conn   string
 	}
-	EnableReload       bool `json:"enable_reload" yaml:"enable_reload"`
-	EnableNotification bool `json:"enable_notification" yaml:"enable_notification"`
+	EnableReload       bool              `json:"enable_reload" yaml:"enable_reload"`
+	EnableNotification bool              `json:"enable_notification" yaml:"enable_notification"`
+	Scripts            map[string]string `json:"scripts" yaml:"scripts"`
 }
 
 func init() {
