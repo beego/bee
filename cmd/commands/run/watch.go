@@ -178,6 +178,7 @@ func AutoBuild(files []string, isgenerate bool) {
 		icmd.Env = append(os.Environ(), "GOGC=off")
 		err = icmd.Run()
 		if err != nil {
+			utils.Notify("", "Failed to generate the docs.")
 			beeLogger.Log.Errorf("Failed to generate the docs.")
 			return
 		}
@@ -202,6 +203,7 @@ func AutoBuild(files []string, isgenerate bool) {
 		bcmd.Stderr = &stderr
 		err = bcmd.Run()
 		if err != nil {
+			utils.Notify(stderr.String(), "Build Failed")
 			beeLogger.Log.Errorf("Failed to build the application: %s", stderr.String())
 			return
 		}
