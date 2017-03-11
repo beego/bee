@@ -16,8 +16,6 @@
 package cmd
 
 import (
-	"os"
-
 	"github.com/beego/bee/cmd/commands"
 	_ "github.com/beego/bee/cmd/commands/api"
 	_ "github.com/beego/bee/cmd/commands/bale"
@@ -79,7 +77,6 @@ Use {{"bee help" | bold}} for more information.
 
 func Usage() {
 	utils.Tmpl(usageTemplate, commands.AvailableCommands)
-	os.Exit(2)
 }
 
 func Help(args []string) {

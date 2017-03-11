@@ -105,10 +105,10 @@ func createhprose(cmd *commands.Command, args []string) int {
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models"), "\x1b[0m")
 
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "object.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "models", "object.go"), apiapp.ApiModels)
+		utils.WriteToFile(path.Join(apppath, "models", "object.go"), apiapp.APIModels)
 
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "models", "user.go"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "models", "user.go"), apiapp.ApiModels2)
+		utils.WriteToFile(path.Join(apppath, "models", "user.go"), apiapp.APIModels2)
 
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "main.go"), "\x1b[0m")
 		utils.WriteToFile(path.Join(apppath, "main.go"),

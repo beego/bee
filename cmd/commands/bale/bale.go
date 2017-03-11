@@ -143,7 +143,7 @@ func saveFile(filePath string, b []byte) (int, error) {
 
 var resFiles = make([]string, 0, 10)
 
-func walkFn(resPath string, info os.FileInfo, err error) error {
+func walkFn(resPath string, info os.FileInfo, _ error) error {
 	if info.IsDir() || filterSuffix(resPath) {
 		return nil
 	}

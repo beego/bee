@@ -732,7 +732,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
-		// beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
+		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	st, ok := ts.Type.(*ast.StructType)

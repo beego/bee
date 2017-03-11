@@ -123,7 +123,7 @@ func GetBeegoVersion() string {
 		return ""
 	}
 	if gopath == "" {
-		err = fmt.Errorf("You need to set GOPATH environment variable")
+		beeLogger.Log.Error("You need to set GOPATH environment variable")
 		return ""
 	}
 	wgopath := path.SplitList(gopath)
