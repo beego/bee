@@ -241,12 +241,6 @@ func WriteToFile(filename, content string) {
 	MustCheck(err)
 }
 
-// IsDebugEnabled checks if DEBUG_ENABLED is set or not
-func IsDebugEnabled() bool {
-	debugMode := os.Getenv("DEBUG_ENABLED")
-	return map[string]bool{"1": true, "0": false}[debugMode]
-}
-
 // __FILE__ returns the file name in which the function was invoked
 func FILE() string {
 	_, file, _, _ := runtime.Caller(1)

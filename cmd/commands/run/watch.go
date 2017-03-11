@@ -73,14 +73,14 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 
 				mt := getFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
-					beeLogger.Log.Infof(colors.Bold("Skipping: ")+"%s", e.String())
+					beeLogger.Log.Hintf(colors.Bold("Skipping: ")+"%s", e.String())
 					isBuild = false
 				}
 
 				eventTime[e.Name] = mt
 
 				if isBuild {
-					beeLogger.Log.Infof("Event fired: %s", e)
+					beeLogger.Log.Hintf("Event fired: %s", e)
 					go func() {
 						// Wait 1s before autobuild until there is no file change.
 						scheduleTime = time.Now().Add(1 * time.Second)
@@ -96,7 +96,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 
 	beeLogger.Log.Info("Initializing watcher...")
 	for _, path := range paths {
-		beeLogger.Log.Infof(colors.Bold("Watching: ")+"%s", path)
+		beeLogger.Log.Hintf(colors.Bold("Watching: ")+"%s", path)
 		err = watcher.Add(path)
 		if err != nil {
 			beeLogger.Log.Fatalf("Failed to watch directory: %s", err)
