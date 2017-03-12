@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
-
 package bale
 
 import (
@@ -43,8 +42,11 @@ var CmdBale = &commands.Command{
   It will auto-generate an unpack function to the main package then run it during the runtime.
   This is mainly used for zealots who are requiring 100% Go code.
 `,
-	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
-	Run:    runBale,
+	PreRun: func(cmd *commands.Command, args []string) {
+		version.ShowShortVersionBanner()
+		config.LoadConfig()
+	},
+	Run: runBale,
 }
 
 func init() {

@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
-
 package run
 
 import (
@@ -35,8 +34,11 @@ var CmdRun = &commands.Command{
 Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
 
 `,
-	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
-	Run:    RunApp,
+	PreRun: func(cmd *commands.Command, args []string) {
+		version.ShowShortVersionBanner()
+		config.LoadConfig()
+	},
+	Run: RunApp,
 }
 
 var (
