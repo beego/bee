@@ -27,57 +27,59 @@ import (
 
 const confVer = 0
 
-var defaultConf = `{
-	"version": 0,
-	"gopm": {
-		"enable": false,
-		"install": false
-	},
-	"go_install": true,
-	"dir_structure": {
-		"watch_all": false,
-		"controllers": "",
-		"models": "",
-		"others": []
-	},
-	"cmd_args": [],
-	"envs": [],
-	"database": {
-		"driver": "mysql"
-	},
-	"enable_reload": false,
-	"enable_notification": true
-
-}
-`
-var Conf struct {
-	Version int
-	// gopm support
-	Gopm struct {
-		Enable  bool
-		Install bool
-	}
-	// Indicates whether execute "go install" before "go build".
-	GoInstall bool `json:"go_install" yaml:"go_install"`
-	DirStruct struct {
-		WatchAll    bool `json:"watch_all" yaml:"watch_all"`
-		Controllers string
-		Models      string
-		Others      []string // Other directories.
-	} `json:"dir_structure" yaml:"dir_structure"`
-	CmdArgs []string `json:"cmd_args" yaml:"cmd_args"`
-	Envs    []string
-	Bale    struct {
-		Import string
-		Dirs   []string
-		IngExt []string `json:"ignore_ext" yaml:"ignore_ext"`
-	}
-	Database struct {
-		Driver string
-		Conn   string
-	}
+var Conf = struct {
+	Version            int
+	Gopm               gopm
+	GoInstall          bool      `json:"go_install" yaml:"go_install"` // Indicates whether execute "go install" before "go build".
+	DirStruct          dirStruct `json:"dir_structure" yaml:"dir_structure"`
+	CmdArgs            []string  `json:"cmd_args" yaml:"cmd_args"`
+	Envs               []string
+	Bale               bale
+	Database           database
 	EnableReload       bool `json:"enable_reload" yaml:"enable_reload"`
 	EnableNotification bool `json:"enable_notification" yaml:"enable_notification"`
+}{
+	GoInstall: true,
+	DirStruct: dirStruct{
+		Others: []string{},
+	},
+	CmdArgs: []string{},
+	Envs:    []string{},
+	Bale: bale{
+		Dirs:   []string{},
+		IngExt: []string{},
+	},
+	Database: database{
+		Driver: "mysql",
+	},
+	EnableNotification: true,
+}
+
+// gopm support
+type gopm struct {
+	Enable  bool
+	Install bool
+}
+
+// dirStruct describes the application's directory structure
+type dirStruct struct {
+	WatchAll    bool `json:"watch_all" yaml:"watch_all"`
+	Controllers string
+	Models      string
+	Others      []string // Other directories
+}
+
+// bale
+type bale struct {
+	Import string
+	Dirs   []string
+	IngExt []string `json:"ignore_ext" yaml:"ignore_ext"`
+}
+
+// database holds the database connection information
+type database struct {
+	Driver string
+	Conn   string
 }
 
 // LoadConfig loads the bee tool configuration.
@@ -118,14 +120,8 @@ func LoadConfig() {
 		return nil
 	})
 
-	// In case no configuration file found or an error different than io.EOF,
-	// fallback to default configuration
 	if err != io.EOF {
 		beeLogger.Log.Info("Loading default configuration...")
-		err = json.Unmarshal([]byte(defaultConf), &Conf)
-		if err != nil {
-			return
-		}
 	}
 
 	// Check format version
