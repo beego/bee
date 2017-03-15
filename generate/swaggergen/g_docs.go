@@ -143,7 +143,7 @@ func GenerateDocs(curpath string) {
 
 	f, err := parser.ParseFile(fset, path.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 	if err != nil {
-		// beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
+		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
 	}
 
 	rootapi.Infos = swagger.Information{}
@@ -352,7 +352,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 	}
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
-		// beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
+		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	pkgRealpath := ""
 
@@ -370,7 +370,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		// beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH", pkgpath)
+		beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH", pkgpath)
 	}
 
 	fileSet := token.NewFileSet()
@@ -379,7 +379,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
 	if err != nil {
-		// beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
+		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
@@ -417,7 +417,7 @@ func isSystemPackage(pkgpath string) bool {
 		goroot = runtime.GOROOT()
 	}
 	if goroot == "" {
-		// beeLogger.Log.Fatalf("GOROOT environment variable is not set or empty")
+		beeLogger.Log.Fatalf("GOROOT environment variable is not set or empty")
 	}
 
 	wg, _ := filepath.EvalSymlinks(filepath.Join(goroot, "src", "pkg", pkgpath))
@@ -481,7 +481,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					ss = strings.TrimSpace(ss[pos:])
 					schemaName, pos := peekNextSplitString(ss)
 					if schemaName == "" {
-						// beeLogger.Log.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
+						beeLogger.Log.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
 					}
 					if strings.HasPrefix(schemaName, "[]") {
 						schemaName = schemaName[2:]
@@ -518,7 +518,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				para := swagger.Parameter{}
 				p := getparams(strings.TrimSpace(t[len("@Param "):]))
 				if len(p) < 4 {
-					// beeLogger.Log.Fatal(controllerName + "_" + funcName + "'s comments @Param should have at least 4 params")
+					beeLogger.Log.Fatal(controllerName + "_" + funcName + "'s comments @Param should have at least 4 params")
 				}
 				para.Name = p[0]
 				switch p[1] {
@@ -533,7 +533,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				case "body":
 					break
 				default:
-					// beeLogger.Log.Warnf("[%s.%s] Unknown param location: %s. Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
+					beeLogger.Log.Warnf("[%s.%s] Unknown param location: %s. Possible values are `query`, `header`, `path`, `formData` or `body`.\n", controllerName, funcName, p[1])
 				}
 				para.In = p[1]
 				pp := strings.Split(p[2], ".")
@@ -564,7 +564,7 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						paraType = typeFormat[0]
 						paraFormat = typeFormat[1]
 					} else {
-						// beeLogger.Log.Warnf("[%s.%s] Unknown param type: %s\n", controllerName, funcName, typ)
+						beeLogger.Log.Warnf("[%s.%s] Unknown param type: %s\n", controllerName, funcName, typ)
 					}
 					if isArray {
 						para.Type = "array"
@@ -717,7 +717,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 		}
 	}
 	if m.Title == "" {
-		// beeLogger.Log.Warnf("Cannot find the object: %s", str)
+		beeLogger.Log.Warnf("Cannot find the object: %s", str)
 		// TODO remove when all type have been supported
 		//os.Exit(1)
 	}
@@ -808,7 +808,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 						mp.Default = str2RealType(res[1], realType)
 
 					} else {
-						// beeLogger.Log.Warnf("Invalid default value: %s", defaultValue)
+						beeLogger.Log.Warnf("Invalid default value: %s", defaultValue)
 					}
 				}
 
@@ -946,7 +946,7 @@ func str2RealType(s string, typ string) interface{} {
 	}
 
 	if err != nil {
-		// beeLogger.Log.Warnf("Invalid default value type '%s': %s", typ, s)
+		beeLogger.Log.Warnf("Invalid default value type '%s': %s", typ, s)
 		return s
 	}
 
