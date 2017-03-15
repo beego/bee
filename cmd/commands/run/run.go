@@ -34,11 +34,8 @@ var CmdRun = &commands.Command{
 Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
 
 `,
-	PreRun: func(cmd *commands.Command, args []string) {
-		version.ShowShortVersionBanner()
-		config.LoadConfig()
-	},
-	Run: RunApp,
+	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
+	Run:    RunApp,
 }
 
 var (

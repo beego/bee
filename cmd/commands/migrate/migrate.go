@@ -52,11 +52,8 @@ var CmdMigrate = &commands.Command{
 
     $ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 `,
-	PreRun: func(cmd *commands.Command, args []string) {
-		version.ShowShortVersionBanner()
-		config.LoadConfig()
-	},
-	Run: RunMigration,
+	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
+	Run:    RunMigration,
 }
 
 var mDriver utils.DocValue

@@ -117,8 +117,6 @@ func scaffold(cmd *commands.Command, args []string, currpath string) {
 		beeLogger.Log.Fatal("Wrong number of arguments. Run: bee help generate")
 	}
 
-	config.LoadConfig()
-
 	cmd.Flag.Parse(args[2:])
 	if generate.SQLDriver == "" {
 		generate.SQLDriver = utils.DocValue(config.Conf.Database.Driver)
@@ -141,8 +139,6 @@ func scaffold(cmd *commands.Command, args []string, currpath string) {
 }
 
 func appCode(cmd *commands.Command, args []string, currpath string) {
-	config.LoadConfig()
-
 	cmd.Flag.Parse(args[1:])
 	if generate.SQLDriver == "" {
 		generate.SQLDriver = utils.DocValue(config.Conf.Database.Driver)

@@ -42,11 +42,8 @@ var CmdBale = &commands.Command{
   It will auto-generate an unpack function to the main package then run it during the runtime.
   This is mainly used for zealots who are requiring 100% Go code.
 `,
-	PreRun: func(cmd *commands.Command, args []string) {
-		version.ShowShortVersionBanner()
-		config.LoadConfig()
-	},
-	Run: runBale,
+	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
+	Run:    runBale,
 }
 
 func init() {

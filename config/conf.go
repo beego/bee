@@ -15,7 +15,6 @@ package config
 
 import (
 	"encoding/json"
-	"io"
 	"io/ioutil"
 	"os"
 
@@ -86,42 +85,43 @@ type database struct {
 // It looks for Beefile or bee.json in the current path,
 // and falls back to default configuration in case not found.
 func LoadConfig() {
-	err := filepath.Walk(".", func(path string, fileInfo os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
+	currentPath, err := os.Getwd()
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
+	}
 
-		if fileInfo.IsDir() {
-			return nil
-		}
+	dir, err := os.Open(currentPath)
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
+	}
+	defer dir.Close()
 
-		switch fileInfo.Name() {
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
+	}
+
+	for _, file := range files {
+		switch file.Name() {
 		case "bee.json":
 			{
 				beeLogger.Log.Info("Loading configuration from 'bee.json'...")
-				err = parseJSON(path, &Conf)
+				err = parseJSON(filepath.Join(currentPath, file.Name()), &Conf)
 				if err != nil {
 					beeLogger.Log.Errorf("Failed to parse JSON file: %s", err)
-					return err
 				}
-				return io.EOF
+				break
 			}
 		case "Beefile":
 			{
 				beeLogger.Log.Info("Loading configuration from 'Beefile'...")
-				err = parseYAML(path, &Conf)
+				err = parseYAML(filepath.Join(currentPath, file.Name()), &Conf)
 				if err != nil {
 					beeLogger.Log.Errorf("Failed to parse YAML file: %s", err)
-					return err
 				}
-				return io.EOF
+				break
 			}
 		}
-		return nil
-	})
-
-	if err != io.EOF {
-		beeLogger.Log.Info("Loading default configuration...")
 	}
 
 	// Check format version
@@ -138,7 +138,6 @@ func LoadConfig() {
 	if len(Conf.DirStruct.Models) == 0 {
 		Conf.DirStruct.Models = "models"
 	}
-	return
 }
 
 func parseJSON(path string, v interface{}) error {
