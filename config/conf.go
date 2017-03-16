@@ -35,8 +35,9 @@ var Conf = struct {
 	Envs               []string
 	Bale               bale
 	Database           database
-	EnableReload       bool `json:"enable_reload" yaml:"enable_reload"`
-	EnableNotification bool `json:"enable_notification" yaml:"enable_notification"`
+	EnableReload       bool              `json:"enable_reload" yaml:"enable_reload"`
+	EnableNotification bool              `json:"enable_notification" yaml:"enable_notification"`
+	Scripts            map[string]string `json:"scripts" yaml:"scripts"`
 }{
 	GoInstall: true,
 	DirStruct: dirStruct{
@@ -52,6 +53,7 @@ var Conf = struct {
 		Driver: "mysql",
 	},
 	EnableNotification: true,
+	Scripts:            map[string]string{},
 }
 
 // gopm support
