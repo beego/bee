@@ -11,7 +11,6 @@
 // WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 // License for the specific language governing permissions and limitations
 // under the License.
-
 package config
 
 import (
@@ -27,93 +26,106 @@ import (
 
 const confVer = 0
 
-var defaultConf = `{
-	"version": 0,
-	"gopm": {
-		"enable": false,
-		"install": false
-	},
-	"go_install": true,
-	"watch_ext": [],
-	"dir_structure": {
-		"watch_all": false,
-		"controllers": "",
-		"models": "",
-		"others": []
-	},
-	"cmd_args": [],
-	"envs": [],
-	"database": {
-		"driver": "mysql"
-	},
-	"enable_reload": false,
-	"enable_notification": true
-
-}
-`
-var Conf struct {
-	Version int
-	// gopm support
-	Gopm struct {
-		Enable  bool
-		Install bool
-	}
-	// Indicates whether execute "go install" before "go build".
-	GoInstall bool     `json:"go_install" yaml:"go_install"`
-	WatchExt  []string `json:"watch_ext" yaml:"watch_ext"`
-	DirStruct struct {
-		WatchAll    bool `json:"watch_all" yaml:"watch_all"`
-		Controllers string
-		Models      string
-		Others      []string // Other directories.
-	} `json:"dir_structure" yaml:"dir_structure"`
-	CmdArgs []string `json:"cmd_args" yaml:"cmd_args"`
-	Envs    []string
-	Bale    struct {
-		Import string
-		Dirs   []string
-		IngExt []string `json:"ignore_ext" yaml:"ignore_ext"`
-	}
-	Database struct {
-		Driver string
-		Conn   string
-	}
+var Conf = struct {
+	Version            int
+	Gopm               gopm
+	GoInstall          bool      `json:"go_install" yaml:"go_install"` // Indicates whether execute "go install" before "go build".
+	DirStruct          dirStruct `json:"dir_structure" yaml:"dir_structure"`
+	CmdArgs            []string  `json:"cmd_args" yaml:"cmd_args"`
+	Envs               []string
+	Bale               bale
+	Database           database
 	EnableReload       bool              `json:"enable_reload" yaml:"enable_reload"`
 	EnableNotification bool              `json:"enable_notification" yaml:"enable_notification"`
 	Scripts            map[string]string `json:"scripts" yaml:"scripts"`
+}{
+	GoInstall: true,
+	DirStruct: dirStruct{
+		Others: []string{},
+	},
+	CmdArgs: []string{},
+	Envs:    []string{},
+	Bale: bale{
+		Dirs:   []string{},
+		IngExt: []string{},
+	},
+	Database: database{
+		Driver: "mysql",
+	},
+	EnableNotification: true,
+	Scripts:            map[string]string{},
 }
 
-func init() {
-	loadConfig()
+// gopm support
+type gopm struct {
+	Enable  bool
+	Install bool
 }
 
-// loadConfig loads customized configuration.
-func loadConfig() {
-	beeLogger.Log.Info("Loading default configuration...")
-	err := json.Unmarshal([]byte(defaultConf), &Conf)
+// dirStruct describes the application's directory structure
+type dirStruct struct {
+	WatchAll    bool `json:"watch_all" yaml:"watch_all"`
+	Controllers string
+	Models      string
+	Others      []string // Other directories
+}
+
+// bale
+type bale struct {
+	Import string
+	Dirs   []string
+	IngExt []string `json:"ignore_ext" yaml:"ignore_ext"`
+}
+
+// database holds the database connection information
+type database struct {
+	Driver string
+	Conn   string
+}
+
+// LoadConfig loads the bee tool configuration.
+// It looks for Beefile or bee.json in the current path,
+// and falls back to default configuration in case not found.
+func LoadConfig() {
+	currentPath, err := os.Getwd()
 	if err != nil {
-		beeLogger.Log.Errorf(err.Error())
+		beeLogger.Log.Error(err.Error())
 	}
-	err = filepath.Walk(".", func(path string, fileInfo os.FileInfo, err error) error {
-		if err != nil {
-			return nil
-		}
-		if fileInfo.IsDir() {
-			return nil
-		}
-		switch fileInfo.Name() {
+
+	dir, err := os.Open(currentPath)
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
+	}
+	defer dir.Close()
+
+	files, err := dir.Readdir(-1)
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
+	}
+
+	for _, file := range files {
+		switch file.Name() {
 		case "bee.json":
-			beeLogger.Log.Info("Loading configuration from 'bee.json'...")
-			return parseJSON(path, &Conf)
+			{
+				beeLogger.Log.Info("Loading configuration from 'bee.json'...")
+				err = parseJSON(filepath.Join(currentPath, file.Name()), &Conf)
+				if err != nil {
+					beeLogger.Log.Errorf("Failed to parse JSON file: %s", err)
+				}
+				break
+			}
 		case "Beefile":
-			beeLogger.Log.Info("Loading configuration from 'Beefile'...")
-			return parseYAML(path, &Conf)
+			{
+				beeLogger.Log.Info("Loading configuration from 'Beefile'...")
+				err = parseYAML(filepath.Join(currentPath, file.Name()), &Conf)
+				if err != nil {
+					beeLogger.Log.Errorf("Failed to parse YAML file: %s", err)
+				}
+				break
+			}
 		}
-		return nil
-	})
-	if err != nil {
-		beeLogger.Log.Errorf("Failed to parse config file: %s", err)
 	}
+
 	// Check format version
 	if Conf.Version != confVer {
 		beeLogger.Log.Warn("Your configuration file is outdated. Please do consider updating it.")
@@ -124,13 +136,10 @@ func loadConfig() {
 	if len(Conf.DirStruct.Controllers) == 0 {
 		Conf.DirStruct.Controllers = "controllers"
 	}
+
 	if len(Conf.DirStruct.Models) == 0 {
 		Conf.DirStruct.Models = "models"
 	}
-
-	// Append watch exts
-	//watchExts = append(watchExts, Conf.WatchExt...)
-	return
 }
 
 func parseJSON(path string, v interface{}) error {
