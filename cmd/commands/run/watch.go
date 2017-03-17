@@ -131,14 +131,10 @@ func AutoBuild(files []string, isgenerate bool) {
 	os.Chdir(currpath)
 
 	cmdName := "go"
-	if config.Conf.Gopm.Enable {
-		cmdName = "gopm"
-	}
 
 	var (
 		err    error
 		stderr bytes.Buffer
-		stdout bytes.Buffer
 	)
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
@@ -148,28 +144,6 @@ func AutoBuild(files []string, isgenerate bool) {
 		icmd.Stderr = os.Stderr
 		icmd.Env = append(os.Environ(), "GOGC=off")
 		icmd.Run()
-	}
-	if config.Conf.Gopm.Install {
-		icmd := exec.Command("go", "list", "./...")
-		icmd.Stdout = &stdout
-		icmd.Env = append(os.Environ(), "GOGC=off")
-		err = icmd.Run()
-		if err == nil {
-			list := strings.Split(stdout.String(), "\n")[1:]
-			for _, pkg := range list {
-				if len(pkg) == 0 {
-					continue
-				}
-				icmd = exec.Command(cmdName, "install", pkg)
-				icmd.Stdout = os.Stdout
-				icmd.Stderr = os.Stderr
-				icmd.Env = append(os.Environ(), "GOGC=off")
-				err = icmd.Run()
-				if err != nil {
-					break
-				}
-			}
-		}
 	}
 
 	if isgenerate {
