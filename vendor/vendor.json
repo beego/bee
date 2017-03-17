@@ -5,14 +5,14 @@
 		{
 			"checksumSHA1": "OeOvZ+3A1tRBdMD8GuS6R9zcnqA=",
 			"path": "github.com/astaxie/beego/swagger",
-			"revision": "a20ccde90d75695e4f0ae0353c88dba9781d366c",
-			"revisionTime": "2016-12-05T14:58:29Z"
+			"revision": "323a1c4214101331a4b71922c23d19b7409ac71f",
+			"revisionTime": "2017-03-06T13:59:04Z"
 		},
 		{
-			"checksumSHA1": "95wt85GTZG0zi3Zk8g2jOVFV6Zg=",
+			"checksumSHA1": "epd3Y7nD7QVzTW0ppwK+q4pKo/4=",
 			"path": "github.com/astaxie/beego/utils",
-			"revision": "a20ccde90d75695e4f0ae0353c88dba9781d366c",
-			"revisionTime": "2016-12-05T14:58:29Z"
+			"revision": "323a1c4214101331a4b71922c23d19b7409ac71f",
+			"revisionTime": "2017-03-06T13:59:04Z"
 		},
 		{
 			"checksumSHA1": "hveFTNQ9YEyYRs6SWuXM+XU9qRI=",
@@ -27,22 +27,10 @@
 			"revisionTime": "2016-01-13T11:48:05Z"
 		},
 		{
-			"checksumSHA1": "dyGQP5AipmInoTQmnqvbFmUORpk=",
+			"checksumSHA1": "G778A9feKkdW7ZjeDdj5qoU0Ku4=",
 			"path": "github.com/gorilla/websocket",
-			"revision": "a68708917c6a4f06314ab4e52493cc61359c9d42",
-			"revisionTime": "2016-06-06T23:20:22Z"
-		},
-		{
-			"checksumSHA1": "ZxzYc1JwJ3U6kZbw/KGuPko5lSY=",
-			"path": "github.com/howeyc/fsnotify",
-			"revision": "f0c08ee9c60704c1879025f2ae0ff3e000082c13",
-			"revisionTime": "2015-10-03T19:46:02Z"
-		},
-		{
-			"checksumSHA1": "tewA7jXVGCw1zb5mA0BDecWi4iQ=",
-			"path": "github.com/jtolds/gls",
-			"revision": "8ddce2a84170772b95dd5d576c48d517b22cac63",
-			"revisionTime": "2016-01-05T22:08:40Z"
+			"revision": "b258b4fadb573ac412f187b9f31974ea99d32f50",
+			"revisionTime": "2017-03-02T22:46:13Z"
 		},
 		{
 			"checksumSHA1": "dNYxHiBLalTqluak2/Z8c3RsSEM=",
@@ -55,36 +43,6 @@
 			"path": "github.com/lib/pq/oid",
 			"revision": "80f8150043c80fb52dee6bc863a709cdac7ec8f8",
 			"revisionTime": "2016-08-06T14:40:29Z"
-		},
-		{
-			"checksumSHA1": "0DtXHkHCB8kOYM15F+Y5WYMMMuc=",
-			"path": "github.com/smartystreets/assertions",
-			"revision": "edb6e295a22c57a2aa353b2f0729b6eff9f9f4b7",
-			"revisionTime": "2015-12-10T17:08:24Z"
-		},
-		{
-			"checksumSHA1": "QCsUvPHx/Ifqm+sJmocjSvePAIc=",
-			"path": "github.com/smartystreets/assertions/internal/oglematchers",
-			"revision": "edb6e295a22c57a2aa353b2f0729b6eff9f9f4b7",
-			"revisionTime": "2015-12-10T17:08:24Z"
-		},
-		{
-			"checksumSHA1": "fQeXVv5U9dlo3ufH2vjk1GNf4Lo=",
-			"path": "github.com/smartystreets/goconvey/convey",
-			"revision": "a2d5d788f3afbce0989463251ccc5492fad832df",
-			"revisionTime": "2015-12-28T21:47:19Z"
-		},
-		{
-			"checksumSHA1": "9LakndErFi5uCXtY1KWl0iRnT4c=",
-			"path": "github.com/smartystreets/goconvey/convey/gotest",
-			"revision": "a2d5d788f3afbce0989463251ccc5492fad832df",
-			"revisionTime": "2015-12-28T21:47:19Z"
-		},
-		{
-			"checksumSHA1": "Ht2/XG8aSW7vWbwav9z5jKyTzzw=",
-			"path": "github.com/smartystreets/goconvey/convey/reporting",
-			"revision": "a2d5d788f3afbce0989463251ccc5492fad832df",
-			"revisionTime": "2015-12-28T21:47:19Z"
 		},
 		{
 			"checksumSHA1": "NIg5qnKx/D8Th7YX882++siXTDY=",

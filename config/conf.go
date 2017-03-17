@@ -17,7 +17,6 @@ import (
 	"encoding/json"
 	"io/ioutil"
 	"os"
-
 	"path/filepath"
 
 	beeLogger "github.com/beego/bee/logger"
@@ -28,7 +27,6 @@ const confVer = 0
 
 var Conf = struct {
 	Version            int
-	Gopm               gopm
 	GoInstall          bool      `json:"go_install" yaml:"go_install"` // Indicates whether execute "go install" before "go build".
 	DirStruct          dirStruct `json:"dir_structure" yaml:"dir_structure"`
 	CmdArgs            []string  `json:"cmd_args" yaml:"cmd_args"`
@@ -54,12 +52,6 @@ var Conf = struct {
 	},
 	EnableNotification: true,
 	Scripts:            map[string]string{},
-}
-
-// gopm support
-type gopm struct {
-	Enable  bool
-	Install bool
 }
 
 // dirStruct describes the application's directory structure
