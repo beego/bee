@@ -87,7 +87,8 @@ func (c *customCommand) run() error {
 	switch runtime.GOOS {
 	case "darwin", "linux":
 		cmd = exec.Command("sh", "-c", c.Command)
-	case "windows": //TODO
+	case "windows":
+		cmd = exec.Command("cmd", "/C", c.Command)
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
