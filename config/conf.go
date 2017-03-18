@@ -99,7 +99,6 @@ func LoadConfig() {
 		switch file.Name() {
 		case "bee.json":
 			{
-				beeLogger.Log.Info("Loading configuration from 'bee.json'...")
 				err = parseJSON(filepath.Join(currentPath, file.Name()), &Conf)
 				if err != nil {
 					beeLogger.Log.Errorf("Failed to parse JSON file: %s", err)
@@ -108,7 +107,6 @@ func LoadConfig() {
 			}
 		case "Beefile":
 			{
-				beeLogger.Log.Info("Loading configuration from 'Beefile'...")
 				err = parseYAML(filepath.Join(currentPath, file.Name()), &Conf)
 				if err != nil {
 					beeLogger.Log.Errorf("Failed to parse YAML file: %s", err)
