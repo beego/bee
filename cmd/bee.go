@@ -12,7 +12,7 @@
 // License for the specific language governing permissions and limitations
 // under the License.
 
-// Bee is a tool for developing applications based on beego framework.
+// Package cmd ...
 package cmd
 
 import (
@@ -20,6 +20,7 @@ import (
 	_ "github.com/beego/bee/cmd/commands/api"
 	_ "github.com/beego/bee/cmd/commands/bale"
 	_ "github.com/beego/bee/cmd/commands/beefix"
+	_ "github.com/beego/bee/cmd/commands/dlv"
 	_ "github.com/beego/bee/cmd/commands/dockerize"
 	_ "github.com/beego/bee/cmd/commands/generate"
 	_ "github.com/beego/bee/cmd/commands/hprose"
