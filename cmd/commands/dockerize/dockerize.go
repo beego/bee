@@ -40,7 +40,7 @@ ENV APP_DIR $GOPATH{{.Appdir}}
 RUN mkdir -p $APP_DIR
 
 # Set the entrypoint
-ENTRYPOINT $APP_DIR/{{.Entrypoint}}
+ENTRYPOINT (cd $APP_DIR && ./{{.Entrypoint}})
 ADD . $APP_DIR
 
 # Compile the binary and statically link
