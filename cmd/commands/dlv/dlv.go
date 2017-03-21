@@ -18,16 +18,18 @@ package dlv
 import (
 	"flag"
 	"fmt"
-	"os/exec"
+	"net"
+	"os"
+	"path/filepath"
 
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/utils"
 	"github.com/derekparker/delve/pkg/terminal"
 	"github.com/derekparker/delve/service"
 	"github.com/derekparker/delve/service/rpc2"
-
-	dlvConfig "github.com/derekparker/delve/pkg/config"
+	"github.com/derekparker/delve/service/rpccommon"
 )
 
 var cmdDlv = &commands.Command{
@@ -46,12 +48,12 @@ var cmdDlv = &commands.Command{
 
 var (
 	packageName string
-	port        string
+	port        int
 )
 
 func init() {
 	fs := flag.NewFlagSet("dlv", flag.ContinueOnError)
-	fs.StringVar(&port, "port", "8181", "Port to listen to for clients")
+	fs.IntVar(&port, "port", 8181, "Port to listen to for clients")
 	fs.StringVar(&packageName, "package", "", "The package to debug (Must have a main package)")
 	cmdDlv.Flag = *fs
 	commands.AvailableCommands = append(commands.AvailableCommands, cmdDlv)
@@ -61,49 +63,69 @@ func runDlv(cmd *commands.Command, args []string) int {
 	if err := cmd.Flag.Parse(args); err != nil {
 		beeLogger.Log.Fatalf("Error parsing flags: %v", err.Error())
 	}
-	addr := fmt.Sprintf("127.0.0.1:%s", port)
 
-	startChan := make(chan bool)
-	defer close(startChan)
-
-	go runDelve(addr, startChan)
-
-	if started := <-startChan; started {
-		beeLogger.Log.Info("Starting Delve Debugger...")
-		status, err := startRepl(addr)
-		if err != nil {
-			beeLogger.Log.Fatal(err.Error())
-		}
-		return status
-	}
-	return 0
+	debugname := "debug"
+	addr := fmt.Sprintf("127.0.0.1:%d", port)
+	return runDelve(addr, debugname)
 }
 
-// runDelve runs the Delve debugger in API mode
-func runDelve(addr string, c chan bool) {
-	args := []string{
-		"debug",
-		"--headless",
-		"--accept-multiclient=true",
-		"--api-version=2",
-		fmt.Sprintf("--listen=%s", addr),
-	}
-	if err := exec.Command("dlv", args...).Start(); err == nil {
-		c <- true
-	}
-}
+// runDelve runs the Delve debugger server
+func runDelve(addr, debugname string) int {
+	beeLogger.Log.Info("Starting Delve Debugger...")
 
-// startRepl starts the Delve REPL
-func startRepl(addr string) (int, error) {
-	var client service.Client
-	client = rpc2.NewClient(addr)
-	term := terminal.New(client, dlvConfig.LoadConfig())
+	err := utils.GoBuild(debugname, packageName)
+	if err != nil {
+		beeLogger.Log.Fatalf("%v", err)
+	}
+
+	fp, err := filepath.Abs("./" + debugname)
+	if err != nil {
+		beeLogger.Log.Fatalf("%v", err)
+	}
+	defer os.Remove(fp)
+
+	abs, err := filepath.Abs(debugname)
+	if err != nil {
+		beeLogger.Log.Fatalf("%v", err)
+	}
+
+	//
+	// Create and start the debugger server
+	//
+	listener, err := net.Listen("tcp", addr)
+	if err != nil {
+		beeLogger.Log.Fatalf("Could not start listener: %s", err)
+	}
+	defer listener.Close()
+
+	server := rpccommon.NewServer(&service.Config{
+		Listener:    listener,
+		AcceptMulti: true,
+		AttachPid:   0,
+		APIVersion:  2,
+		WorkingDir:  "./",
+		ProcessArgs: []string{abs},
+	}, false)
+	if err := server.Run(); err != nil {
+		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
+	}
+
+	//
+	// Start the Delve client REPL
+	//
+	client := rpc2.NewClient(addr)
+	term := terminal.New(client, nil)
 
 	status, err := term.Run()
 	if err != nil {
-		return status, err
+		beeLogger.Log.Fatalf("Could not start Delve REPL: %v", err)
 	}
 	defer term.Close()
 
-	return 0, nil
+	// Stop and kill the debugger server once
+	// user quits the REPL
+	if err := server.Stop(true); err != nil {
+		beeLogger.Log.Fatalf("Could not stop Delve server: %v", err)
+	}
+	return status
 }
