@@ -69,6 +69,12 @@
 			"revisionTime": "2017-03-13T17:59:34Z"
 		},
 		{
+			"checksumSHA1": "xRa64kuzCXVktmGscs1vCz9jIHs=",
+			"path": "github.com/derekparker/delve/pkg/version",
+			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
+			"revisionTime": "2017-03-13T17:59:34Z"
+		},
+		{
 			"checksumSHA1": "BPHre0My8iszpkoNcX4ljtrz1dA=",
 			"path": "github.com/derekparker/delve/service",
 			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
@@ -87,8 +93,20 @@
 			"revisionTime": "2017-03-13T17:59:34Z"
 		},
 		{
+			"checksumSHA1": "d73mTsiCuYYpDaVs9QtozhzMDU0=",
+			"path": "github.com/derekparker/delve/service/rpc1",
+			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
+			"revisionTime": "2017-03-13T17:59:34Z"
+		},
+		{
 			"checksumSHA1": "B+J0KRNuX0anRlif3mWXhBQhnVo=",
 			"path": "github.com/derekparker/delve/service/rpc2",
+			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
+			"revisionTime": "2017-03-13T17:59:34Z"
+		},
+		{
+			"checksumSHA1": "PsNfnfv8GS79AG225Q/h57q/6F4=",
+			"path": "github.com/derekparker/delve/service/rpccommon",
 			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
 			"revisionTime": "2017-03-13T17:59:34Z"
 		},
