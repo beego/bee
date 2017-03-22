@@ -73,7 +73,7 @@ func runDlv(cmd *commands.Command, args []string) int {
 func runDelve(addr, debugname string) int {
 	beeLogger.Log.Info("Starting Delve Debugger...")
 
-	err := utils.GoBuild(debugname, packageName)
+	err := gobuild(debugname, packageName)
 	if err != nil {
 		beeLogger.Log.Fatalf("%v", err)
 	}
@@ -89,9 +89,7 @@ func runDelve(addr, debugname string) int {
 		beeLogger.Log.Fatalf("%v", err)
 	}
 
-	//
 	// Create and start the debugger server
-	//
 	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		beeLogger.Log.Fatalf("Could not start listener: %s", err)
@@ -110,9 +108,7 @@ func runDelve(addr, debugname string) int {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
 	}
 
-	//
 	// Start the Delve client REPL
-	//
 	client := rpc2.NewClient(addr)
 	term := terminal.New(client, nil)
 
@@ -128,4 +124,12 @@ func runDelve(addr, debugname string) int {
 		beeLogger.Log.Fatalf("Could not stop Delve server: %v", err)
 	}
 	return status
+}
+
+// gobuild runs the "go build" command on the specified package
+func gobuild(debugname, pkg string) error {
+	args := []string{"-gcflags", "-N -l", "-o", debugname}
+	args = append(args, utils.SplitQuotedFields("-ldflags='-linkmode internal'")...)
+	args = append(args, pkg)
+	return utils.GoCommand("build", args...)
 }

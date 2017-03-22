@@ -343,17 +343,6 @@ func GoCommand(command string, args ...string) error {
 	return goBuild.Run()
 }
 
-// GoBuild runs the "go build" command on the specified package
-func GoBuild(debugname, pkg string) error {
-	buildFlags := "-ldflags='-linkmode internal'"
-	args := []string{"-gcflags", "-N -l", "-o", debugname}
-	if buildFlags != "" {
-		args = append(args, SplitQuotedFields(buildFlags)...)
-	}
-	args = append(args, pkg)
-	return GoCommand("build", args...)
-}
-
 // SplitQuotedFields is like strings.Fields but ignores spaces
 // inside areas surrounded by single quotes.
 // To specify a single quote use backslash to escape it: '\''
