@@ -22,6 +22,8 @@ import (
 	"runtime"
 	"time"
 
+	"strings"
+
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/version"
 	"github.com/beego/bee/config"
@@ -36,7 +38,7 @@ var cmdRs = &commands.Command{
 	Long: `Run script allows you to run arbitrary commands using Bee.
   Custom commands are provided from the "scripts" object inside bee.json or Beefile.
 
-  To run a custom command, use: {{"$ bee rs mycmd" | bold}}
+  To run a custom command, use: {{"$ bee rs mycmd ARGS" | bold}}
   {{if len .}}
 {{"AVAILABLE SCRIPTS"|headline}}{{range $cmdName, $cmd := .}}
   {{$cmdName | printf "-%s" | bold}}
@@ -58,18 +60,19 @@ func runScript(cmd *commands.Command, args []string) int {
 	}
 
 	start := time.Now()
-	for _, arg := range args {
-		if c, exist := config.Conf.Scripts[arg]; exist {
-			command := customCommand{
-				Name:    arg,
-				Command: c,
-			}
-			if err := command.run(); err != nil {
-				beeLogger.Log.Error(err.Error())
-			}
-		} else {
-			beeLogger.Log.Errorf("Command '%s' not found in Beefile/bee.json", arg)
+	script, args := args[0], args[1:]
+
+	if c, exist := config.Conf.Scripts[script]; exist {
+		command := customCommand{
+			Name:    script,
+			Command: c,
+			Args:    args,
 		}
+		if err := command.run(); err != nil {
+			beeLogger.Log.Error(err.Error())
+		}
+	} else {
+		beeLogger.Log.Errorf("Command '%s' not found in Beefile/bee.json", script)
 	}
 	elapsed := time.Since(start)
 	fmt.Println(colors.GreenBold(fmt.Sprintf("Finished in %s.", elapsed)))
@@ -79,6 +82,7 @@ func runScript(cmd *commands.Command, args []string) int {
 type customCommand struct {
 	Name    string
 	Command string
+	Args    []string
 }
 
 func (c *customCommand) run() error {
@@ -86,9 +90,11 @@ func (c *customCommand) run() error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "darwin", "linux":
-		cmd = exec.Command("sh", "-c", c.Command)
+		args := append([]string{c.Command}, c.Args...)
+		cmd = exec.Command("bash", "-c", strings.Join(args, " "))
 	case "windows":
-		cmd = exec.Command("cmd", "/C", c.Command)
+		args := append([]string{c.Command}, c.Args...)
+		cmd = exec.Command("cmd", "/C", strings.Join(args, " "))
 	}
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
