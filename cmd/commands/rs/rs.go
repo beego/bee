@@ -41,7 +41,7 @@ var cmdRs = &commands.Command{
   To run a custom command, use: {{"$ bee rs mycmd ARGS" | bold}}
   {{if len .}}
 {{"AVAILABLE SCRIPTS"|headline}}{{range $cmdName, $cmd := .}}
-  {{$cmdName | printf "-%s" | bold}}
+  {{$cmdName | bold}}
       {{$cmd}}{{end}}{{end}}
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
