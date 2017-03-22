@@ -1,3 +1,4 @@
+
 bee
 ===
 
@@ -34,17 +35,20 @@ go get -u github.com/beego/bee
 Bee provides a variety of commands which can be helpful at various stages of development. The top level commands include:
 
 ```
-    new         Creates a Beego application
-    run         Run the application by starting a local development server
-    pack        Compresses a Beego application into a single file
-    api         Creates a Beego API application
-    hprose      Creates an RPC application based on Hprose and Beego frameworks
-    bale        Transforms non-Go files to Go source files
     version     Prints the current Bee version
-    generate    Source code generator
     migrate     Runs database migrations
+    api         Creates a Beego API application
+    bale        Transforms non-Go files to Go source files
     fix         Fixes your application by making it compatible with newer versions of Beego
+    dlv         Start a debugging session using Delve
     dockerize   Generates a Dockerfile for your Beego application
+    generate    Source code generator
+    hprose      Creates an RPC application based on Hprose and Beego frameworks
+    new         Creates a Beego application
+    pack        Compresses a Beego application into a single file
+    rs          Run customized scripts
+    run         Run the application by starting a local development server
+
 ```
 
 ### bee version
@@ -297,6 +301,37 @@ ______
 ```
 
 For more information on the usage, run `bee help dockerize`.
+
+### bee dlv
+
+Bee can also help with debugging your application. To start a debugging session:
+
+```bash
+______
+| ___ \
+| |_/ /  ___   ___
+| ___ \ / _ \ / _ \
+| |_/ /|  __/|  __/
+\____/  \___| \___| v1.8.0
+2017/03/22 11:17:05 INFO     ▶ 0001 Starting Delve Debugger...
+Type 'help' for list of commands.
+(dlv) break main.main
+Breakpoint 1 set at 0x40100f for main.main() ./main.go:8
+
+(dlv) continue
+> main.main() ./main.go:8 (hits goroutine(1):1 total:1) (PC: 0x40100f)
+     3:	import (
+     4:		_ "github.com/user/myapp/routers"
+     5:		"github.com/astaxie/beego"
+     6:	)
+     7:	
+=>   8:	func main() {
+     9:		beego.Run()
+    10:	}
+    11:
+```
+
+For more information on the usage, run `bee help dlv`.
 
 ## Shortcuts
 
