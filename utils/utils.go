@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
+	"unicode"
 
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
@@ -331,4 +332,70 @@ func CheckEnv(appname string) (apppath, packpath string, err error) {
 func PrintErrorAndExit(message, errorTemplate string) {
 	Tmpl(fmt.Sprintf(errorTemplate, message), nil)
 	os.Exit(2)
+}
+
+// GoCommand executes the passed command using Go tool
+func GoCommand(command string, args ...string) error {
+	allargs := []string{command}
+	allargs = append(allargs, args...)
+	goBuild := exec.Command("go", allargs...)
+	goBuild.Stderr = os.Stderr
+	return goBuild.Run()
+}
+
+// SplitQuotedFields is like strings.Fields but ignores spaces
+// inside areas surrounded by single quotes.
+// To specify a single quote use backslash to escape it: '\''
+func SplitQuotedFields(in string) []string {
+	type stateEnum int
+	const (
+		inSpace stateEnum = iota
+		inField
+		inQuote
+		inQuoteEscaped
+	)
+	state := inSpace
+	r := []string{}
+	var buf bytes.Buffer
+
+	for _, ch := range in {
+		switch state {
+		case inSpace:
+			if ch == '\'' {
+				state = inQuote
+			} else if !unicode.IsSpace(ch) {
+				buf.WriteRune(ch)
+				state = inField
+			}
+
+		case inField:
+			if ch == '\'' {
+				state = inQuote
+			} else if unicode.IsSpace(ch) {
+				r = append(r, buf.String())
+				buf.Reset()
+			} else {
+				buf.WriteRune(ch)
+			}
+
+		case inQuote:
+			if ch == '\'' {
+				state = inField
+			} else if ch == '\\' {
+				state = inQuoteEscaped
+			} else {
+				buf.WriteRune(ch)
+			}
+
+		case inQuoteEscaped:
+			buf.WriteRune(ch)
+			state = inQuote
+		}
+	}
+
+	if buf.Len() != 0 {
+		r = append(r, buf.String())
+	}
+
+	return r
 }
