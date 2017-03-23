@@ -169,6 +169,38 @@ ______
 
 For more information on the usage, run `bee help pack`.
 
+### bee rs 
+Inspired by makefile / npm scripts.
+  Run script allows you to run arbitrary commands using Bee.
+  Custom commands are provided from the "scripts" object inside bee.json or Beefile.
+
+  To run a custom command, use: $ bee rs mycmd ARGS
+
+```bash
+$ bee help rs
+
+USAGE
+  bee rs
+
+DESCRIPTION
+  Run script allows you to run arbitrary commands using Bee.
+  Custom commands are provided from the "scripts" object inside bee.json or Beefile.
+
+  To run a custom command, use: $ bee rs mycmd ARGS
+  
+AVAILABLE SCRIPTS
+  gtest
+      APP_ENV=test APP_CONF_PATH=$(pwd)/conf go test -v -cover
+  gtestall
+      APP_ENV=test APP_CONF_PATH=$(pwd)/conf go test -v -cover $(go list ./... | grep -v /vendor/)
+
+```
+
+*Run your scripts with:*
+```$ bee rs gtest tests/*.go```
+```$ bee rs gtestall```
+
+
 ### bee api
 
 To create a Beego API application:
