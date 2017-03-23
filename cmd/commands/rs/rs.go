@@ -91,7 +91,7 @@ func (c *customCommand) run() error {
 	switch runtime.GOOS {
 	case "darwin", "linux":
 		args := append([]string{c.Command}, c.Args...)
-		cmd = exec.Command("bash", "-c", strings.Join(args, " "))
+		cmd = exec.Command("sh", "-c", strings.Join(args, " "))
 	case "windows":
 		args := append([]string{c.Command}, c.Args...)
 		cmd = exec.Command("cmd", "/C", strings.Join(args, " "))
