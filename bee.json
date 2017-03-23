@@ -1,9 +1,5 @@
 {
 	"version": 0,
-	"gopm": {
-		"enable": false,
-		"install": false
-	},
 	"go_install": false,
 	"watch_ext": [],
 	"dir_structure": {
