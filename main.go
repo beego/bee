@@ -17,7 +17,6 @@ import (
 	"flag"
 	"log"
 	"os"
-	"strings"
 
 	"github.com/beego/bee/cmd"
 	"github.com/beego/bee/cmd/commands"
@@ -64,7 +63,7 @@ func main() {
 
 			// Check if current directory is inside the GOPATH,
 			// if so parse the packages inside it.
-			if strings.Contains(currentpath, utils.GetGOPATHs()[0]+"/src") && cmd.IfGenerateDocs(c.Name(), args) {
+			if utils.IsInGOPATH(currentpath) && cmd.IfGenerateDocs(c.Name(), args) {
 				swaggergen.ParsePackagesFromDir(currentpath)
 			}
 
