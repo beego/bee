@@ -61,12 +61,17 @@ func GetGOPATHs() []string {
 	return paths
 }
 
-// IsInGOPATH checks the path is in the fisrt GOPATH(/src) or not
+// IsInGOPATH checks whether the path is inside of any GOPATH or not
 func IsInGOPATH(thePath string) bool {
 	if runtime.GOOS == "windows" {
 		thePath = filepath.ToSlash(thePath)
 	}
-	return strings.Contains(thePath, GetGOPATHs()[0]+"/src")
+	for _, gopath := range GetGOPATHs() {
+		if strings.Contains(thePath, gopath + "/src") {
+			return true
+		}
+	}
+	return false
 }
 
 // IsBeegoProject checks whether the current path is a Beego application or not
