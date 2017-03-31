@@ -194,7 +194,7 @@ func GenerateDocs(curpath string) {
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analyseControllerPkg(localName, im.Path.Value)
+		analyseControllerPkg(path.Join(curpath, "vendor"), localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -336,7 +336,7 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analyseControllerPkg(localName, pkgpath string) {
+func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
@@ -356,12 +356,19 @@ func analyseControllerPkg(localName, pkgpath string) {
 	}
 	pkgRealpath := ""
 
-	wgopath := filepath.SplitList(gopath)
-	for _, wg := range wgopath {
-		wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-		if utils.FileExists(wg) {
-			pkgRealpath = wg
-			break
+	wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
+	if utils.FileExists(wg) {
+		pkgRealpath = wg
+	} else {
+		wgopath := filepath.SplitList(gopath)
+		for _, wg := range wgopath {
+			beeLogger.Log.Infof("wg := range wgopath => %s", wg)
+			beeLogger.Log.Infof("filepath.EvalSymlinks => %s", filepath.Join(wg, "src", pkgpath))
+			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
+			if utils.FileExists(wg) {
+				pkgRealpath = wg
+				break
+			}
 		}
 	}
 	if pkgRealpath != "" {
@@ -370,7 +377,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH", pkgpath)
+		beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH or vendor path", pkgpath)
 	}
 
 	fileSet := token.NewFileSet()
