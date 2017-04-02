@@ -26,6 +26,7 @@ import (
 	"runtime"
 	"strings"
 	"text/template"
+	"time"
 	"unicode"
 
 	beeLogger "github.com/beego/bee/logger"
@@ -67,7 +68,7 @@ func IsInGOPATH(thePath string) bool {
 		thePath = filepath.ToSlash(thePath)
 	}
 	for _, gopath := range GetGOPATHs() {
-		if strings.Contains(thePath, gopath + "/src") {
+		if strings.Contains(thePath, gopath+"/src") {
 			return true
 		}
 	}
@@ -411,4 +412,23 @@ func SplitQuotedFields(in string) []string {
 	}
 
 	return r
+}
+
+// GetFileModTime returns unix timestamp of `os.File.ModTime` for the given path.
+func GetFileModTime(path string) int64 {
+	path = strings.Replace(path, "\\", "/", -1)
+	f, err := os.Open(path)
+	if err != nil {
+		beeLogger.Log.Errorf("Failed to open file on '%s': %s", path, err)
+		return time.Now().Unix()
+	}
+	defer f.Close()
+
+	fi, err := f.Stat()
+	if err != nil {
+		beeLogger.Log.Errorf("Failed to get file stats: %s", err)
+		return time.Now().Unix()
+	}
+
+	return fi.ModTime().Unix()
 }
