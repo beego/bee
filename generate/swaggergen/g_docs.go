@@ -362,8 +362,6 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	} else {
 		wgopath := filepath.SplitList(gopath)
 		for _, wg := range wgopath {
-			beeLogger.Log.Infof("wg := range wgopath => %s", wg)
-			beeLogger.Log.Infof("filepath.EvalSymlinks => %s", filepath.Join(wg, "src", pkgpath))
 			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
 			if utils.FileExists(wg) {
 				pkgRealpath = wg
