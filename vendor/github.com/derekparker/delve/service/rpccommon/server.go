@@ -16,12 +16,12 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/derekparker/delve/pkg/version"
 	"github.com/derekparker/delve/service"
 	"github.com/derekparker/delve/service/api"
 	"github.com/derekparker/delve/service/debugger"
 	"github.com/derekparker/delve/service/rpc1"
 	"github.com/derekparker/delve/service/rpc2"
+	"github.com/derekparker/delve/version"
 )
 
 // ServerImpl implements a JSON-RPC server that can switch between two
@@ -403,7 +403,7 @@ func (err *internalError) Error() string {
 	var out bytes.Buffer
 	fmt.Fprintf(&out, "Internal debugger error: %v\n", err.Err)
 	for _, frame := range err.Stack {
-		fmt.Fprintf(&out, "%s (%#x)\n\t%s:%d\n", frame.Func, frame.Pc, frame.File, frame.Line)
+		fmt.Fprintf(&out, "%s (%#x)\n\t%s%d\n", frame.Func, frame.Pc, frame.File, frame.Line)
 	}
 	return out.String()
 }
