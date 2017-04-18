@@ -967,7 +967,7 @@ func getPackagePath(curpath string) (packpath string) {
 	for _, wg := range wgopath {
 		wg, _ = filepath.EvalSymlinks(path.Join(wg, "src"))
 
-		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
+		if strings.HasPrefix(strings.ToLower(strings.Replace(curpath, "/", "\\", -1)), strings.ToLower(wg)) {
 			haspath = true
 			appsrcpath = wg
 			break
