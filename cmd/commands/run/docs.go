@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	swaggerVersion = "2"
+	swaggerVersion = "3"
 	swaggerlink    = "https://github.com/beego/swagger/archive/v" + swaggerVersion + ".zip"
 )
 
