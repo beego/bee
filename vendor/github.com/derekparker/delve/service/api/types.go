@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/derekparker/delve/pkg/proc"
+	"github.com/derekparker/delve/proc"
 )
 
 var NotExecutableErr = proc.NotExecutableErr

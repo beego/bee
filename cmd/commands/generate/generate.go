@@ -66,11 +66,11 @@ var CmdGenerate = &commands.Command{
 }
 
 func init() {
-	CmdGenerate.Flag.Var(&generate.Tables, "Tables", "List of table names separated by a comma.")
-	CmdGenerate.Flag.Var(&generate.SQLDriver, "SQLDriver", "Database SQLDriver. Either mysql, postgres or sqlite.")
-	CmdGenerate.Flag.Var(&generate.SQLConn, "SQLConn", "Connection string used by the SQLDriver to connect to a database instance.")
-	CmdGenerate.Flag.Var(&generate.Level, "Level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
-	CmdGenerate.Flag.Var(&generate.Fields, "Fields", "List of table Fields.")
+	CmdGenerate.Flag.Var(&generate.Tables, "tables", "List of table names separated by a comma.")
+	CmdGenerate.Flag.Var(&generate.SQLDriver, "driver", "Database SQLDriver. Either mysql, postgres or sqlite.")
+	CmdGenerate.Flag.Var(&generate.SQLConn, "conn", "Connection string used by the SQLDriver to connect to a database instance.")
+	CmdGenerate.Flag.Var(&generate.Level, "level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
+	CmdGenerate.Flag.Var(&generate.Fields, "fields", "List of table Fields.")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdGenerate)
 }
 

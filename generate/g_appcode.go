@@ -965,8 +965,7 @@ func getPackagePath(curpath string) (packpath string) {
 	wgopath := filepath.SplitList(gopath)
 
 	for _, wg := range wgopath {
-		wg, _ = filepath.EvalSymlinks(path.Join(wg, "src"))
-
+		wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src"))
 		if strings.HasPrefix(strings.ToLower(curpath), strings.ToLower(wg)) {
 			haspath = true
 			appsrcpath = wg
@@ -975,7 +974,7 @@ func getPackagePath(curpath string) (packpath string) {
 	}
 
 	if !haspath {
-		beeLogger.Log.Fatalf("Cannot generate application code outside of GOPATH '%s'", gopath)
+		beeLogger.Log.Fatalf("Cannot generate application code outside of GOPATH '%s' compare with CWD '%s'", gopath, curpath)
 	}
 
 	if curpath == appsrcpath {

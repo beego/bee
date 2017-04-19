@@ -13,7 +13,7 @@ install:
 script:
   - go vet  $(go list ./... | grep -v /vendor/)
   - structcheck  $(go list ./... | grep -v /vendor/)
-  - gosimple -ignore "github.com/beego/bee/cmd/commands/run/*.go:S1024" $(go list ./... | grep -v /vendor/)
+  - gosimple -ignore "$(cat gosimple.ignore)" $(go list ./... | grep -v /vendor/)
   - staticcheck $(go list ./... | grep -v /vendor/)
   - unused $(go list ./... | grep -v /vendor/)
   - unconvert $(go list ./... | grep -v /vendor/)

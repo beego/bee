@@ -71,7 +71,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 					continue
 				}
 
-				mt := getFileModTime(e.Name)
+				mt := utils.GetFileModTime(e.Name)
 				if t := eventTime[e.Name]; mt == t {
 					beeLogger.Log.Hintf(colors.Bold("Skipping: ")+"%s", e.String())
 					isBuild = false
@@ -102,25 +102,6 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 			beeLogger.Log.Fatalf("Failed to watch directory: %s", err)
 		}
 	}
-}
-
-// getFileModTime returns unix timestamp of `os.File.ModTime` for the given path.
-func getFileModTime(path string) int64 {
-	path = strings.Replace(path, "\\", "/", -1)
-	f, err := os.Open(path)
-	if err != nil {
-		beeLogger.Log.Errorf("Failed to open file on '%s': %s", path, err)
-		return time.Now().Unix()
-	}
-	defer f.Close()
-
-	fi, err := f.Stat()
-	if err != nil {
-		beeLogger.Log.Errorf("Failed to get file stats: %s", err)
-		return time.Now().Unix()
-	}
-
-	return fi.ModTime().Unix()
 }
 
 // AutoBuild builds the specified set of files

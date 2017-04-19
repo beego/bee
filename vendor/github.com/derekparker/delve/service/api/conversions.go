@@ -9,8 +9,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/derekparker/delve/pkg/proc"
-
+	"github.com/derekparker/delve/proc"
 	"golang.org/x/debug/dwarf"
 )
 
@@ -99,19 +98,6 @@ func prettyTypeName(typ dwarf.Type) string {
 	return r
 }
 
-func convertFloatValue(v *proc.Variable, sz int) string {
-	switch v.FloatSpecial {
-	case proc.FloatIsPosInf:
-		return "+Inf"
-	case proc.FloatIsNegInf:
-		return "-Inf"
-	case proc.FloatIsNaN:
-		return "NaN"
-	}
-	f, _ := constant.Float64Val(v.Value)
-	return strconv.FormatFloat(f, 'f', -1, sz)
-}
-
 // ConvertVar converts from proc.Variable to api.Variable.
 func ConvertVar(v *proc.Variable) *Variable {
 	r := Variable{
@@ -133,9 +119,11 @@ func ConvertVar(v *proc.Variable) *Variable {
 	if v.Value != nil {
 		switch v.Kind {
 		case reflect.Float32:
-			r.Value = convertFloatValue(v, 32)
+			f, _ := constant.Float64Val(v.Value)
+			r.Value = strconv.FormatFloat(f, 'f', -1, 32)
 		case reflect.Float64:
-			r.Value = convertFloatValue(v, 64)
+			f, _ := constant.Float64Val(v.Value)
+			r.Value = strconv.FormatFloat(f, 'f', -1, 64)
 		case reflect.String, reflect.Func:
 			r.Value = constant.StringVal(v.Value)
 		default:
