@@ -52,14 +52,7 @@ func IsExist(path string) bool {
 // GetGOPATHs returns all paths in GOPATH variable.
 func GetGOPATHs() []string {
 	gopath := os.Getenv("GOPATH")
-	var paths []string
-	if runtime.GOOS == "windows" {
-		gopath = strings.Replace(gopath, "\\", "/", -1)
-		paths = strings.Split(gopath, ";")
-	} else {
-		paths = strings.Split(gopath, ":")
-	}
-	return paths
+	return filepath.SplitList(gopath)
 }
 
 // IsInGOPATH checks whether the path is inside of any GOPATH or not
@@ -315,10 +308,10 @@ func CheckEnv(appname string) (apppath, packpath string, err error) {
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
-	currpath = path.Join(currpath, appname)
+	currpath = filepath.Join(currpath, appname)
 	for _, gpath := range gps {
-		gsrcpath := path.Join(gpath, "src")
-		if strings.HasPrefix(currpath, gsrcpath) {
+		gsrcpath := filepath.Join(gpath, "src")
+		if strings.HasPrefix(strings.ToLower(currpath), strings.ToLower(gsrcpath)) {
 			packpath = strings.Replace(currpath[len(gsrcpath)+1:], string(filepath.Separator), "/", -1)
 			return currpath, packpath, nil
 		}
@@ -331,8 +324,8 @@ func CheckEnv(appname string) (apppath, packpath string, err error) {
 	beeLogger.Log.Warn("You current workdir is not inside $GOPATH/src.")
 	beeLogger.Log.Debugf("GOPATH: %s", FILE(), LINE(), gopath)
 
-	gosrcpath := path.Join(gopath, "src")
-	apppath = path.Join(gosrcpath, appname)
+	gosrcpath := filepath.Join(gopath, "src")
+	apppath = filepath.Join(gosrcpath, appname)
 
 	if _, e := os.Stat(apppath); !os.IsNotExist(e) {
 		err = fmt.Errorf("Cannot create application without removing '%s' first", apppath)
