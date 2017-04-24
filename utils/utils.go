@@ -52,6 +52,9 @@ func IsExist(path string) bool {
 // GetGOPATHs returns all paths in GOPATH variable.
 func GetGOPATHs() []string {
 	gopath := os.Getenv("GOPATH")
+	if gopath == "" && strings.Compare(runtime.Version(), "go1.8") >= 0 {
+		gopath = defaultGOPATH()
+	}
 	return filepath.SplitList(gopath)
 }
 
@@ -61,7 +64,7 @@ func IsInGOPATH(thePath string) bool {
 		thePath = filepath.ToSlash(thePath)
 	}
 	for _, gopath := range GetGOPATHs() {
-		if strings.Contains(thePath, gopath+"/src") {
+		if strings.Contains(thePath, filepath.Join(gopath, "src")) {
 			return true
 		}
 	}
@@ -424,4 +427,17 @@ func GetFileModTime(path string) int64 {
 	}
 
 	return fi.ModTime().Unix()
+}
+
+func defaultGOPATH() string {
+	env := "HOME"
+	if runtime.GOOS == "windows" {
+		env = "USERPROFILE"
+	} else if runtime.GOOS == "plan9" {
+		env = "home"
+	}
+	if home := os.Getenv(env); home != "" {
+		return filepath.Join(home, "go")
+	}
+	return ""
 }

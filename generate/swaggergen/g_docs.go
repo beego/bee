@@ -36,6 +36,7 @@ import (
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
 	beeLogger "github.com/beego/bee/logger"
+	bu "github.com/beego/bee/utils"
 )
 
 const (
@@ -141,7 +142,7 @@ func parsePackageFromDir(path string) error {
 func GenerateDocs(curpath string) {
 	fset := token.NewFileSet()
 
-	f, err := parser.ParseFile(fset, path.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
+	f, err := parser.ParseFile(fset, filepath.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
 	}
@@ -350,8 +351,8 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		pps := strings.Split(pkgpath, "/")
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
+	gopaths := bu.GetGOPATHs()
+	if len(gopaths) == 0 {
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	pkgRealpath := ""
@@ -360,7 +361,7 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	if utils.FileExists(wg) {
 		pkgRealpath = wg
 	} else {
-		wgopath := filepath.SplitList(gopath)
+		wgopath := gopaths
 		for _, wg := range wgopath {
 			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
 			if utils.FileExists(wg) {
