@@ -863,7 +863,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 		nameSpaces = append(nameSpaces, nameSpace)
 	}
 	// Add export controller
-	fpath := path.Join(rPath, "router.go")
+	fpath := filepath.Join(rPath, "router.go")
 	routerStr := strings.Replace(RouterTPL, "{{nameSpaces}}", strings.Join(nameSpaces, ""), 1)
 	routerStr = strings.Replace(routerStr, "{{pkgPath}}", pkgPath, 1)
 	var f *os.File

@@ -17,6 +17,7 @@ import (
 	"github.com/beego/bee/cmd/commands"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/utils"
 	"gopkg.in/yaml.v2"
 )
 
@@ -56,7 +57,7 @@ Prints the current Bee, Beego and Go version alongside the platform information.
 }
 var outputFormat string
 
-const version = "1.8.2"
+const version = "1.8.3"
 
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
@@ -117,16 +118,15 @@ func ShowShortVersionBanner() {
 }
 
 func GetBeegoVersion() string {
-	gopath := os.Getenv("GOPATH")
 	re, err := regexp.Compile(`VERSION = "([0-9.]+)"`)
 	if err != nil {
 		return ""
 	}
-	if gopath == "" {
+	wgopath := utils.GetGOPATHs()
+	if len(wgopath) == 0 {
 		beeLogger.Log.Error("You need to set GOPATH environment variable")
 		return ""
 	}
-	wgopath := path.SplitList(gopath)
 	for _, wg := range wgopath {
 		wg, _ = path.EvalSymlinks(path.Join(wg, "src", "github.com", "astaxie", "beego"))
 		filename := path.Join(wg, "beego.go")

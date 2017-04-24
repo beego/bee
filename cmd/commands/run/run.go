@@ -219,7 +219,6 @@ func readAppDirectories(directory string, paths *[]string) {
 			useDirectory = true
 		}
 	}
-	return
 }
 
 // If a file is excluded
