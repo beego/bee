@@ -362,11 +362,11 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		pkgRealpath = wg
 	} else {
 		wgopath := gopaths
-	for _, wg := range wgopath {
-		wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-		if utils.FileExists(wg) {
-			pkgRealpath = wg
-			break
+		for _, wg := range wgopath {
+			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
+			if utils.FileExists(wg) {
+				pkgRealpath = wg
+				break
 			}
 		}
 	}
