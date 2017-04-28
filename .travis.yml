@@ -10,6 +10,7 @@ install:
   - go get -u honnef.co/go/tools/cmd/staticcheck
   - go get -u honnef.co/go/tools/cmd/unused
   - go get -u github.com/mdempsky/unconvert
+  - go get -u github.com/gordonklaus/ineffassign
 script:
   - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
   - go vet  $(go list ./... | grep -v /vendor/)
@@ -18,3 +19,4 @@ script:
   - staticcheck $(go list ./... | grep -v /vendor/)
   - unused $(go list ./... | grep -v /vendor/)
   - unconvert $(go list ./... | grep -v /vendor/)
+  - ineffassign .

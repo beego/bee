@@ -417,7 +417,7 @@ func packDirectory(output io.Writer, excludePrefix []string, excludeSuffix []str
 func packApp(cmd *commands.Command, args []string) int {
 	output := cmd.Out()
 	curPath, _ := os.Getwd()
-	thePath := ""
+	var thePath string
 
 	nArgs := []string{}
 	has := false

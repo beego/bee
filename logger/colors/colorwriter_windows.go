@@ -360,7 +360,7 @@ func isParameterChar(b byte) bool {
 }
 
 func (cw *colorWriter) Write(p []byte) (int, error) {
-	r, nw, first, last := 0, 0, 0, 0
+	var r, nw, first, last int
 	if cw.mode != DiscardNonColorEscSeq {
 		cw.state = outsideCsiCode
 		cw.resetBuffer()
