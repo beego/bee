@@ -11,6 +11,7 @@ install:
   - go get -u honnef.co/go/tools/cmd/unused
   - go get -u github.com/mdempsky/unconvert
 script:
+  - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
   - go vet  $(go list ./... | grep -v /vendor/)
   - structcheck  $(go list ./... | grep -v /vendor/)
   - gosimple -ignore "$(cat gosimple.ignore)" $(go list ./... | grep -v /vendor/)
