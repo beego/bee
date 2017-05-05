@@ -864,13 +864,8 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
-		//arr.Len nil for slice types
-		if arr.Len == nil {
-			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
-		}
-
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"
