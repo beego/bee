@@ -762,7 +762,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 			mp := swagger.Propertie{}
 			if isSlice {
 				mp.Type = "array"
-				if isBasicType(realType) {
+				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
 					typeFormat := strings.Split(sType, ":")
 					mp.Items = &swagger.Propertie{
 						Type:   typeFormat[0],
@@ -865,7 +865,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"
