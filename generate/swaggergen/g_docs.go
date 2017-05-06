@@ -216,7 +216,7 @@ func GenerateDocs(curpath string) {
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
-									controllerName := ""
+									var controllerName string
 									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
 										s, params := analyseNewNamespace(pp)
 										for _, sp := range params {
@@ -298,12 +298,10 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 		}
 		if apis, ok := controllerList[cname]; ok {
 			for rt, item := range apis {
-				tag := ""
+				tag := cname
 				if baseurl != "" {
 					rt = baseurl + rt
 					tag = strings.Trim(baseurl, "/")
-				} else {
-					tag = cname
 				}
 				if item.Get != nil {
 					item.Get.Tags = []string{tag}
@@ -749,7 +747,6 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
 		for _, field := range st.Fields.List {
-			realType := ""
 			isSlice, realType, sType := typeAnalyser(field)
 			if (isSlice && isBasicType(realType)) || sType == "object" {
 				if len(strings.Split(realType, " ")) > 1 {
@@ -765,7 +762,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 			mp := swagger.Propertie{}
 			if isSlice {
 				mp.Type = "array"
-				if isBasicType(realType) {
+				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
 					typeFormat := strings.Split(sType, ":")
 					mp.Items = &swagger.Propertie{
 						Type:   typeFormat[0],
@@ -868,7 +865,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"

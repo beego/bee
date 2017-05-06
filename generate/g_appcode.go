@@ -503,9 +503,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 
 // GetGoDataType maps an SQL data type to Golang data type
 func (*MysqlDB) GetGoDataType(sqlType string) (string, error) {
-	var typeMapping = map[string]string{}
-	typeMapping = typeMappingMysql
-	if v, ok := typeMapping[sqlType]; ok {
+	if v, ok := typeMappingMysql[sqlType]; ok {
 		return v, nil
 	}
 	return "", fmt.Errorf("data type '%s' not found", sqlType)
@@ -766,7 +764,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 				continue
 			}
 		}
-		template := ""
+		var template string
 		if tb.Pk == "" {
 			template = StructModelTPL
 		} else {
