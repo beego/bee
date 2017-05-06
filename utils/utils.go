@@ -61,7 +61,8 @@ func GetGOPATHs() []string {
 // IsInGOPATH checks whether the path is inside of any GOPATH or not
 func IsInGOPATH(thePath string) bool {
 	for _, gopath := range GetGOPATHs() {
-		if strings.Contains(thePath, filepath.Join(gopath, "src")) {
+		b, _ := filepath.Rel(thePath, filepath.Join(gopath, "src"))
+		if strings.Contains(b, "..") {
 			return true
 		}
 	}
