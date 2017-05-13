@@ -640,7 +640,17 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						opts.Produces = append(opts.Produces, ahtml)
 					}
 				}
+			} else if strings.HasPrefix(t, "@Security") {
+				if len(opts.Security) == 0 {
+					opts.Security = make([]map[string]swagger.Security, 0)
+				}
+				fullString := strings.TrimSpace(t[len("@Security"):])
+				e := strings.SplitN(fullString, " ", 4)
+				newMap := make(map[string]swagger.Security)
+				newMap[e[0]] = swagger.Security{}
+				opts.Security = append(opts.Security, newMap)
 			}
+
 		}
 	}
 	if routerPath != "" {
