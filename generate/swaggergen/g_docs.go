@@ -188,14 +188,53 @@ func GenerateDocs(curpath string) {
 					if len(rootapi.SecurityDefinitions) == 0 {
 						rootapi.SecurityDefinitions = make(map[string]swagger.Security)
 					}
-					fullString := strings.TrimSpace(s[len("@SecurityDefinition"):])
-					e := strings.SplitN(fullString, " ", 4)
-					rootapi.SecurityDefinitions[e[0]] = swagger.Security{Type: e[1], Name: e[2], In: e[3]}
+					var out swagger.Security
+					p := getparams(strings.TrimSpace(s[len("@SecurityDefinition"):]))
+					out.Type = p[1]
+					switch out.Type {
+					case "oauth2":
+						if len(p) < 6 {
+							beeLogger.Log.Fatalf("Not enough params for oauth2: %d\n", len(p))
+						}
+						if !(p[3] == "implicit" || p[3] == "password" || p[3] == "application" || p[3] == "accessCode") {
+							beeLogger.Log.Fatalf("Unknown flow type: %s. Possible values are `implicit`, `password`, `application` or `accessCode`.\n", p[1])
+						}
+						out.AuthorizationURL = p[2]
+						out.Flow = p[3]
+						if len(p)%2 != 0 {
+							out.Description = strings.Trim(p[len(p)-1], `" `)
+						}
+						out.Scopes = make(map[string]string)
+						for i := 4; i < len(p)-1; i += 2 {
+							out.Scopes[p[i]] = strings.Trim(p[i+1], `" `)
+						}
+						break
+					case "apiKey":
+						if len(p) < 4 {
+							beeLogger.Log.Fatalf("Not enough params for apiKey: %d\n", len(p))
+						}
+						if !(p[3] == "header" || p[3] == "query") {
+							beeLogger.Log.Fatalf("Unknown in type: %s. Possible values are `query` or `header`.\n", p[4])
+						}
+						out.Name = p[2]
+						out.In = p[3]
+						if len(p) > 4 {
+							out.Description = strings.Trim(p[4], `" `)
+						}
+						break
+					case "basic":
+						if len(p) > 2 {
+							out.Description = strings.Trim(p[2], `" `)
+						}
+						break
+					default:
+						beeLogger.Log.Fatalf("Unknown security type: %s. Possible values are `oauth2`, `apiKey` or `basic`.\n", p[1])
+					}
+					rootapi.SecurityDefinitions[p[0]] = out
 				}
 			}
 		}
 	}
-
 	// Analyse controller package
 	for _, im := range f.Imports {
 		localName := ""
@@ -641,16 +680,20 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					}
 				}
 			} else if strings.HasPrefix(t, "@Security") {
+				strs := make(map[string][]string)
 				if len(opts.Security) == 0 {
-					opts.Security = make([]map[string]swagger.Security, 0)
+					opts.Security = make([]map[string][]string, 0)
 				}
-				fullString := strings.TrimSpace(t[len("@Security"):])
-				e := strings.SplitN(fullString, " ", 4)
-				newMap := make(map[string]swagger.Security)
-				newMap[e[0]] = swagger.Security{}
-				opts.Security = append(opts.Security, newMap)
+				p := getparams(strings.TrimSpace(t[len("@Security"):]))
+				if len(p) == 0 {
+					beeLogger.Log.Fatalf("[%s.%s] No params for security specified\n", controllerName, funcName)
+				}
+				strs[p[0]] = make([]string, 0)
+				for i := 1; i < len(p); i++ {
+					strs[p[0]] = append(strs[p[0]], p[i])
+				}
+				opts.Security = append(opts.Security, strs)
 			}
-
 		}
 	}
 	if routerPath != "" {
