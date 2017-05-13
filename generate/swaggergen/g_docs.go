@@ -184,6 +184,13 @@ func GenerateDocs(curpath string) {
 					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
 				} else if strings.HasPrefix(s, "@Host") {
 					rootapi.Host = strings.TrimSpace(s[len("@Host"):])
+				} else if strings.HasPrefix(s, "@SecurityDefinition") {
+					if len(rootapi.SecurityDefinitions) == 0 {
+						rootapi.SecurityDefinitions = make(map[string]swagger.Security)
+					}
+					fullString := strings.TrimSpace(s[len("@SecurityDefinition"):])
+					e := strings.SplitN(fullString, " ", 4)
+					rootapi.SecurityDefinitions[e[0]] = swagger.Security{Type: e[1], Name: e[2], In: e[3]}
 				}
 			}
 		}
