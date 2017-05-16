@@ -184,11 +184,62 @@ func GenerateDocs(curpath string) {
 					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
 				} else if strings.HasPrefix(s, "@Host") {
 					rootapi.Host = strings.TrimSpace(s[len("@Host"):])
+				} else if strings.HasPrefix(s, "@SecurityDefinition") {
+					if len(rootapi.SecurityDefinitions) == 0 {
+						rootapi.SecurityDefinitions = make(map[string]swagger.Security)
+					}
+					var out swagger.Security
+					p := getparams(strings.TrimSpace(s[len("@SecurityDefinition"):]))
+					if len(p) < 2 {
+						beeLogger.Log.Fatalf("Not enough params for security: %d\n", len(p))
+					}
+					out.Type = p[1]
+					switch out.Type {
+					case "oauth2":
+						if len(p) < 6 {
+							beeLogger.Log.Fatalf("Not enough params for oauth2: %d\n", len(p))
+						}
+						if !(p[3] == "implicit" || p[3] == "password" || p[3] == "application" || p[3] == "accessCode") {
+							beeLogger.Log.Fatalf("Unknown flow type: %s. Possible values are `implicit`, `password`, `application` or `accessCode`.\n", p[1])
+						}
+						out.AuthorizationURL = p[2]
+						out.Flow = p[3]
+						if len(p)%2 != 0 {
+							out.Description = strings.Trim(p[len(p)-1], `" `)
+						}
+						out.Scopes = make(map[string]string)
+						for i := 4; i < len(p)-1; i += 2 {
+							out.Scopes[p[i]] = strings.Trim(p[i+1], `" `)
+						}
+					case "apiKey":
+						if len(p) < 4 {
+							beeLogger.Log.Fatalf("Not enough params for apiKey: %d\n", len(p))
+						}
+						if !(p[3] == "header" || p[3] == "query") {
+							beeLogger.Log.Fatalf("Unknown in type: %s. Possible values are `query` or `header`.\n", p[4])
+						}
+						out.Name = p[2]
+						out.In = p[3]
+						if len(p) > 4 {
+							out.Description = strings.Trim(p[4], `" `)
+						}
+					case "basic":
+						if len(p) > 2 {
+							out.Description = strings.Trim(p[2], `" `)
+						}
+					default:
+						beeLogger.Log.Fatalf("Unknown security type: %s. Possible values are `oauth2`, `apiKey` or `basic`.\n", p[1])
+					}
+					rootapi.SecurityDefinitions[p[0]] = out
+				} else if strings.HasPrefix(s, "@Security") {
+					if len(rootapi.Security) == 0 {
+						rootapi.Security = make([]map[string][]string, 0)
+					}
+					rootapi.Security = append(rootapi.Security, getSecurity(s))
 				}
 			}
 		}
 	}
-
 	// Analyse controller package
 	for _, im := range f.Imports {
 		localName := ""
@@ -631,6 +682,11 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						opts.Produces = append(opts.Produces, ahtml)
 					}
 				}
+			} else if strings.HasPrefix(t, "@Security") {
+				if len(opts.Security) == 0 {
+					opts.Security = make([]map[string][]string, 0)
+				}
+				opts.Security = append(opts.Security, getSecurity(t))
 			}
 		}
 	}
@@ -919,6 +975,19 @@ func appendModels(pkgpath, controllerName string, realTypes []string) {
 			appendModels(pkgpath, controllerName, newRealTypes)
 		}
 	}
+}
+
+func getSecurity(t string) (security map[string][]string) {
+	security = make(map[string][]string)
+	p := getparams(strings.TrimSpace(t[len("@Security"):]))
+	if len(p) == 0 {
+		beeLogger.Log.Fatalf("No params for security specified\n")
+	}
+	security[p[0]] = make([]string, 0)
+	for i := 1; i < len(p); i++ {
+		security[p[0]] = append(security[p[0]], p[i])
+	}
+	return
 }
 
 func urlReplace(src string) string {

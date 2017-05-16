@@ -16,7 +16,7 @@ script:
   - go vet  $(go list ./... | grep -v /vendor/)
   - structcheck  $(go list ./... | grep -v /vendor/)
   - gosimple -ignore "$(cat gosimple.ignore)" $(go list ./... | grep -v /vendor/)
-  - staticcheck $(go list ./... | grep -v /vendor/)
+  - staticcheck -ignore "$(cat staticcheck.ignore)" $(go list ./... | grep -v /vendor/)
   - unused $(go list ./... | grep -v /vendor/)
   - unconvert $(go list ./... | grep -v /vendor/)
   - ineffassign .
