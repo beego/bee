@@ -369,7 +369,7 @@ func writeHproseModelFiles(tables []*Table, mPath string, selectedTables map[str
 				continue
 			}
 		}
-		template := ""
+		var template string
 		if tb.Pk == "" {
 			template = HproseStructModelTPL
 		} else {

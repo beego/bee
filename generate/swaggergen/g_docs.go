@@ -184,11 +184,62 @@ func GenerateDocs(curpath string) {
 					rootapi.Schemes = strings.Split(strings.TrimSpace(s[len("@Schemes"):]), ",")
 				} else if strings.HasPrefix(s, "@Host") {
 					rootapi.Host = strings.TrimSpace(s[len("@Host"):])
+				} else if strings.HasPrefix(s, "@SecurityDefinition") {
+					if len(rootapi.SecurityDefinitions) == 0 {
+						rootapi.SecurityDefinitions = make(map[string]swagger.Security)
+					}
+					var out swagger.Security
+					p := getparams(strings.TrimSpace(s[len("@SecurityDefinition"):]))
+					if len(p) < 2 {
+						beeLogger.Log.Fatalf("Not enough params for security: %d\n", len(p))
+					}
+					out.Type = p[1]
+					switch out.Type {
+					case "oauth2":
+						if len(p) < 6 {
+							beeLogger.Log.Fatalf("Not enough params for oauth2: %d\n", len(p))
+						}
+						if !(p[3] == "implicit" || p[3] == "password" || p[3] == "application" || p[3] == "accessCode") {
+							beeLogger.Log.Fatalf("Unknown flow type: %s. Possible values are `implicit`, `password`, `application` or `accessCode`.\n", p[1])
+						}
+						out.AuthorizationURL = p[2]
+						out.Flow = p[3]
+						if len(p)%2 != 0 {
+							out.Description = strings.Trim(p[len(p)-1], `" `)
+						}
+						out.Scopes = make(map[string]string)
+						for i := 4; i < len(p)-1; i += 2 {
+							out.Scopes[p[i]] = strings.Trim(p[i+1], `" `)
+						}
+					case "apiKey":
+						if len(p) < 4 {
+							beeLogger.Log.Fatalf("Not enough params for apiKey: %d\n", len(p))
+						}
+						if !(p[3] == "header" || p[3] == "query") {
+							beeLogger.Log.Fatalf("Unknown in type: %s. Possible values are `query` or `header`.\n", p[4])
+						}
+						out.Name = p[2]
+						out.In = p[3]
+						if len(p) > 4 {
+							out.Description = strings.Trim(p[4], `" `)
+						}
+					case "basic":
+						if len(p) > 2 {
+							out.Description = strings.Trim(p[2], `" `)
+						}
+					default:
+						beeLogger.Log.Fatalf("Unknown security type: %s. Possible values are `oauth2`, `apiKey` or `basic`.\n", p[1])
+					}
+					rootapi.SecurityDefinitions[p[0]] = out
+				} else if strings.HasPrefix(s, "@Security") {
+					if len(rootapi.Security) == 0 {
+						rootapi.Security = make([]map[string][]string, 0)
+					}
+					rootapi.Security = append(rootapi.Security, getSecurity(s))
 				}
 			}
 		}
 	}
-
 	// Analyse controller package
 	for _, im := range f.Imports {
 		localName := ""
@@ -216,7 +267,7 @@ func GenerateDocs(curpath string) {
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
-									controllerName := ""
+									var controllerName string
 									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
 										s, params := analyseNewNamespace(pp)
 										for _, sp := range params {
@@ -298,12 +349,10 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 		}
 		if apis, ok := controllerList[cname]; ok {
 			for rt, item := range apis {
-				tag := ""
+				tag := cname
 				if baseurl != "" {
 					rt = baseurl + rt
 					tag = strings.Trim(baseurl, "/")
-				} else {
-					tag = cname
 				}
 				if item.Get != nil {
 					item.Get.Tags = []string{tag}
@@ -395,7 +444,7 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 					if specDecl.Recv != nil && len(specDecl.Recv.List) > 0 {
 						if t, ok := specDecl.Recv.List[0].Type.(*ast.StarExpr); ok {
 							// Parse controller method
-							parserComments(specDecl.Doc, specDecl.Name.String(), fmt.Sprint(t.X), pkgpath)
+							parserComments(specDecl, fmt.Sprint(t.X), pkgpath)
 						}
 					}
 				case *ast.GenDecl:
@@ -448,12 +497,16 @@ func peekNextSplitString(ss string) (s string, spacePos int) {
 }
 
 // parse the func comments
-func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpath string) error {
+func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 	var routerPath string
 	var HTTPMethod string
 	opts := swagger.Operation{
 		Responses: make(map[string]swagger.Response),
 	}
+	funcName := f.Name.String()
+	comments := f.Doc
+	funcParamMap := buildParamMap(f.Type.Params)
+	//TODO: resultMap := buildParamMap(f.Type.Results)
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
@@ -526,7 +579,17 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 				if len(p) < 4 {
 					beeLogger.Log.Fatal(controllerName + "_" + funcName + "'s comments @Param should have at least 4 params")
 				}
-				para.Name = p[0]
+				paramNames := strings.SplitN(p[0], "=>", 2)
+				para.Name = paramNames[0]
+				funcParamName := para.Name
+				if len(paramNames) > 1 {
+					funcParamName = paramNames[1]
+				}
+				paramType, ok := funcParamMap[funcParamName]
+				if ok {
+					delete(funcParamMap, funcParamName)
+				}
+
 				switch p[1] {
 				case "query":
 					fallthrough
@@ -555,33 +618,10 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 					modelsList[pkgpath+controllerName][typ] = mod
 					appendModels(pkgpath, controllerName, realTypes)
 				} else {
-					isArray := false
-					paraType := ""
-					paraFormat := ""
-					if strings.HasPrefix(typ, "[]") {
-						typ = typ[2:]
-						isArray = true
+					if typ == "auto" {
+						typ = paramType
 					}
-					if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
-						typ == "array" || typ == "file" {
-						paraType = typ
-					} else if sType, ok := basicTypes[typ]; ok {
-						typeFormat := strings.Split(sType, ":")
-						paraType = typeFormat[0]
-						paraFormat = typeFormat[1]
-					} else {
-						beeLogger.Log.Warnf("[%s.%s] Unknown param type: %s\n", controllerName, funcName, typ)
-					}
-					if isArray {
-						para.Type = "array"
-						para.Items = &swagger.ParameterItems{
-							Type:   paraType,
-							Format: paraFormat,
-						}
-					} else {
-						para.Type = paraType
-						para.Format = paraFormat
-					}
+					setParamType(&para, typ, pkgpath, controllerName)
 				}
 				switch len(p) {
 				case 5:
@@ -633,10 +673,29 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 						opts.Produces = append(opts.Produces, ahtml)
 					}
 				}
+			} else if strings.HasPrefix(t, "@Security") {
+				if len(opts.Security) == 0 {
+					opts.Security = make([]map[string][]string, 0)
+				}
+				opts.Security = append(opts.Security, getSecurity(t))
 			}
 		}
 	}
+
 	if routerPath != "" {
+		//Go over function parameters which were not mapped and create swagger params for them
+		for name, typ := range funcParamMap {
+			para := swagger.Parameter{}
+			para.Name = name
+			setParamType(&para, typ, pkgpath, controllerName)
+			if paramInPath(name, routerPath) {
+				para.In = "path"
+			} else {
+				para.In = "query"
+			}
+			opts.Parameters = append(opts.Parameters, para)
+		}
+
 		var item *swagger.Item
 		if itemList, ok := controllerList[pkgpath+controllerName]; ok {
 			if it, ok := itemList[routerPath]; !ok {
@@ -669,6 +728,91 @@ func parserComments(comments *ast.CommentGroup, funcName, controllerName, pkgpat
 	return nil
 }
 
+func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName string) {
+	isArray := false
+	paraType := ""
+	paraFormat := ""
+
+	if strings.HasPrefix(typ, "[]") {
+		typ = typ[2:]
+		isArray = true
+	}
+	if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
+		typ == "array" || typ == "file" {
+		paraType = typ
+	} else if sType, ok := basicTypes[typ]; ok {
+		typeFormat := strings.Split(sType, ":")
+		paraType = typeFormat[0]
+		paraFormat = typeFormat[1]
+	} else {
+		m, mod, realTypes := getModel(typ)
+		para.Schema = &swagger.Schema{
+			Ref: "#/definitions/" + m,
+		}
+		if _, ok := modelsList[pkgpath+controllerName]; !ok {
+			modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+		}
+		modelsList[pkgpath+controllerName][typ] = mod
+		appendModels(pkgpath, controllerName, realTypes)
+	}
+	if isArray {
+		para.Type = "array"
+		para.Items = &swagger.ParameterItems{
+			Type:   paraType,
+			Format: paraFormat,
+		}
+	} else {
+		para.Type = paraType
+		para.Format = paraFormat
+	}
+
+}
+
+func paramInPath(name, route string) bool {
+	return strings.HasSuffix(route, ":"+name) ||
+		strings.Contains(route, ":"+name+"/")
+}
+
+func getFunctionParamType(t ast.Expr) string {
+	switch paramType := t.(type) {
+	case *ast.Ident:
+		return paramType.Name
+	// case *ast.Ellipsis:
+	// 	result := getFunctionParamType(paramType.Elt)
+	// 	result.array = true
+	// 	return result
+	case *ast.ArrayType:
+		return "[]" + getFunctionParamType(paramType.Elt)
+	case *ast.StarExpr:
+		return getFunctionParamType(paramType.X)
+	case *ast.SelectorExpr:
+		return getFunctionParamType(paramType.X) + "." + paramType.Sel.Name
+	default:
+		return ""
+
+	}
+}
+
+func buildParamMap(list *ast.FieldList) map[string]string {
+	i := 0
+	result := map[string]string{}
+	if list != nil {
+		funcParams := list.List
+		for _, fparam := range funcParams {
+			param := getFunctionParamType(fparam.Type)
+			var paramName string
+			if len(fparam.Names) > 0 {
+				paramName = fparam.Names[0].Name
+			} else {
+				paramName = fmt.Sprint(i)
+				i++
+			}
+			result[paramName] = param
+		}
+	}
+	return result
+}
+
 // analisys params return []string
 // @Param	query		form	 string	true		"The email for login"
 // [query form string true "The email for login"]
@@ -678,7 +822,7 @@ func getparams(str string) []string {
 	var start bool
 	var r []string
 	var quoted int8
-	for _, c := range []rune(str) {
+	for _, c := range str {
 		if unicode.IsSpace(c) && quoted == 0 {
 			if !start {
 				continue
@@ -749,7 +893,6 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
 		for _, field := range st.Fields.List {
-			realType := ""
 			isSlice, realType, sType := typeAnalyser(field)
 			if (isSlice && isBasicType(realType)) || sType == "object" {
 				if len(strings.Split(realType, " ")) > 1 {
@@ -765,7 +908,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 			mp := swagger.Propertie{}
 			if isSlice {
 				mp.Type = "array"
-				if isBasicType(realType) {
+				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
 					typeFormat := strings.Split(sType, ":")
 					mp.Items = &swagger.Propertie{
 						Type:   typeFormat[0],
@@ -868,7 +1011,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
-			return false, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), "object"
@@ -880,7 +1023,11 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	}
 	switch t := f.Type.(type) {
 	case *ast.StarExpr:
-		return false, fmt.Sprint(t.X), "object"
+		basicType := fmt.Sprint(t.X)
+		if k, ok := basicTypes[basicType]; ok {
+			return false, basicType, k
+		}
+		return false, basicType, "object"
 	case *ast.MapType:
 		val := fmt.Sprintf("%v", t.Value)
 		if isBasicType(val) {
@@ -918,6 +1065,19 @@ func appendModels(pkgpath, controllerName string, realTypes []string) {
 			appendModels(pkgpath, controllerName, newRealTypes)
 		}
 	}
+}
+
+func getSecurity(t string) (security map[string][]string) {
+	security = make(map[string][]string)
+	p := getparams(strings.TrimSpace(t[len("@Security"):]))
+	if len(p) == 0 {
+		beeLogger.Log.Fatalf("No params for security specified\n")
+	}
+	security[p[0]] = make([]string, 0)
+	for i := 1; i < len(p); i++ {
+		security[p[0]] = append(security[p[0]], p[i])
+	}
+	return
 }
 
 func urlReplace(src string) string {
