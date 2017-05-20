@@ -298,7 +298,14 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, ap
 	defer db.Close()
 	if trans, ok := dbDriver[dbms]; ok {
 		beeLogger.Log.Info("Analyzing database tables...")
-		tableNames := trans.GetTableNames(db)
+		var tableNames []string
+		if len(selectedTableNames) != 0 {
+			for tableName := range selectedTableNames {
+				tableNames = append(tableNames, tableName)
+			}
+		} else {
+			tableNames = trans.GetTableNames(db)
+		}
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
 		mvcPath.ModelPath = path.Join(apppath, "models")
