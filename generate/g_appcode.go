@@ -182,6 +182,7 @@ type OrmTag struct {
 	RelFk       bool
 	ReverseMany bool
 	RelM2M      bool
+	Comment     string //字段注解
 }
 
 // String returns the source code string for the Table struct
@@ -255,7 +256,7 @@ func (tag *OrmTag) String() string {
 	if len(ormOptions) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
+	return fmt.Sprintf("`orm:\"%s\" description:\"%s\"`", strings.Join(ormOptions, ";"), tag.Comment)
 }
 
 func GenerateAppcode(driver, connStr, level, tables, currpath string) {
@@ -410,7 +411,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	// retrieve columns
 	colDefRows, err := db.Query(
 		`SELECT
-			column_name, data_type, column_type, is_nullable, column_default, extra
+			column_name, data_type, column_type, is_nullable, column_default, extra, column_comment 
 		FROM
 			information_schema.columns
 		WHERE
@@ -423,12 +424,12 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 
 	for colDefRows.Next() {
 		// datatype as bytes so that SQL <null> values can be retrieved
-		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes []byte
-		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes); err != nil {
+		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes, columnCommentBytes []byte
+		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes, &columnCommentBytes); err != nil {
 			beeLogger.Log.Fatal("Could not query INFORMATION_SCHEMA for column information")
 		}
-		colName, dataType, columnType, isNullable, columnDefault, extra :=
-			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes)
+		colName, dataType, columnType, isNullable, columnDefault, extra, columnComment :=
+			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes), string(columnCommentBytes)
 
 		// create a column
 		col := new(Column)
@@ -441,6 +442,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 		// Tag info
 		tag := new(OrmTag)
 		tag.Column = colName
+		tag.Comment = columnComment
 		if table.Pk == colName {
 			col.Name = "Id"
 			col.Type = "int"
