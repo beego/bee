@@ -182,7 +182,7 @@ type OrmTag struct {
 	RelFk       bool
 	ReverseMany bool
 	RelM2M      bool
-	Comment     string //字段注解
+	Comment     string //column comment
 }
 
 // String returns the source code string for the Table struct
