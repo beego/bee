@@ -256,7 +256,10 @@ func (tag *OrmTag) String() string {
 	if len(ormOptions) == 0 {
 		return ""
 	}
-	return fmt.Sprintf("`orm:\"%s\" description:\"%s\"`", strings.Join(ormOptions, ";"), tag.Comment)
+	if tag.Comment != "" {
+		return fmt.Sprintf("`orm:\"%s\" description:\"%s\"`", strings.Join(ormOptions, ";"), tag.Comment)
+	}
+	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
 func GenerateAppcode(driver, connStr, level, tables, currpath string) {
