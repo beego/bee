@@ -101,6 +101,7 @@ var typeMappingMysql = map[string]string{
 	"decimal":            "float64",
 	"binary":             "string", // binary
 	"varbinary":          "string",
+	"year":               "int16",
 }
 
 // typeMappingPostgres maps SQL data type to corresponding Go data type
