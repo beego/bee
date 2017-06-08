@@ -707,21 +707,23 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			controllerList[pkgpath+controllerName] = make(map[string]*swagger.Item)
 			item = &swagger.Item{}
 		}
-		switch HTTPMethod {
-		case "GET":
-			item.Get = &opts
-		case "POST":
-			item.Post = &opts
-		case "PUT":
-			item.Put = &opts
-		case "PATCH":
-			item.Patch = &opts
-		case "DELETE":
-			item.Delete = &opts
-		case "HEAD":
-			item.Head = &opts
-		case "OPTIONS":
-			item.Options = &opts
+		for _, hm := range strings.Split(HTTPMethod, ",") {
+			switch hm {
+			case "GET":
+				item.Get = &opts
+			case "POST":
+				item.Post = &opts
+			case "PUT":
+				item.Put = &opts
+			case "PATCH":
+				item.Patch = &opts
+			case "DELETE":
+				item.Delete = &opts
+			case "HEAD":
+				item.Head = &opts
+			case "OPTIONS":
+				item.Options = &opts
+			}
 		}
 		controllerList[pkgpath+controllerName][routerPath] = item
 	}
