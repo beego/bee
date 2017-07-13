@@ -212,7 +212,6 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 			switch strings.Title(DDL.String()) {
 			case "Create":
 				spec = strings.Replace(DDLSpecCreate, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
-				break
 			case "Alter":
 				spec = strings.Replace(DDLSpecAlter, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
 			}
