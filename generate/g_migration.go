@@ -21,7 +21,7 @@ import (
 	"strings"
 	"time"
 
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
 	"github.com/beego/bee/utils"
 )
@@ -203,11 +203,31 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer utils.CloseFile(f)
-		content := strings.Replace(MigrationTPL, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
-		content = strings.Replace(content, "{{CurrTime}}", today, -1)
-		content = strings.Replace(content, "{{UpSQL}}", upsql, -1)
-		content = strings.Replace(content, "{{DownSQL}}", downsql, -1)
-		f.WriteString(content)
+		ddlSpec := ""
+		spec := ""
+		up := ""
+		down := ""
+		if DDL != "" {
+			ddlSpec = "m.ddlSpec()"
+			switch strings.Title(DDL.String()) {
+			case "Create":
+				spec = strings.Replace(DDLSpecCreate, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
+				break
+			case "Alter":
+				spec = strings.Replace(DDLSpecAlter, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
+			}
+			spec = strings.Replace(spec, "{{tableName}}", mname, -1)
+		} else {
+			up = strings.Replace(MigrationUp, "{{UpSQL}}", upsql, -1)
+			up = strings.Replace(up, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
+			down = strings.Replace(MigrationDown, "{{DownSQL}}", downsql, -1)
+			down = strings.Replace(down, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
+		}
+
+		header := strings.Replace(MigrationHeader, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
+		header = strings.Replace(header, "{{ddlSpec}}", ddlSpec, -1)
+		header = strings.Replace(header, "{{CurrTime}}", today, -1)
+		f.WriteString(header + spec + up + down)
 		// Run 'gofmt' on the generated source code
 		utils.FormatSourceCode(fpath)
 		fmt.Fprintf(w, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", fpath, "\x1b[0m")
@@ -216,33 +236,56 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 	}
 }
 
-const MigrationTPL = `package main
+const (
+	MigrationHeader = `package main
+						import (
+							"github.com/astaxie/beego/migration"
+						)
 
-import (
-	"github.com/astaxie/beego/migration"
+						// DO NOT MODIFY
+						type {{StructName}} struct {
+							migration.Migration
+						}
+
+						// DO NOT MODIFY
+						func init() {
+							m := &{{StructName}}{}
+							m.Created = "{{CurrTime}}"
+							{{ddlSpec}}
+							migration.Register("{{StructName}}", m)
+						}
+					   `
+
+	DDLSpecCreate = `
+				/*
+				refer beego/migration/doc.go
+				*/
+				func(m *{{StructName}}) ddlSpec(){
+				m.CreateTable("{{tableName}}", "InnoDB", "utf8")
+				m.PriCol("id").SetAuto(true).SetNullable(false).SetDataType("INT(10)").SetUnsigned(true)
+
+				}
+				`
+	DDLSpecAlter = `
+				/*
+				refer beego/migration/doc.go
+				*/
+				func(m *{{StructName}}) ddlSpec(){
+				m.AlterTable("{{tableName}}")
+
+				}
+				`
+	MigrationUp = `
+				// Run the migrations
+				func (m *{{StructName}}) Up() {
+					// use m.SQL("CREATE TABLE ...") to make schema update
+					{{UpSQL}}
+				}`
+	MigrationDown = `
+				// Reverse the migrations
+				func (m *{{StructName}}) Down() {
+					// use m.SQL("DROP TABLE ...") to reverse schema update
+					{{DownSQL}}
+				}
+				`
 )
-
-// DO NOT MODIFY
-type {{StructName}} struct {
-	migration.Migration
-}
-
-// DO NOT MODIFY
-func init() {
-	m := &{{StructName}}{}
-	m.Created = "{{CurrTime}}"
-	migration.Register("{{StructName}}", m)
-}
-
-// Run the migrations
-func (m *{{StructName}}) Up() {
-	// use m.SQL("CREATE TABLE ...") to make schema update
-	{{UpSQL}}
-}
-
-// Reverse the migrations
-func (m *{{StructName}}) Down() {
-	// use m.SQL("DROP TABLE ...") to reverse schema update
-	{{DownSQL}}
-}
-`
