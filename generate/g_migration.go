@@ -203,12 +203,10 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 	fpath := path.Join(migrationFilePath, fmt.Sprintf("%s_%s.go", today, mname))
 	if f, err := os.OpenFile(fpath, os.O_CREATE|os.O_EXCL|os.O_RDWR, 0666); err == nil {
 		defer utils.CloseFile(f)
-		ddlSpec := ""
 		spec := ""
 		up := ""
 		down := ""
 		if DDL != "" {
-			ddlSpec = "m.ddlSpec()"
 			switch strings.Title(DDL.String()) {
 			case "Create":
 				spec = strings.Replace(DDLSpecCreate, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
@@ -224,7 +222,6 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 		}
 
 		header := strings.Replace(MigrationHeader, "{{StructName}}", utils.CamelCase(mname)+"_"+today, -1)
-		header = strings.Replace(header, "{{ddlSpec}}", ddlSpec, -1)
 		header = strings.Replace(header, "{{CurrTime}}", today, -1)
 		f.WriteString(header + spec + up + down)
 		// Run 'gofmt' on the generated source code
@@ -250,7 +247,6 @@ const (
 						func init() {
 							m := &{{StructName}}{}
 							m.Created = "{{CurrTime}}"
-							{{ddlSpec}}
 							migration.Register("{{StructName}}", m)
 						}
 					   `
