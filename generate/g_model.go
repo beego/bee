@@ -167,7 +167,7 @@ func Add{{modelName}}(m *{{modelName}}) (id int64, err error) {
 func Get{{modelName}}ById(id int64) (v *{{modelName}}, err error) {
 	o := orm.NewOrm()
 	v = &{{modelName}}{Id: id}
-	if err = o.Read(v); err == nil {
+	if err = o.QueryTable(new({{modelName}})).Filter("Id", id).RelatedSel().One(v); err == nil {
 		return v, nil
 	}
 	return nil, err
@@ -225,7 +225,7 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	}
 
 	var l []{{modelName}}
-	qs = qs.OrderBy(sortFields...)
+	qs = qs.OrderBy(sortFields...).RelatedSel()
 	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
