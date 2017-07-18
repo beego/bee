@@ -101,6 +101,7 @@ var typeMappingMysql = map[string]string{
 	"decimal":            "float64",
 	"binary":             "string", // binary
 	"varbinary":          "string",
+	"year":               "int16",
 }
 
 // typeMappingPostgres maps SQL data type to corresponding Go data type
@@ -182,6 +183,7 @@ type OrmTag struct {
 	RelFk       bool
 	ReverseMany bool
 	RelM2M      bool
+	Comment     string //column comment
 }
 
 // String returns the source code string for the Table struct
@@ -255,6 +257,9 @@ func (tag *OrmTag) String() string {
 	if len(ormOptions) == 0 {
 		return ""
 	}
+	if tag.Comment != "" {
+		return fmt.Sprintf("`orm:\"%s\" description:\"%s\"`", strings.Join(ormOptions, ";"), tag.Comment)
+	}
 	return fmt.Sprintf("`orm:\"%s\"`", strings.Join(ormOptions, ";"))
 }
 
@@ -298,7 +303,14 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, ap
 	defer db.Close()
 	if trans, ok := dbDriver[dbms]; ok {
 		beeLogger.Log.Info("Analyzing database tables...")
-		tableNames := trans.GetTableNames(db)
+		var tableNames []string
+		if len(selectedTableNames) != 0 {
+			for tableName := range selectedTableNames {
+				tableNames = append(tableNames, tableName)
+			}
+		} else {
+			tableNames = trans.GetTableNames(db)
+		}
 		tables := getTableObjects(tableNames, db, trans)
 		mvcPath := new(MvcPath)
 		mvcPath.ModelPath = path.Join(apppath, "models")
@@ -403,7 +415,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	// retrieve columns
 	colDefRows, err := db.Query(
 		`SELECT
-			column_name, data_type, column_type, is_nullable, column_default, extra
+			column_name, data_type, column_type, is_nullable, column_default, extra, column_comment 
 		FROM
 			information_schema.columns
 		WHERE
@@ -416,12 +428,12 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 
 	for colDefRows.Next() {
 		// datatype as bytes so that SQL <null> values can be retrieved
-		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes []byte
-		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes); err != nil {
+		var colNameBytes, dataTypeBytes, columnTypeBytes, isNullableBytes, columnDefaultBytes, extraBytes, columnCommentBytes []byte
+		if err := colDefRows.Scan(&colNameBytes, &dataTypeBytes, &columnTypeBytes, &isNullableBytes, &columnDefaultBytes, &extraBytes, &columnCommentBytes); err != nil {
 			beeLogger.Log.Fatal("Could not query INFORMATION_SCHEMA for column information")
 		}
-		colName, dataType, columnType, isNullable, columnDefault, extra :=
-			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes)
+		colName, dataType, columnType, isNullable, columnDefault, extra, columnComment :=
+			string(colNameBytes), string(dataTypeBytes), string(columnTypeBytes), string(isNullableBytes), string(columnDefaultBytes), string(extraBytes), string(columnCommentBytes)
 
 		// create a column
 		col := new(Column)
@@ -434,6 +446,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 		// Tag info
 		tag := new(OrmTag)
 		tag.Column = colName
+		tag.Comment = columnComment
 		if table.Pk == colName {
 			col.Name = "Id"
 			col.Type = "int"

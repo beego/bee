@@ -22,7 +22,7 @@ import (
 	"github.com/beego/bee/config"
 	"github.com/beego/bee/generate"
 	"github.com/beego/bee/generate/swaggergen"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
 )
 
@@ -71,6 +71,7 @@ func init() {
 	CmdGenerate.Flag.Var(&generate.SQLConn, "conn", "Connection string used by the SQLDriver to connect to a database instance.")
 	CmdGenerate.Flag.Var(&generate.Level, "level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
 	CmdGenerate.Flag.Var(&generate.Fields, "fields", "List of table Fields.")
+	CmdGenerate.Flag.Var(&generate.DDL, "ddl", "Generate DDL Migration")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdGenerate)
 }
 

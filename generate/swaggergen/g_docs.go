@@ -104,7 +104,11 @@ func ParsePackagesFromDir(dirpath string) {
 				return nil
 			}
 
-			if !strings.Contains(fpath, "vendor") && !strings.Contains(fpath, "tests") {
+			// 7 is length of 'vendor' (6) + length of file path separator (1)
+			// so we skip dir 'vendor' which is directly under dirpath
+			if !(len(fpath) == len(dirpath)+7 && strings.HasSuffix(fpath, "vendor")) &&
+				!strings.Contains(fpath, "tests") &&
+				!(len(fpath) > len(dirpath) && fpath[len(dirpath)+1] == '.') {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
 					// Send the error to through the channel and continue walking
@@ -707,21 +711,23 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			controllerList[pkgpath+controllerName] = make(map[string]*swagger.Item)
 			item = &swagger.Item{}
 		}
-		switch HTTPMethod {
-		case "GET":
-			item.Get = &opts
-		case "POST":
-			item.Post = &opts
-		case "PUT":
-			item.Put = &opts
-		case "PATCH":
-			item.Patch = &opts
-		case "DELETE":
-			item.Delete = &opts
-		case "HEAD":
-			item.Head = &opts
-		case "OPTIONS":
-			item.Options = &opts
+		for _, hm := range strings.Split(HTTPMethod, ",") {
+			switch hm {
+			case "GET":
+				item.Get = &opts
+			case "POST":
+				item.Post = &opts
+			case "PUT":
+				item.Put = &opts
+			case "PATCH":
+				item.Patch = &opts
+			case "DELETE":
+				item.Delete = &opts
+			case "HEAD":
+				item.Head = &opts
+			case "OPTIONS":
+				item.Options = &opts
+			}
 		}
 		controllerList[pkgpath+controllerName][routerPath] = item
 	}
