@@ -29,6 +29,7 @@ import (
 	_ "github.com/beego/bee/cmd/commands/pack"
 	_ "github.com/beego/bee/cmd/commands/rs"
 	_ "github.com/beego/bee/cmd/commands/run"
+	_ "github.com/beego/bee/cmd/commands/server"
 	_ "github.com/beego/bee/cmd/commands/version"
 	"github.com/beego/bee/utils"
 )
