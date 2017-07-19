@@ -613,7 +613,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
 					isArray := false
-					if (p[1] == "body" || p[1] == "formData") && strings.HasPrefix(p[2], "[]") {
+					if p[1] == "body" && strings.HasPrefix(p[2], "[]") {
 						p[2] = p[2][2:]
 						isArray = true
 					}
