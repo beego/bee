@@ -612,10 +612,25 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
-					m, mod, realTypes := getModel(p[2])
-					para.Schema = &swagger.Schema{
-						Ref: "#/definitions/" + m,
+					isArray := false
+					if p[1] == "body" || p[1] == "formData" || strings.HasPrefix(p[2], "[]") {
+						p[2] = p[2][2:]
+						isArray = true
 					}
+					m, mod, realTypes := getModel(p[2])
+					if isArray {
+						para.Schema = &swagger.Schema{
+							Type: "array",
+							Items: &swagger.Schema{
+								Ref: "#/definitions/" + m,
+							},
+						}
+					} else {
+						para.Schema = &swagger.Schema{
+							Ref: "#/definitions/" + m,
+						}
+					}
+
 					if _, ok := modelsList[pkgpath+controllerName]; !ok {
 						modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
 					}
@@ -762,10 +777,12 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		appendModels(pkgpath, controllerName, realTypes)
 	}
 	if isArray {
-		para.Type = "array"
-		para.Items = &swagger.ParameterItems{
-			Type:   paraType,
-			Format: paraFormat,
+		para.Schema = &swagger.Schema{
+			Type: "array",
+			Items: &swagger.Schema{
+				Type:   paraType,
+				Format: paraFormat,
+			},
 		}
 	} else {
 		para.Type = paraType
