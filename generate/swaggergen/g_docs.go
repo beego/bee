@@ -777,12 +777,20 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		appendModels(pkgpath, controllerName, realTypes)
 	}
 	if isArray {
-		para.Schema = &swagger.Schema{
-			Type: "array",
-			Items: &swagger.Schema{
+		if para.In == "body" {
+			para.Schema = &swagger.Schema{
+				Type: "array",
+				Items: &swagger.Schema{
+					Type:   paraType,
+					Format: paraFormat,
+				},
+			}
+		} else {
+			para.Type = "array"
+			para.Items = &swagger.ParameterItems{
 				Type:   paraType,
 				Format: paraFormat,
-			},
+			}
 		}
 	} else {
 		para.Type = paraType
