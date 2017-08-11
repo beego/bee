@@ -866,6 +866,10 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 					if k != objectname {
 						continue
 					}
+					// check package
+					if len(strs) > 1 && pkg.Name != strs[len(strs)-2] {
+						continue
+					}
 					packageName = pkg.Name
 					parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
 				}
