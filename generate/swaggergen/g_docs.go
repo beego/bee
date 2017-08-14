@@ -52,7 +52,7 @@ var importlist map[string]string
 var controllerList map[string]map[string]*swagger.Item //controllername Paths items
 var modelsList map[string]map[string]swagger.Schema
 var rootapi swagger.Swagger
-var astPkgs map[string]*ast.Package
+var astPkgs []*ast.Package
 
 // refer to builtin.go
 var basicTypes = map[string]string{
@@ -89,7 +89,7 @@ func init() {
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
-	astPkgs = map[string]*ast.Package{}
+	astPkgs = make([]*ast.Package, 0)
 }
 
 func ParsePackagesFromDir(dirpath string) {
@@ -136,8 +136,8 @@ func parsePackageFromDir(path string) error {
 		return err
 	}
 
-	for k, v := range folderPkgs {
-		astPkgs[k] = v
+	for _, v := range folderPkgs {
+		astPkgs = append(astPkgs, v)
 	}
 
 	return nil
@@ -860,18 +860,20 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 	packageName := ""
 	m.Type = "object"
 	for _, pkg := range astPkgs {
-		for _, fl := range pkg.Files {
-			for k, d := range fl.Scope.Objects {
-				if d.Kind == ast.Typ {
-					if k != objectname {
-						continue
+		if strs[0] == pkg.Name {
+			for _, fl := range pkg.Files {
+				for k, d := range fl.Scope.Objects {
+					if d.Kind == ast.Typ {
+						if k != objectname {
+							continue
+						}
+						// check package
+						if len(strs) > 1 && pkg.Name != strs[len(strs)-2] {
+							continue
+						}
+						packageName = pkg.Name
+						parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
 					}
-					// check package
-					if len(strs) > 1 && pkg.Name != strs[len(strs)-2] {
-						continue
-					}
-					packageName = pkg.Name
-					parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
 				}
 			}
 		}
@@ -889,7 +891,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 	return
 }
 
-func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs map[string]*ast.Package, packageName string) {
+func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
 		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
