@@ -21,13 +21,10 @@ import (
 	"github.com/beego/bee/cmd"
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/config"
-	"github.com/beego/bee/generate/swaggergen"
 	"github.com/beego/bee/utils"
 )
 
 func main() {
-	currentpath, _ := os.Getwd()
-
 	flag.Usage = cmd.Usage
 	flag.Parse()
 	log.SetFlags(0)
@@ -60,12 +57,6 @@ func main() {
 			}
 
 			config.LoadConfig()
-
-			// Check if current directory is inside the GOPATH,
-			// if so parse the packages inside it.
-			if utils.IsInGOPATH(currentpath) && cmd.IfGenerateDocs(c.Name(), args) {
-				swaggergen.ParsePackagesFromDir(currentpath)
-			}
 
 			os.Exit(c.Run(c, args))
 			return
