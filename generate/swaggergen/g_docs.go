@@ -678,6 +678,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 						opts.Produces = append(opts.Produces, ahtml)
 					case "form":
 						opts.Consumes = append(opts.Consumes, aform)
+						opts.Consumes = append(opts.Consumes, ajson)
 					}
 				}
 			} else if strings.HasPrefix(t, "@Security") {
