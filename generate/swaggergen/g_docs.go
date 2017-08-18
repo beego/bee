@@ -44,6 +44,7 @@ const (
 	axml   = "application/xml"
 	aplain = "text/plain"
 	ahtml  = "text/html"
+	aform  = "multipart/form-data"
 )
 
 var pkgCache map[string]struct{} //pkg:controller:function:comments comments: key:value
@@ -675,6 +676,8 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 					case "html":
 						opts.Consumes = append(opts.Consumes, ahtml)
 						opts.Produces = append(opts.Produces, ahtml)
+					case "form":
+						opts.Consumes = append(opts.Consumes, aform)
 					}
 				}
 			} else if strings.HasPrefix(t, "@Security") {
