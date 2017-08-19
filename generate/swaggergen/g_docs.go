@@ -69,7 +69,7 @@ func convertSpecDefinitions(specDefs spec.Definitions) (defs map[string]swagger.
 	return
 }
 
-func parseModel(pkg *ast.Package, typeStr string) (typeID string, err error) {
+func parseModel(pkg *ast.Package, typeStr string) (typeTitle string, err error) {
 	if pkg == nil {
 		panic("pkg can not be nil")
 	}
@@ -77,7 +77,7 @@ func parseModel(pkg *ast.Package, typeStr string) (typeID string, err error) {
 	if err != nil {
 		return
 	}
-	typeID = schema.ID
+	typeTitle = schema.Title
 	return
 }
 
@@ -538,11 +538,11 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 						schema.Type = typeFormat[0]
 						schema.Format = typeFormat[1]
 					} else {
-						typeID, err := parseModel(controllerPkg, schemaName)
+						typeTitle, err := parseModel(controllerPkg, schemaName)
 						if err != nil {
 							beeLogger.Log.Fatalf("failed to parse model %s: %s", schemaName, err)
 						}
-						schema.Ref = "#/definitions/" + typeID
+						schema.Ref = "#/definitions/" + typeTitle
 					}
 					if isArray {
 						rs.Schema = &swagger.Schema{
@@ -592,12 +592,12 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				pp := strings.Split(p[2], ".")
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
-					typeID, err := parseModel(controllerPkg, p[2])
+					typeTitle, err := parseModel(controllerPkg, p[2])
 					if err != nil {
 						beeLogger.Log.Fatalf("failed to parse model %s: %s", p[2], err)
 					}
 					para.Schema = &swagger.Schema{
-						Ref: "#/definitions/" + typeID,
+						Ref: "#/definitions/" + typeTitle,
 					}
 				} else {
 					if typ == "auto" {
@@ -731,12 +731,12 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		paraType = typeFormat[0]
 		paraFormat = typeFormat[1]
 	} else {
-		typeID, err := parseModel(controllerPkg, typ)
+		typeTitle, err := parseModel(controllerPkg, typ)
 		if err != nil {
 			beeLogger.Log.Fatalf("failed to parse model %s: %s", typ, err)
 		}
 		para.Schema = &swagger.Schema{
-			Ref: "#/definitions/" + typeID,
+			Ref: "#/definitions/" + typeTitle,
 		}
 	}
 	if isArray {
