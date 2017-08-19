@@ -280,7 +280,8 @@ func GenerateDocs(curpath string) {
 	}
 	defs, err := convertSpecDefinitions(tparser.Definitions())
 	if err != nil {
-		panic(err)
+		msg := fmt.Sprintf("failed to convert spec definitions into swagger definitions: %s", err)
+		panic(msg)
 	}
 	rootapi.Definitions = defs
 
