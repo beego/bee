@@ -29,7 +29,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v2"
+	"github.com/ghodss/yaml"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
@@ -285,9 +285,14 @@ func GenerateDocs(curpath string) {
 	defer fdyml.Close()
 	defer fd.Close()
 	dt, err := json.MarshalIndent(rootapi, "", "    ")
-	dtyml, erryml := yaml.Marshal(rootapi)
-	if err != nil || erryml != nil {
-		panic(err)
+	if err != nil {
+		msg := fmt.Sprintf("failed to marshal api doc: %s", err)
+		panic(msg)
+	}
+	dtyml, erryml := yaml.JSONToYAML(dt)
+	if erryml != nil {
+		msg := fmt.Sprintf("failed to convert json bytes to yaml bytes: %s", erryml)
+		panic(msg)
 	}
 	_, err = fd.Write(dt)
 	_, erryml = fdyml.Write(dtyml)
