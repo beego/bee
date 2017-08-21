@@ -47,27 +47,20 @@ const (
 	aform  = "multipart/form-data"
 )
 
+// Swagger redefines definitions
+type Swagger struct {
+	swagger.Swagger
+	Definitions spec.Definitions `json:"definitions,omitempty" yaml:"definitions,omitempty"`
+}
+
 var pkgCache map[string]struct{} //pkg:controller:function:comments comments: key:value
 var controllerComments map[string]string
 var importlist map[string]string
 var controllerList map[string]map[string]*swagger.Item //controllername Paths items
-var rootapi swagger.Swagger
+var rootapi Swagger
 
 var tparser *tspec.Parser
 var controllerPkg *ast.Package
-
-func convertSpecDefinitions(specDefs spec.Definitions) (defs map[string]swagger.Schema, err error) {
-	bytes, err := json.Marshal(specDefs)
-	if err != nil {
-		return
-	}
-	defs = make(map[string]swagger.Schema)
-	err = json.Unmarshal(bytes, &defs)
-	if err != nil {
-		return
-	}
-	return
-}
 
 func parseModel(pkg *ast.Package, typeStr string) (typeTitle string, err error) {
 	if pkg == nil {
@@ -278,12 +271,7 @@ func GenerateDocs(curpath string) {
 			}
 		}
 	}
-	defs, err := convertSpecDefinitions(tparser.Definitions())
-	if err != nil {
-		msg := fmt.Sprintf("failed to convert spec definitions into swagger definitions: %s", err)
-		panic(msg)
-	}
-	rootapi.Definitions = defs
+	rootapi.Definitions = tparser.Definitions()
 
 	os.Mkdir(path.Join(curpath, "swagger"), 0755)
 	fd, err := os.Create(path.Join(curpath, "swagger", "swagger.json"))
