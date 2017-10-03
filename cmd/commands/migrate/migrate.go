@@ -187,8 +187,8 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 					beeLogger.Log.Fatalf("Column migration.name type mismatch: TYPE: %s, NULL: %s", typeStr, nullStr)
 				}
 			} else if fieldStr == "created_at" {
-				if typeStr != "timestamp" || defaultStr != "CURRENT_TIMESTAMP" {
-					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP")
+				if typeStr != "timestamp" || ((defaultStr != "CURRENT_TIMESTAMP") && (defaultStr != "CURRENT_TIMESTAMP()")) {
+					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP || CURRENT_TIMESTAMP()")
 					beeLogger.Log.Fatalf("Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s", typeStr, defaultStr)
 				}
 			}
