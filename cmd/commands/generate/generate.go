@@ -166,6 +166,7 @@ func appCode(cmd *commands.Command, args []string, currpath string) {
 	beeLogger.Log.Infof("Using '%s' as 'Level'", generate.Level)
 	generate.GenerateAppcode(generate.SQLDriver.String(), generate.SQLConn.String(), generate.Level.String(), generate.Tables.String(), currpath)
 }
+
 func migration(cmd *commands.Command, args []string, currpath string) {
 	if len(args) < 2 {
 		beeLogger.Log.Fatal("Wrong number of arguments. Run: bee help generate")
