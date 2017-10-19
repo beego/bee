@@ -86,6 +86,12 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 						scheduleTime = time.Now().Add(1 * time.Second)
 						time.Sleep(scheduleTime.Sub(time.Now()))
 						AutoBuild(files, isgenerate)
+
+						if config.Conf.EnableReload {
+							// Wait 100ms more before refreshing the browser
+							time.Sleep(100 * time.Millisecond)
+							sendReload(e.String())
+						}
 					}()
 				}
 			case err := <-watcher.Errors:
