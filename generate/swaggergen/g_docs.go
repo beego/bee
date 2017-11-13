@@ -896,10 +896,71 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
-	st, ok := ts.Type.(*ast.StructType)
-	if !ok {
-		return
+	switch t := ts.Type.(type) {
+	case *ast.Ident:
+		parseIdent(k, m, astPkgs)
+	case *ast.StructType:
+		parseStruct(t, k, m, realTypes, astPkgs, packageName)
 	}
+}
+
+// parse as enum
+func parseIdent(k string, m *swagger.Schema, astPkgs []*ast.Package) {
+	m.Title = k
+	for _, pkg := range astPkgs {
+		for _, fl := range pkg.Files {
+			for _, obj := range fl.Scope.Objects {
+				if obj.Kind == ast.Con {
+					vs, ok := obj.Decl.(*ast.ValueSpec)
+					if !ok {
+						beeLogger.Log.Fatalf("Unknown type without ValueSpec: %v\n", vs)
+					}
+					ti, ok := vs.Type.(*ast.Ident)
+					if !ok {
+						// TODO type inference, iota not support yet
+						continue
+					}
+					if ti.Name != k {
+						continue
+					}
+					for _, val := range vs.Values {
+						v, ok := val.(*ast.BasicLit)
+						if !ok {
+							beeLogger.Log.Warnf("Unknown type without BasicLit: %v\n", v)
+							continue
+						}
+						rawV := strings.Trim(v.Value, `"`)
+						switch v.Kind {
+						case token.INT:
+							vv, err := strconv.Atoi(rawV)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", rawV)
+								continue
+							}
+							m.Enum = append(m.Enum, vv)
+						case token.FLOAT:
+							vv, err := strconv.ParseFloat(rawV, 64)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", rawV)
+								continue
+							}
+							m.Enum = append(m.Enum, vv)
+						//case token.IMAG:
+						//	rawV := strings.Trim(v.Value, `i`)
+						//	m.Enum = append(m.Enum, strconv.ParseFloat(rawV, 64))
+						case token.CHAR:
+							m.Enum = append(m.Enum, rawV)
+						case token.STRING:
+							m.Enum = append(m.Enum, rawV)
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	m.Title = k
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
