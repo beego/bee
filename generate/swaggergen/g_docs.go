@@ -105,11 +105,12 @@ func ParsePackagesFromDir(dirpath string) {
 				return nil
 			}
 
-			// 7 is length of 'vendor' (6) + length of file path separator (1)
-			// so we skip dir 'vendor' which is directly under dirpath
-			if !(len(fpath) == len(dirpath)+7 && strings.HasSuffix(fpath, "vendor")) &&
+			// skip folder if it's a 'vendor' folder within dirpath or its child,
+			// all 'tests' folders and dot folders wihin dirpath
+			d, _ := filepath.Rel(dirpath, fpath)
+			if !(d == "vendor" || strings.HasPrefix(d, "vendor"+string(os.PathSeparator))) &&
 				!strings.Contains(fpath, "tests") &&
-				!(len(fpath) > len(dirpath) && fpath[len(dirpath)+1] == '.') {
+				!(d[0] == '.') {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
 					// Send the error to through the channel and continue walking
