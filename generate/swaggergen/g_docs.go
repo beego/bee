@@ -1092,14 +1092,40 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					continue
 				}
 			} else {
-				for _, pkg := range astPkgs {
-					for _, fl := range pkg.Files {
-						for nameOfObj, obj := range fl.Scope.Objects {
-							if obj.Name == fmt.Sprint(field.Type) {
-								parseObject(obj, nameOfObj, m, realTypes, astPkgs, pkg.Name)
+				// only parse case of when embedded field is TypeName
+				// cases of *TypeName and Interface are not handled, maybe useless for swagger spec
+				tag := ""
+				if field.Tag != nil {
+					stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+					tag = stag.Get("json")
+				}
+
+				if tag != "" {
+					tagValues := strings.Split(tag, ",")
+					if tagValues[0] == "-" {
+						//if json tag is "-", omit
+						continue
+					} else {
+						//if json tag is "something", output: something #definition/pkgname.Type
+						m.Properties[tagValues[0]] = mp
+						continue
+					}
+				} else {
+					//if no json tag, expand all fields of the type here
+					nm := &swagger.Schema{}
+					for _, pkg := range astPkgs {
+						for _, fl := range pkg.Files {
+							for nameOfObj, obj := range fl.Scope.Objects {
+								if obj.Name == fmt.Sprint(field.Type) {
+									parseObject(obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
+								}
 							}
 						}
 					}
+					for name, p := range nm.Properties {
+						m.Properties[name] = p
+					}
+					continue
 				}
 			}
 		}
