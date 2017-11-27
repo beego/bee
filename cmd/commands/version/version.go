@@ -57,7 +57,7 @@ Prints the current Bee, Beego and Go version alongside the platform information.
 }
 var outputFormat string
 
-const version = "1.9.1"
+const version = "1.9.2"
 
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
