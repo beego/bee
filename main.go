@@ -25,9 +25,15 @@ import (
 	"github.com/beego/bee/utils"
 )
 
+var (
+	workspace = os.Getenv("BeeWorkspace")
+)
+
 func main() {
 	currentpath, _ := os.Getwd()
-
+	if workspace != "" {
+		currentpath = workspace
+	}
 	flag.Usage = cmd.Usage
 	flag.Parse()
 	log.SetFlags(0)
@@ -66,7 +72,6 @@ func main() {
 			if utils.IsInGOPATH(currentpath) && cmd.IfGenerateDocs(c.Name(), args) {
 				swaggergen.ParsePackagesFromDir(currentpath)
 			}
-
 			os.Exit(c.Run(c, args))
 			return
 		}
