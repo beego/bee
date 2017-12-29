@@ -139,9 +139,9 @@ func AutoBuild(files []string, isgenerate bool) {
 		}
 		beeLogger.Log.Success("Docs generated!")
 	}
-
+	appName := appname
 	if err == nil {
-		appName := appname
+		
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
@@ -165,7 +165,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 
 	beeLogger.Log.Success("Built Successfully!")
-	Restart(appname)
+	Restart(appName)
 }
 
 // Kill kills the running command process
