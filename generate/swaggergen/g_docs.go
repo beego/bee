@@ -1225,6 +1225,8 @@ func str2RealType(s string, typ string) interface{} {
 	switch typ {
 	case "int", "int64", "int32", "int16", "int8":
 		ret, err = strconv.Atoi(s)
+	case "uint", "uint64", "uint32", "uint16", "uint8":
+		ret, err = strconv.ParseUint(s, 10, 0)
 	case "bool":
 		ret, err = strconv.ParseBool(s)
 	case "float64":
