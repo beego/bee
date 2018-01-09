@@ -261,8 +261,9 @@ func GenerateDocs(curpath string) {
 				case *ast.AssignStmt:
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
-							// Analyse NewNamespace, it will return version and the subfunction
-							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
+							// Analyze NewNamespace, it will return version and the subfunction
+							selExpr, selOK := v.Fun.(*ast.SelectorExpr)
+							if !selOK || selExpr.Sel.Name != "NewNamespace" {
 								continue
 							}
 							version, params := analyseNewNamespace(v)
