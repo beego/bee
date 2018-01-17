@@ -732,6 +732,7 @@ func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath
 	if (OModel & mode) == OModel {
 		beeLogger.Log.Info("Creating model files...")
 		writeModelFiles(tables, paths.ModelPath, selectedTables)
+
 	}
 	if (OController & mode) == OController {
 		beeLogger.Log.Info("Creating controller files...")
@@ -759,8 +760,7 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 		var f *os.File
 		var err error
 		if utils.IsExist(fpath) {
-			beeLogger.Log.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
-			if utils.AskForConfirmation() {
+			if Override == "y" || utils.WarningBeforeAskForConfirmation("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath) {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
 					beeLogger.Log.Warnf("%s", err)
@@ -824,8 +824,7 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 		var f *os.File
 		var err error
 		if utils.IsExist(fpath) {
-			beeLogger.Log.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
-			if utils.AskForConfirmation() {
+			if Override == "y" || utils.WarningBeforeAskForConfirmation("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath) {
 				f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 				if err != nil {
 					beeLogger.Log.Warnf("%s", err)
@@ -880,8 +879,7 @@ func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bo
 	var f *os.File
 	var err error
 	if utils.IsExist(fpath) {
-		beeLogger.Log.Warnf("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath)
-		if utils.AskForConfirmation() {
+		if Override == "y" || utils.WarningBeforeAskForConfirmation("'%s' already exists. Do you want to overwrite it? [Yes|No] ", fpath) {
 			f, err = os.OpenFile(fpath, os.O_RDWR|os.O_TRUNC, 0666)
 			if err != nil {
 				beeLogger.Log.Warnf("%s", err)
