@@ -59,7 +59,7 @@ var CmdGenerate = &commands.Command{
 
   ▶ {{"To generate appcode based on an existing database:"|bold}}
 
-     $ bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3]
+     $ bee generate appcode [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-level=3] [-override=n]
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    GenerateCode,
@@ -72,6 +72,7 @@ func init() {
 	CmdGenerate.Flag.Var(&generate.Level, "level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
 	CmdGenerate.Flag.Var(&generate.Fields, "fields", "List of table Fields.")
 	CmdGenerate.Flag.Var(&generate.DDL, "ddl", "Generate DDL Migration")
+	CmdGenerate.Flag.Var(&generate.Override, "override", "Override generated files or not.")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdGenerate)
 }
 
@@ -160,10 +161,14 @@ func appCode(cmd *commands.Command, args []string, currpath string) {
 	if generate.Level == "" {
 		generate.Level = "3"
 	}
+	if generate.Override == "" {
+		generate.Override = "n"
+	}
 	beeLogger.Log.Infof("Using '%s' as 'SQLDriver'", generate.SQLDriver)
 	beeLogger.Log.Infof("Using '%s' as 'SQLConn'", generate.SQLConn)
 	beeLogger.Log.Infof("Using '%s' as 'Tables'", generate.Tables)
 	beeLogger.Log.Infof("Using '%s' as 'Level'", generate.Level)
+	beeLogger.Log.Infof("Using '%s' as 'Override'", generate.Override)
 	generate.GenerateAppcode(generate.SQLDriver.String(), generate.SQLConn.String(), generate.Level.String(), generate.Tables.String(), currpath)
 }
 
