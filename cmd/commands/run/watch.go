@@ -131,6 +131,8 @@ func AutoBuild(files []string, isgenerate bool) {
 		beeLogger.Log.Info("Generating the docs...")
 		icmd := exec.Command("bee", "generate", "docs")
 		icmd.Env = append(os.Environ(), "GOGC=off")
+		icmd.Stdout = os.Stdout
+		icmd.Stderr = os.Stderr
 		err = icmd.Run()
 		if err != nil {
 			utils.Notify("", "Failed to generate the docs.")

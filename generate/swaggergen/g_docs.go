@@ -35,7 +35,7 @@ import (
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	bu "github.com/beego/bee/utils"
 )
 
@@ -262,8 +262,17 @@ func GenerateDocs(curpath string) {
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
 							// Analyse NewNamespace, it will return version and the subfunction
-							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
-								continue
+							//if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
+							//	continue
+							//}
+							if sel, ok := v.Fun.(*ast.SelectorExpr); ok {
+								if sel.Sel.String() != "NewNamespace" {
+									continue
+								}
+							} else if ident, ok := v.Fun.(*ast.Ident); ok {
+								if ident.String() != "NewNamespace" {
+									continue
+								}
 							}
 							version, params := analyseNewNamespace(v)
 							if rootapi.BasePath == "" && version != "" {
@@ -434,15 +443,20 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	}
 
 	fileSet := token.NewFileSet()
-	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
+	astPkg, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
-	for _, pkg := range astPkgs {
+	for _, pkg := range astPkg {
 		for _, fl := range pkg.Files {
+			for _, v := range fl.Imports {
+				for _, v1 := range gopaths {
+					parsePackageFromDir(filepath.Join(v1+"/src/", strings.Trim(v.Path.Value, "\"")))
+				}
+			}
 			for _, d := range fl.Decls {
 				switch specDecl := d.(type) {
 				case *ast.FuncDecl:
@@ -558,12 +572,20 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 						schema.Format = typeFormat[1]
 					} else {
 						m, mod, realTypes := getModel(schemaName)
-						schema.Ref = "#/definitions/" + m
-						if _, ok := modelsList[pkgpath+controllerName]; !ok {
-							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+						if mod.Type != "object" {
+							if sType, ok := basicTypes[mod.Type]; ok {
+								typeFormat := strings.Split(sType, ":")
+								schema.Type = typeFormat[0]
+								schema.Format = typeFormat[1]
+							}
+						} else {
+							schema.Ref = "#/definitions/" + m
+							if _, ok := modelsList[pkgpath+controllerName]; !ok {
+								modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+							}
+							modelsList[pkgpath+controllerName][schemaName] = mod
+							appendModels(pkgpath, controllerName, realTypes)
 						}
-						modelsList[pkgpath+controllerName][schemaName] = mod
-						appendModels(pkgpath, controllerName, realTypes)
 					}
 					if isArray {
 						rs.Schema = &swagger.Schema{
@@ -614,6 +636,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
 					m, mod, realTypes := getModel(p[2])
+					//TODO:这里可能还要对解析的参数进行处理
 					para.Schema = &swagger.Schema{
 						Ref: "#/definitions/" + m,
 					}
@@ -755,14 +778,23 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		paraFormat = typeFormat[1]
 	} else {
 		m, mod, realTypes := getModel(typ)
-		para.Schema = &swagger.Schema{
-			Ref: "#/definitions/" + m,
+		fmt.Printf("类型:%s\n", mod.Type)
+		if mod.Type != "object" {
+			if sType, ok := basicTypes[mod.Type]; ok {
+				typeFormat := strings.Split(sType, ":")
+				paraType = typeFormat[0]
+				paraFormat = typeFormat[1]
+			}
+		} else {
+			para.Schema = &swagger.Schema{
+				Ref: "#/definitions/" + m,
+			}
+			if _, ok := modelsList[pkgpath+controllerName]; !ok {
+				modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+			}
+			modelsList[pkgpath+controllerName][typ] = mod
+			appendModels(pkgpath, controllerName, realTypes)
 		}
-		if _, ok := modelsList[pkgpath+controllerName]; !ok {
-			modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
-		}
-		modelsList[pkgpath+controllerName][typ] = mod
-		appendModels(pkgpath, controllerName, realTypes)
 	}
 	if isArray {
 		para.Type = "array"
@@ -786,10 +818,10 @@ func getFunctionParamType(t ast.Expr) string {
 	switch paramType := t.(type) {
 	case *ast.Ident:
 		return paramType.Name
-	// case *ast.Ellipsis:
-	// 	result := getFunctionParamType(paramType.Elt)
-	// 	result.array = true
-	// 	return result
+		// case *ast.Ellipsis:
+		// 	result := getFunctionParamType(paramType.Elt)
+		// 	result.array = true
+		// 	return result
 	case *ast.ArrayType:
 		return "[]" + getFunctionParamType(paramType.Elt)
 	case *ast.StarExpr:
@@ -872,6 +904,9 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 						}
 						packageName = pkg.Name
 						parseObject(d, k, &m, &realTypes, astPkgs, pkg.Name)
+						if m.Type != "object" { //如果不是object退出
+							return
+						}
 					}
 				}
 			}
@@ -898,6 +933,8 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	st, ok := ts.Type.(*ast.StructType)
 	if !ok {
+		m.Title = fmt.Sprintf("%v", reflect.ValueOf(ts.Type))
+		m.Type = fmt.Sprintf("%v", reflect.ValueOf(ts.Type))
 		return
 	}
 	m.Title = k
@@ -1009,7 +1046,19 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					for _, fl := range pkg.Files {
 						for nameOfObj, obj := range fl.Scope.Objects {
 							if obj.Name == fmt.Sprint(field.Type) {
-								parseObject(obj, nameOfObj, m, realTypes, astPkgs, pkg.Name)
+								nameOfObj = fmt.Sprintf("%s.%s",pkg.Name,nameOfObj)
+								//m.Properties[obj.Name] = swagger.Propertie{
+								//	Ref: "#/definitions/" + nameOfObj,
+								//}
+								m1,ok := rootapi.Definitions[nameOfObj]
+								if !ok {
+									_,m1,_ = getModel(nameOfObj)
+								}
+								if len(m1.Properties) > 0 {
+									for k,v := range m1.Properties {
+										m.Properties[k]=v
+									}
+								}
 							}
 						}
 					}
@@ -1047,6 +1096,14 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 		return false, val, "object"
 	}
 	basicType := fmt.Sprint(f.Type)
+	if v, ok := f.Type.(*ast.SelectorExpr); ok {
+		//对象解析
+		basicType = fmt.Sprintf("%s.%s", v.X, v.Sel.Name)
+		_, m, _ := getModel(basicType)
+		if m.Type != "object" {
+			basicType = m.Type
+		}
+	}
 	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
 		basicType = object
 	}
@@ -1072,6 +1129,9 @@ func appendModels(pkgpath, controllerName string, realTypes []string) {
 				continue
 			}
 			_, mod, newRealTypes := getModel(realType)
+			if mod.Type != "object" {
+				continue
+			}
 			modelsList[pkgpath+controllerName][realType] = mod
 			appendModels(pkgpath, controllerName, newRealTypes)
 		}
