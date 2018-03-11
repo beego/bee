@@ -925,15 +925,24 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	switch t := ts.Type.(type) {
 	case *ast.Ident:
-		parseIdent(k, m, astPkgs)
+		parseIdent(t, k, m, astPkgs)
 	case *ast.StructType:
 		parseStruct(t, k, m, realTypes, astPkgs, packageName)
 	}
 }
 
 // parse as enum
-func parseIdent(k string, m *swagger.Schema, astPkgs []*ast.Package) {
+func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Package) {
 	m.Title = k
+	basicType := fmt.Sprint(st)
+	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+		basicType = object
+	}
+	if k, ok := basicTypes[basicType]; ok {
+		typeFormat := strings.Split(k, ":")
+		m.Type = typeFormat[0]
+		m.Format = typeFormat[1]
+	}
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for _, obj := range fl.Scope.Objects {
@@ -942,44 +951,11 @@ func parseIdent(k string, m *swagger.Schema, astPkgs []*ast.Package) {
 					if !ok {
 						beeLogger.Log.Fatalf("Unknown type without ValueSpec: %v\n", vs)
 					}
-					ti, ok := vs.Type.(*ast.Ident)
-					if !ok {
-						// TODO type inference, iota not support yet
-						continue
-					}
-					if ti.Name != k {
-						continue
-					}
-					for _, val := range vs.Values {
-						v, ok := val.(*ast.BasicLit)
-						if !ok {
-							beeLogger.Log.Warnf("Unknown type without BasicLit: %v\n", v)
-							continue
-						}
-						rawV := strings.Trim(v.Value, `"`)
-						switch v.Kind {
-						case token.INT:
-							vv, err := strconv.Atoi(rawV)
-							if err != nil {
-								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", rawV)
-								continue
-							}
-							m.Enum = append(m.Enum, vv)
-						case token.FLOAT:
-							vv, err := strconv.ParseFloat(rawV, 64)
-							if err != nil {
-								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", rawV)
-								continue
-							}
-							m.Enum = append(m.Enum, vv)
-						//case token.IMAG:
-						//	rawV := strings.Trim(v.Value, `i`)
-						//	m.Enum = append(m.Enum, strconv.ParseFloat(rawV, 64))
-						case token.CHAR:
-							m.Enum = append(m.Enum, rawV)
-						case token.STRING:
-							m.Enum = append(m.Enum, rawV)
-						}
+					enum := fmt.Sprintf("%s = %v", vs.Names[0].Name, vs.Names[0].Obj.Data)
+					m.Enum = append(m.Enum, enum)
+					// Automatically give an example.
+					if m.Example == nil {
+						m.Example = vs.Names[0].Obj.Data
 					}
 				}
 			}
@@ -1005,6 +981,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 			}
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
+			isObject := false
 			if isSlice {
 				mp.Type = "array"
 				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
@@ -1020,6 +997,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 				}
 			} else {
 				if sType == "object" {
+					isObject = true
 					mp.Ref = "#/definitions/" + realType
 				} else if isBasicType(realType) {
 					typeFormat := strings.Split(sType, ":")
@@ -1085,6 +1063,10 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					}
 					if desc := stag.Get("description"); desc != "" {
 						mp.Description = desc
+					}
+
+					if example := stag.Get("example"); example != "" && !isObject && !isSlice {
+						mp.Example = str2RealType(example, realType)
 					}
 
 					m.Properties[name] = mp
