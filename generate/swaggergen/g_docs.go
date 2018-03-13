@@ -27,6 +27,7 @@ import (
 	"reflect"
 	"regexp"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 	"unicode"
@@ -93,6 +94,7 @@ func init() {
 	astPkgs = make([]*ast.Package, 0)
 }
 
+// ParsePackagesFromDir parses packages from a given directory
 func ParsePackagesFromDir(dirpath string) {
 	c := make(chan error)
 
@@ -145,6 +147,7 @@ func parsePackageFromDir(path string) error {
 	return nil
 }
 
+// GenerateDocs generates documentations for a given path.
 func GenerateDocs(curpath string) {
 	fset := token.NewFileSet()
 
@@ -931,7 +934,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	}
 }
 
-// parse as enum
+// parse as enum, in the package, find out all consts with the same type
 func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Package) {
 	m.Title = k
 	basicType := fmt.Sprint(st)
@@ -943,6 +946,8 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 		m.Type = typeFormat[0]
 		m.Format = typeFormat[1]
 	}
+	enums := make(map[int]string)
+	enumValues := make(map[int]string)
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for _, obj := range fl.Scope.Objects {
@@ -951,16 +956,45 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 					if !ok {
 						beeLogger.Log.Fatalf("Unknown type without ValueSpec: %v\n", vs)
 					}
-					enum := fmt.Sprintf("%s = %v", vs.Names[0].Name, vs.Names[0].Obj.Data)
-					m.Enum = append(m.Enum, enum)
-					// Automatically give an example.
-					if m.Example == nil {
-						m.Example = vs.Names[0].Obj.Data
+
+					ti, ok := vs.Type.(*ast.Ident)
+					if !ok {
+						// TODO type inference, iota not support yet
+						continue
+					}
+					// Only add the enums that are defined by the current identifier
+					if ti.Name != k {
+						continue
+					}
+
+					// For all names and values, aggregate them by it's position so that we can sort them later.
+					for i, val := range vs.Values {
+						v, ok := val.(*ast.BasicLit)
+						if !ok {
+							beeLogger.Log.Warnf("Unknown type without BasicLit: %v\n", v)
+							continue
+						}
+						enums[int(val.Pos())] = fmt.Sprintf("%s = %s", vs.Names[i].Name, v.Value)
+						enumValues[int(val.Pos())] = v.Value
 					}
 				}
 			}
 		}
 	}
+	// Sort the enums by position
+	if len(enums) > 0 {
+		var keys []int
+		for k := range enums {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+		for _, k := range keys {
+			m.Enum = append(m.Enum, enums[k])
+		}
+		// Automatically use the first enum value as the example.
+		m.Example = enumValues[keys[0]]
+	}
+
 }
 
 func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
