@@ -927,6 +927,21 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	switch t := ts.Type.(type) {
+	case *ast.ArrayType:
+		m.Title = k
+		m.Type = "array"
+		if isBasicType(fmt.Sprint(t.Elt)) {
+			typeFormat := strings.Split(basicTypes[fmt.Sprint(t.Elt)], ":")
+			m.Format = typeFormat[0]
+		} else {
+			objectName := packageName + "." + fmt.Sprint(t.Elt)
+			if _, ok := rootapi.Definitions[objectName]; !ok {
+				objectName, _, _ = getModel(objectName)
+			}
+			m.Items = &swagger.Schema{
+				Ref: "#/definitions/" + objectName,
+			}
+		}
 	case *ast.Ident:
 		parseIdent(t, k, m, astPkgs)
 	case *ast.StructType:
