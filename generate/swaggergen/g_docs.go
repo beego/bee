@@ -927,6 +927,21 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
 	switch t := ts.Type.(type) {
+	case *ast.ArrayType:
+		m.Title = k
+		m.Type = "array"
+		if isBasicType(fmt.Sprint(t.Elt)) {
+			typeFormat := strings.Split(basicTypes[fmt.Sprint(t.Elt)], ":")
+			m.Format = typeFormat[0]
+		} else {
+			objectName := packageName + "." + fmt.Sprint(t.Elt)
+			if _, ok := rootapi.Definitions[objectName]; !ok {
+				objectName, _, _ = getModel(objectName)
+			}
+			m.Items = &swagger.Schema{
+				Ref: "#/definitions/" + objectName,
+			}
+		}
 	case *ast.Ident:
 		parseIdent(t, k, m, astPkgs)
 	case *ast.StructType:
@@ -947,7 +962,7 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 		m.Format = typeFormat[1]
 	}
 	enums := make(map[int]string)
-	enumValues := make(map[int]string)
+	enumValues := make(map[int]interface{})
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for _, obj := range fl.Scope.Objects {
@@ -975,7 +990,25 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 							continue
 						}
 						enums[int(val.Pos())] = fmt.Sprintf("%s = %s", vs.Names[i].Name, v.Value)
-						enumValues[int(val.Pos())] = v.Value
+						switch v.Kind {
+						case token.INT:
+							vv, err := strconv.Atoi(v.Value)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", v.Value)
+								continue
+							}
+							enumValues[int(val.Pos())] = vv
+						case token.FLOAT:
+							vv, err := strconv.ParseFloat(v.Value, 64)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", v.Value)
+								continue
+							}
+							enumValues[int(val.Pos())] = vv
+						default:
+							enumValues[int(val.Pos())] = strings.Trim(v.Value, `"`)
+						}
+
 					}
 				}
 			}
