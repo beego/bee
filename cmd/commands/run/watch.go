@@ -43,6 +43,7 @@ var (
 		`.(\w+).go.swp`,
 		`(\w+).go~`,
 		`(\w+).tmp`,
+		`commentsRouter_controllers.go`,
 	}
 )
 
