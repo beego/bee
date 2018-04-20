@@ -1263,6 +1263,12 @@ func urlReplace(src string) string {
 			} else if p[0] == '?' && p[1] == ':' {
 				pt[i] = "{" + p[2:] + "}"
 			}
+
+			if pt[i][0] == '{' && strings.Contains(pt[i], ":") {
+				pt[i] = pt[i][:strings.Index(pt[i], ":")] + "}"
+			} else if pt[i][0] == '{' && strings.Contains(pt[i], "(") {
+				pt[i] = pt[i][:strings.Index(pt[i], "(")] + "}"
+			}
 		}
 	}
 	return strings.Join(pt, "/")
