@@ -77,7 +77,7 @@ var basicTypes = map[string]string{
 	"byte":       "string:byte",
 	"rune":       "string:byte",
 	// builtin golang objects
-	"time.Time": "string:string",
+	"time.Time": "string:datetime",
 }
 
 var stdlibObject = map[string]string{
@@ -919,7 +919,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 			mp := swagger.Propertie{}
 			if isSlice {
 				mp.Type = "array"
-				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
+				if sType, ok := basicTypes[(strings.Replace(realType, "[]", "", -1))]; ok {
 					typeFormat := strings.Split(sType, ":")
 					mp.Items = &swagger.Propertie{
 						Type:   typeFormat[0],
@@ -1035,6 +1035,9 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	switch t := f.Type.(type) {
 	case *ast.StarExpr:
 		basicType := fmt.Sprint(t.X)
+		if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+			basicType = object
+		}
 		if k, ok := basicTypes[basicType]; ok {
 			return false, basicType, k
 		}
