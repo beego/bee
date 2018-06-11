@@ -27,6 +27,8 @@ const confVer = 0
 
 var Conf = struct {
 	Version            int
+	WatchExts          []string  `json:"watch_ext" yaml:"watch_ext"`
+	WatchExtsStatic    []string  `json:"watch_ext_static" yaml:"watch_ext_static"`
 	GoInstall          bool      `json:"go_install" yaml:"go_install"` // Indicates whether execute "go install" before "go build".
 	DirStruct          dirStruct `json:"dir_structure" yaml:"dir_structure"`
 	CmdArgs            []string  `json:"cmd_args" yaml:"cmd_args"`
@@ -37,7 +39,9 @@ var Conf = struct {
 	EnableNotification bool              `json:"enable_notification" yaml:"enable_notification"`
 	Scripts            map[string]string `json:"scripts" yaml:"scripts"`
 }{
-	GoInstall: true,
+	WatchExts:       []string{".go"},
+	WatchExtsStatic: []string{".html", ".tpl", ".js", ".css"},
+	GoInstall:       true,
 	DirStruct: dirStruct{
 		Others: []string{},
 	},
