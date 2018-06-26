@@ -58,6 +58,8 @@ var (
 	currentGoPath string
 	// Current runmode
 	runmode string
+	// Extra args to run application
+	runargs string
 	// Extra directories
 	extraPackages utils.StrFlags
 )
@@ -71,6 +73,7 @@ func init() {
 	CmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Enable watch vendor folder.")
 	CmdRun.Flag.StringVar(&buildTags, "tags", "", "Set the build tags. See: https://golang.org/pkg/go/build/")
 	CmdRun.Flag.StringVar(&runmode, "runmode", "", "Set the Beego run mode.")
+	CmdRun.Flag.StringVar(&runargs, "runargs", "", "Extra args to run application")
 	CmdRun.Flag.Var(&extraPackages, "ex", "List of extra package to watch.")
 	exit = make(chan bool)
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdRun)
