@@ -36,8 +36,8 @@ var (
 	state               sync.Mutex
 	eventTime           = make(map[string]int64)
 	scheduleTime        time.Time
-	watchExts           = []string{".go"}
-	watchExtsStatic     = []string{".html", ".tpl", ".js", ".css"}
+	watchExts           = config.Conf.WatchExts
+	watchExtsStatic     = config.Conf.WatchExtsStatic
 	ignoredFilesRegExps = []string{
 		`.#(\w+).go`,
 		`.(\w+).go.swp`,
