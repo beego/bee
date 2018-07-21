@@ -206,7 +206,13 @@ func Start(appname string) {
 	cmd = exec.Command(appname)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Args = append([]string{appname}, config.Conf.CmdArgs...)
+	if runargs != "" {
+		r := regexp.MustCompile("'.+'|\".+\"|\\S+")
+		m := r.FindAllString(runargs, -1)
+		cmd.Args = append([]string{appname}, m...)
+	} else {
+		cmd.Args = append([]string{appname}, config.Conf.CmdArgs...)
+	}
 	cmd.Env = append(os.Environ(), config.Conf.Envs...)
 
 	go cmd.Run()
