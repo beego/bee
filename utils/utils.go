@@ -157,6 +157,12 @@ func AskForConfirmation() bool {
 	}
 }
 
+// print a warning message before calling AskForConfirmation()
+func WarningBeforeAskForConfirmation(warning string, fpath string) bool {
+	beeLogger.Log.Warnf(warning, fpath)
+	return AskForConfirmation()
+}
+
 func containsString(slice []string, element string) bool {
 	for _, elem := range slice {
 		if elem == element {
