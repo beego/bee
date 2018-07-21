@@ -353,7 +353,21 @@ func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	cname := ""
 	for _, p := range ce.Args {
-		x := p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
+               var x *ast.SelectorExpr
+               var p1 interface{} = p
+               if ident, ok := p1.(*ast.Ident); ok {
+                       if assign, ok := ident.Obj.Decl.(*ast.AssignStmt); ok {
+                               if len(assign.Rhs) > 0 {
+                                       p1 = assign.Rhs[0].(*ast.UnaryExpr)
+                               }
+                       }
+               }
+               if _, ok := p1.(*ast.UnaryExpr); ok {
+                       x = p1.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
+               } else {
+                       beeLogger.Log.Warnf("Couldn't determine type\n")
+                       continue
+               }
 		if v, ok := importlist[fmt.Sprint(x.X)]; ok {
 			cname = v + x.Sel.Name
 		}
