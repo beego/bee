@@ -36,13 +36,14 @@ var (
 	state               sync.Mutex
 	eventTime           = make(map[string]int64)
 	scheduleTime        time.Time
-	watchExts           = []string{".go"}
-	watchExtsStatic     = []string{".html", ".tpl", ".js", ".css"}
+	watchExts           = config.Conf.WatchExts
+	watchExtsStatic     = config.Conf.WatchExtsStatic
 	ignoredFilesRegExps = []string{
 		`.#(\w+).go`,
 		`.(\w+).go.swp`,
 		`(\w+).go~`,
 		`(\w+).tmp`,
+		`commentsRouter_controllers.go`,
 	}
 )
 
@@ -86,6 +87,12 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 						scheduleTime = time.Now().Add(1 * time.Second)
 						time.Sleep(scheduleTime.Sub(time.Now()))
 						AutoBuild(files, isgenerate)
+
+						if config.Conf.EnableReload {
+							// Wait 100ms more before refreshing the browser
+							time.Sleep(100 * time.Millisecond)
+							sendReload(e.String())
+						}
 					}()
 				}
 			case err := <-watcher.Errors:
@@ -139,9 +146,9 @@ func AutoBuild(files []string, isgenerate bool) {
 		}
 		beeLogger.Log.Success("Docs generated!")
 	}
-
+	appName := appname
 	if err == nil {
-		appName := appname
+		
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
@@ -165,7 +172,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 
 	beeLogger.Log.Success("Built Successfully!")
-	Restart(appname)
+	Restart(appName)
 }
 
 // Kill kills the running command process
@@ -200,7 +207,13 @@ func Start(appname string) {
 	cmd = exec.Command(appname)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
-	cmd.Args = append([]string{appname}, config.Conf.CmdArgs...)
+	if runargs != "" {
+		r := regexp.MustCompile("'.+'|\".+\"|\\S+")
+		m := r.FindAllString(runargs, -1)
+		cmd.Args = append([]string{appname}, m...)
+	} else {
+		cmd.Args = append([]string{appname}, config.Conf.CmdArgs...)
+	}
 	cmd.Env = append(os.Environ(), config.Conf.Envs...)
 
 	go cmd.Run()
