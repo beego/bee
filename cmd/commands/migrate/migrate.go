@@ -196,6 +196,17 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 	}
 }
 
+func driverImportStatement(driver string) string {
+	switch driver {
+	case "mysql":
+		return "github.com/go-sql-driver/mysql"
+	case "postgres":
+		return "github.com/lib/pq"
+	default:
+		return "github.com/go-sql-driver/mysql"
+	}
+}
+
 func showMigrationsTableSQL(driver string) string {
 	switch driver {
 	case "mysql":
@@ -263,6 +274,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 		beeLogger.Log.Fatalf("Could not create file: %s", err)
 	} else {
 		content := strings.Replace(MigrationMainTPL, "{{DBDriver}}", driver, -1)
+		content = strings.Replace(content, "{{DriverRepo}}", driverImportStatement(driver), -1)
 		content = strings.Replace(content, "{{ConnStr}}", connStr, -1)
 		content = strings.Replace(content, "{{LatestTime}}", strconv.FormatInt(latestTime, 10), -1)
 		content = strings.Replace(content, "{{LatestName}}", latestName, -1)
@@ -346,8 +358,7 @@ import(
 	"github.com/astaxie/beego/orm"
 	"github.com/astaxie/beego/migration"
 
-	_ "github.com/go-sql-driver/mysql"
-	_ "github.com/lib/pq"
+	_ "{{DriverRepo}}"
 )
 
 func init(){

@@ -37,6 +37,7 @@ import (
 	"github.com/astaxie/beego/utils"
 	"github.com/beego/bee/logger"
 	bu "github.com/beego/bee/utils"
+	"sort"
 )
 
 const (
@@ -262,17 +263,8 @@ func GenerateDocs(curpath string) {
 					for _, l := range stmt.Rhs {
 						if v, ok := l.(*ast.CallExpr); ok {
 							// Analyse NewNamespace, it will return version and the subfunction
-							//if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
-							//	continue
-							//}
-							if sel, ok := v.Fun.(*ast.SelectorExpr); ok {
-								if sel.Sel.String() != "NewNamespace" {
-									continue
-								}
-							} else if ident, ok := v.Fun.(*ast.Ident); ok {
-								if ident.String() != "NewNamespace" {
-									continue
-								}
+							if selName := v.Fun.(*ast.SelectorExpr).Sel.String(); selName != "NewNamespace" {
+								continue
 							}
 							version, params := analyseNewNamespace(v)
 							if rootapi.BasePath == "" && version != "" {
@@ -443,20 +435,15 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	}
 
 	fileSet := token.NewFileSet()
-	astPkg, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
+	astPkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
 		name := info.Name()
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
-	for _, pkg := range astPkg {
+	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
-			for _, v := range fl.Imports {
-				for _, v1 := range gopaths {
-					parsePackageFromDir(filepath.Join(v1+"/src/", strings.Trim(v.Path.Value, "\"")))
-				}
-			}
 			for _, d := range fl.Decls {
 				switch specDecl := d.(type) {
 				case *ast.FuncDecl:
@@ -572,20 +559,12 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 						schema.Format = typeFormat[1]
 					} else {
 						m, mod, realTypes := getModel(schemaName)
-						if mod.Type != "object" {
-							if sType, ok := basicTypes[mod.Type]; ok {
-								typeFormat := strings.Split(sType, ":")
-								schema.Type = typeFormat[0]
-								schema.Format = typeFormat[1]
-							}
-						} else {
-							schema.Ref = "#/definitions/" + m
-							if _, ok := modelsList[pkgpath+controllerName]; !ok {
-								modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
-							}
-							modelsList[pkgpath+controllerName][schemaName] = mod
-							appendModels(pkgpath, controllerName, realTypes)
+						schema.Ref = "#/definitions/" + m
+						if _, ok := modelsList[pkgpath+controllerName]; !ok {
+							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
 						}
+						modelsList[pkgpath+controllerName][schemaName] = mod
+						appendModels(pkgpath, controllerName, realTypes)
 					}
 					if isArray {
 						rs.Schema = &swagger.Schema{
@@ -636,7 +615,6 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				typ := pp[len(pp)-1]
 				if len(pp) >= 2 {
 					m, mod, realTypes := getModel(p[2])
-					//TODO:这里可能还要对解析的参数进行处理
 					para.Schema = &swagger.Schema{
 						Ref: "#/definitions/" + m,
 					}
@@ -797,10 +775,20 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		}
 	}
 	if isArray {
-		para.Type = "array"
-		para.Items = &swagger.ParameterItems{
-			Type:   paraType,
-			Format: paraFormat,
+		if para.In == "body" {
+			para.Schema = &swagger.Schema{
+				Type: "array",
+				Items: &swagger.Schema{
+					Type:   paraType,
+					Format: paraFormat,
+				},
+			}
+		} else {
+			para.Type = "array"
+			para.Items = &swagger.ParameterItems{
+				Type:   paraType,
+				Format: paraFormat,
+			}
 		}
 	} else {
 		para.Type = paraType
@@ -931,12 +919,117 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
-	st, ok := ts.Type.(*ast.StructType)
+	_, ok = ts.Type.(*ast.StructType)
 	if !ok {
 		m.Title = fmt.Sprintf("%v", reflect.ValueOf(ts.Type))
 		m.Type = fmt.Sprintf("%v", reflect.ValueOf(ts.Type))
 		return
+		switch t := ts.Type.(type) {
+		case *ast.ArrayType:
+			m.Title = k
+			m.Type = "array"
+			if isBasicType(fmt.Sprint(t.Elt)) {
+				typeFormat := strings.Split(basicTypes[fmt.Sprint(t.Elt)], ":")
+				m.Format = typeFormat[0]
+			} else {
+				objectName := packageName + "." + fmt.Sprint(t.Elt)
+				if _, ok := rootapi.Definitions[objectName]; !ok {
+					objectName, _, _ = getModel(objectName)
+				}
+				m.Items = &swagger.Schema{
+					Ref: "#/definitions/" + objectName,
+				}
+			}
+		case *ast.Ident:
+			parseIdent(t, k, m, astPkgs)
+		case *ast.StructType:
+			parseStruct(t, k, m, realTypes, astPkgs, packageName)
+		}
 	}
+}
+
+// parse as enum, in the package, find out all consts with the same type
+func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Package) {
+	m.Title = k
+	basicType := fmt.Sprint(st)
+	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+		basicType = object
+	}
+	if k, ok := basicTypes[basicType]; ok {
+		typeFormat := strings.Split(k, ":")
+		m.Type = typeFormat[0]
+		m.Format = typeFormat[1]
+	}
+	enums := make(map[int]string)
+	enumValues := make(map[int]interface{})
+	for _, pkg := range astPkgs {
+		for _, fl := range pkg.Files {
+			for _, obj := range fl.Scope.Objects {
+				if obj.Kind == ast.Con {
+					vs, ok := obj.Decl.(*ast.ValueSpec)
+					if !ok {
+						beeLogger.Log.Fatalf("Unknown type without ValueSpec: %v\n", vs)
+					}
+
+					ti, ok := vs.Type.(*ast.Ident)
+					if !ok {
+						// TODO type inference, iota not support yet
+						continue
+					}
+					// Only add the enums that are defined by the current identifier
+					if ti.Name != k {
+						continue
+					}
+
+					// For all names and values, aggregate them by it's position so that we can sort them later.
+					for i, val := range vs.Values {
+						v, ok := val.(*ast.BasicLit)
+						if !ok {
+							beeLogger.Log.Warnf("Unknown type without BasicLit: %v\n", v)
+							continue
+						}
+						enums[int(val.Pos())] = fmt.Sprintf("%s = %s", vs.Names[i].Name, v.Value)
+						switch v.Kind {
+						case token.INT:
+							vv, err := strconv.Atoi(v.Value)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", v.Value)
+								continue
+							}
+							enumValues[int(val.Pos())] = vv
+						case token.FLOAT:
+							vv, err := strconv.ParseFloat(v.Value, 64)
+							if err != nil {
+								beeLogger.Log.Warnf("Unknown type with BasicLit to int: %v\n", v.Value)
+								continue
+							}
+							enumValues[int(val.Pos())] = vv
+						default:
+							enumValues[int(val.Pos())] = strings.Trim(v.Value, `"`)
+						}
+
+					}
+				}
+			}
+		}
+	}
+	// Sort the enums by position
+	if len(enums) > 0 {
+		var keys []int
+		for k := range enums {
+			keys = append(keys, k)
+		}
+		sort.Ints(keys)
+		for _, k := range keys {
+			m.Enum = append(m.Enum, enums[k])
+		}
+		// Automatically use the first enum value as the example.
+		m.Example = enumValues[keys[0]]
+	}
+
+}
+
+func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	m.Title = k
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
@@ -956,7 +1049,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 			mp := swagger.Propertie{}
 			if isSlice {
 				mp.Type = "array"
-				if isBasicType(strings.Replace(realType, "[]", "", -1)) {
+				if sType, ok := basicTypes[(strings.Replace(realType, "[]", "", -1))]; ok {
 					typeFormat := strings.Split(sType, ":")
 					mp.Items = &swagger.Propertie{
 						Type:   typeFormat[0],
@@ -1046,19 +1139,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					for _, fl := range pkg.Files {
 						for nameOfObj, obj := range fl.Scope.Objects {
 							if obj.Name == fmt.Sprint(field.Type) {
-								nameOfObj = fmt.Sprintf("%s.%s",pkg.Name,nameOfObj)
-								//m.Properties[obj.Name] = swagger.Propertie{
-								//	Ref: "#/definitions/" + nameOfObj,
-								//}
-								m1,ok := rootapi.Definitions[nameOfObj]
-								if !ok {
-									_,m1,_ = getModel(nameOfObj)
-								}
-								if len(m1.Properties) > 0 {
-									for k,v := range m1.Properties {
-										m.Properties[k]=v
-									}
-								}
+								parseObject(obj, nameOfObj, m, realTypes, astPkgs, pkg.Name)
 							}
 						}
 					}
@@ -1084,6 +1165,9 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	switch t := f.Type.(type) {
 	case *ast.StarExpr:
 		basicType := fmt.Sprint(t.X)
+		if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+			basicType = object
+		}
 		if k, ok := basicTypes[basicType]; ok {
 			return false, basicType, k
 		}
@@ -1160,6 +1244,12 @@ func urlReplace(src string) string {
 			} else if p[0] == '?' && p[1] == ':' {
 				pt[i] = "{" + p[2:] + "}"
 			}
+
+			if pt[i][0] == '{' && strings.Contains(pt[i], ":") {
+				pt[i] = pt[i][:strings.Index(pt[i], ":")] + "}"
+			} else if pt[i][0] == '{' && strings.Contains(pt[i], "(") {
+				pt[i] = pt[i][:strings.Index(pt[i], "(")] + "}"
+			}
 		}
 	}
 	return strings.Join(pt, "/")
@@ -1172,6 +1262,8 @@ func str2RealType(s string, typ string) interface{} {
 	switch typ {
 	case "int", "int64", "int32", "int16", "int8":
 		ret, err = strconv.Atoi(s)
+	case "uint", "uint64", "uint32", "uint16", "uint8":
+		ret, err = strconv.ParseUint(s, 10, 0)
 	case "bool":
 		ret, err = strconv.ParseBool(s)
 	case "float64":

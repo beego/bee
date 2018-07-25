@@ -318,7 +318,7 @@ func gen(dbms, connStr string, mode byte, selectedTableNames map[string]bool, ap
 		mvcPath.RouterPath = path.Join(apppath, "routers")
 		createPaths(mode, mvcPath)
 		pkgPath := getPackagePath(apppath)
-		writeSourceFiles(pkgPath, tables, mode, mvcPath, selectedTableNames)
+		writeSourceFiles(pkgPath, tables, mode, mvcPath)
 	} else {
 		beeLogger.Log.Fatalf("Generating app code from '%s' database is not supported yet.", dbms)
 	}
@@ -728,32 +728,26 @@ func createPaths(mode byte, paths *MvcPath) {
 // writeSourceFiles generates source files for model/controller/router
 // It will wipe the following directories and recreate them:./models, ./controllers, ./routers
 // Newly geneated files will be inside these folders.
-func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath, selectedTables map[string]bool) {
+func writeSourceFiles(pkgPath string, tables []*Table, mode byte, paths *MvcPath) {
 	if (OModel & mode) == OModel {
 		beeLogger.Log.Info("Creating model files...")
-		writeModelFiles(tables, paths.ModelPath, selectedTables)
+		writeModelFiles(tables, paths.ModelPath)
 	}
 	if (OController & mode) == OController {
 		beeLogger.Log.Info("Creating controller files...")
-		writeControllerFiles(tables, paths.ControllerPath, selectedTables, pkgPath)
+		writeControllerFiles(tables, paths.ControllerPath, pkgPath)
 	}
 	if (ORouter & mode) == ORouter {
 		beeLogger.Log.Info("Creating router files...")
-		writeRouterFile(tables, paths.RouterPath, selectedTables, pkgPath)
+		writeRouterFile(tables, paths.RouterPath, pkgPath)
 	}
 }
 
 // writeModelFiles generates model files
-func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bool) {
+func writeModelFiles(tables []*Table, mPath string) {
 	w := colors.NewColorWriter(os.Stdout)
 
 	for _, tb := range tables {
-		// if selectedTables map is not nil and this table is not selected, ignore it
-		if selectedTables != nil {
-			if _, selected := selectedTables[tb.Name]; !selected {
-				continue
-			}
-		}
 		filename := getFileName(tb.Name)
 		fpath := path.Join(mPath, filename+".go")
 		var f *os.File
@@ -806,16 +800,10 @@ func writeModelFiles(tables []*Table, mPath string, selectedTables map[string]bo
 }
 
 // writeControllerFiles generates controller files
-func writeControllerFiles(tables []*Table, cPath string, selectedTables map[string]bool, pkgPath string) {
+func writeControllerFiles(tables []*Table, cPath string, pkgPath string) {
 	w := colors.NewColorWriter(os.Stdout)
 
 	for _, tb := range tables {
-		// If selectedTables map is not nil and this table is not selected, ignore it
-		if selectedTables != nil {
-			if _, selected := selectedTables[tb.Name]; !selected {
-				continue
-			}
-		}
 		if tb.Pk == "" {
 			continue
 		}
@@ -854,17 +842,11 @@ func writeControllerFiles(tables []*Table, cPath string, selectedTables map[stri
 }
 
 // writeRouterFile generates router file
-func writeRouterFile(tables []*Table, rPath string, selectedTables map[string]bool, pkgPath string) {
+func writeRouterFile(tables []*Table, rPath string, pkgPath string) {
 	w := colors.NewColorWriter(os.Stdout)
 
 	var nameSpaces []string
 	for _, tb := range tables {
-		// If selectedTables map is not nil and this table is not selected, ignore it
-		if selectedTables != nil {
-			if _, selected := selectedTables[tb.Name]; !selected {
-				continue
-			}
-		}
 		if tb.Pk == "" {
 			continue
 		}
