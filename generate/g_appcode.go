@@ -415,7 +415,7 @@ func (mysqlDB *MysqlDB) GetColumns(db *sql.DB, table *Table, blackList map[strin
 	// retrieve columns
 	colDefRows, err := db.Query(
 		`SELECT
-			column_name, data_type, column_type, is_nullable, column_default, extra, column_comment 
+			column_name, data_type, column_type, is_nullable, column_default, extra, column_comment
 		FROM
 			information_schema.columns
 		WHERE
@@ -607,15 +607,19 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 		`SELECT
 			column_name,
 			data_type,
-			data_type ||
 			CASE
-				WHEN data_type = 'character' THEN '('||character_maximum_length||')'
-				WHEN data_type = 'numeric' THEN '(' || numeric_precision || ',' || numeric_scale ||')'
-				ELSE ''
+				WHEN data_type ~ 'character' THEN data_type || '(' || character_maximum_length || ')'
+				WHEN (data_type ~ 'numeric' AND numeric_scale IS NOT NULL) THEN data_type||'(' || numeric_precision || ',' || numeric_scale  || ')'
+				WHEN (data_type ~ 'numeric' AND numeric_scale IS NULL) THEN data_type
+				WHEN data_type ~ 'double' THEN data_type || '(' || numeric_precision || ')'
+				WHEN data_type ~ 'real' THEN data_type || '(' || numeric_precision || ')'
+				ELSE NULL
 			END AS column_type,
 			is_nullable,
 			column_default,
-			'' AS extra
+			CASE
+				WHEN column_default ~ 'nextval' THEN 'auto_increment'
+			END AS extra
 		FROM
 			information_schema.columns
 		WHERE
@@ -651,9 +655,8 @@ func (postgresDB *PostgresDB) GetColumns(db *sql.DB, table *Table, blackList map
 			col.Type = "int"
 			if extra == "auto_increment" {
 				tag.Auto = true
-			} else {
-				tag.Pk = true
 			}
+			tag.Pk = true
 		} else {
 			fkCol, isFk := table.Fk[colName]
 			isBl := false
@@ -901,7 +904,7 @@ func isSQLSignedIntType(t string) bool {
 }
 
 func isSQLDecimal(t string) bool {
-	return t == "decimal"
+	return t == "decimal" || t == "double" || t == "numeric" || t == "real" || t == "double precision"
 }
 
 func isSQLBinaryType(t string) bool {
@@ -923,15 +926,19 @@ func extractColSize(colType string) string {
 }
 
 func extractIntSignness(colType string) string {
-	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint)\([0-9]+\)(.*)`)
+	regex := regexp.MustCompile(`[int|smallint|mediumint|bigint]\(([0-9]+)\)(.*)`)
 	signRegex := regex.FindStringSubmatch(colType)
-	return strings.Trim(signRegex[2], " ")
+	return strings.Trim(signRegex[1], " ")
 }
 
 func extractDecimal(colType string) (digits string, decimals string) {
-	decimalRegex := regexp.MustCompile(`decimal\(([0-9]+),([0-9]+)\)`)
+	decimalRegex := regexp.MustCompile(`[decimal|double|numeric|real|double precision]\(([0-9]+),?([0-9]+)?\)`)
 	decimal := decimalRegex.FindStringSubmatch(colType)
-	digits, decimals = decimal[1], decimal[2]
+	if len(decimal) == 0 {
+		return
+	} else {
+		digits, decimals = decimal[1], decimal[2]
+	}
 	return
 }
 
