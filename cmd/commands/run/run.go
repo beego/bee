@@ -79,37 +79,44 @@ func init() {
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdRun)
 }
 
+// RunApp locates files to watch, and starts the beego application
 func RunApp(cmd *commands.Command, args []string) int {
-	if len(args) == 0 || args[0] == "watchall" {
-		currpath, _ = os.Getwd()
-		if found, _gopath, _ := utils.SearchGOPATHs(currpath); found {
-			appname = path.Base(currpath)
-			currentGoPath = _gopath
-		} else {
-			beeLogger.Log.Fatalf("No application '%s' found in your GOPATH", currpath)
-		}
-	} else {
-		// Check if passed Bee application path/name exists in the GOPATH(s)
-		if found, _gopath, _path := utils.SearchGOPATHs(args[0]); found {
-			currpath = _path
-			currentGoPath = _gopath
-			appname = path.Base(currpath)
-		} else {
-			beeLogger.Log.Fatalf("No application '%s' found in your GOPATH", args[0])
-		}
+	// The default app path is the current working directory
+	appPath, _ := os.Getwd()
 
-		if strings.HasSuffix(appname, ".go") && utils.IsExist(currpath) {
+	// If an argument is presented, we use it as the app path
+	if len(args) != 0 && args[0] != "watchall" {
+		if path.IsAbs(args[0]) {
+			appPath = args[0]
+		} else {
+			appPath = path.Join(appPath, args[0])
+		}
+	}
+
+	if utils.IsInGOPATH(appPath) {
+		if found, _gopath, _path := utils.SearchGOPATHs(appPath); found {
+			appPath = _path
+			appname = path.Base(appPath)
+			currentGoPath = _gopath
+		} else {
+			beeLogger.Log.Fatalf("No application '%s' found in your GOPATH", appPath)
+		}
+		if strings.HasSuffix(appname, ".go") && utils.IsExist(appPath) {
 			beeLogger.Log.Warnf("The appname is in conflict with file's current path. Do you want to build appname as '%s'", appname)
 			beeLogger.Log.Info("Do you want to overwrite it? [yes|no] ")
 			if !utils.AskForConfirmation() {
 				return 0
 			}
 		}
+	} else {
+		beeLogger.Log.Warn("Running application outside of GOPATH")
+		appname = path.Base(appPath)
+		currentGoPath = appPath
 	}
 
 	beeLogger.Log.Infof("Using '%s' as 'appname'", appname)
 
-	beeLogger.Log.Debugf("Current path: %s", utils.FILE(), utils.LINE(), currpath)
+	beeLogger.Log.Debugf("Current path: %s", utils.FILE(), utils.LINE(), appPath)
 
 	if runmode == "prod" || runmode == "dev" {
 		os.Setenv("BEEGO_RUNMODE", runmode)
@@ -122,7 +129,7 @@ func RunApp(cmd *commands.Command, args []string) int {
 	}
 
 	var paths []string
-	readAppDirectories(currpath, &paths)
+	readAppDirectories(appPath, &paths)
 
 	// Because monitor files has some issues, we watch current directory
 	// and ignore non-go files.
@@ -159,7 +166,7 @@ func RunApp(cmd *commands.Command, args []string) int {
 		}
 	}
 	if downdoc == "true" {
-		if _, err := os.Stat(path.Join(currpath, "swagger", "index.html")); err != nil {
+		if _, err := os.Stat(path.Join(appPath, "swagger", "index.html")); err != nil {
 			if os.IsNotExist(err) {
 				downloadFromURL(swaggerlink, "swagger.zip")
 				unzipAndDelete("swagger.zip")
