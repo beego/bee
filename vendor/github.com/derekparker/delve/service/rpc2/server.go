@@ -55,10 +55,24 @@ type DetachOut struct {
 
 // Detach detaches the debugger, optionally killing the process.
 func (s *RPCServer) Detach(arg DetachIn, out *DetachOut) error {
-	return s.debugger.Detach(arg.Kill)
+	err := s.debugger.Detach(arg.Kill)
+	if s.config.DisconnectChan != nil {
+		close(s.config.DisconnectChan)
+		s.config.DisconnectChan = nil
+	}
+	return err
 }
 
 type RestartIn struct {
+	// Position to restart from, if it starts with 'c' it's a checkpoint ID,
+	// otherwise it's an event number. Only valid for recorded targets.
+	Position string
+
+	// ResetArgs tell whether NewArgs should take effect.
+	ResetArgs bool
+	// NewArgs are arguments to launch a new process.  They replace only the
+	// argv[1] and later. Argv[0] cannot be changed.
+	NewArgs []string
 }
 
 type RestartOut struct {
@@ -71,11 +85,13 @@ func (s *RPCServer) Restart(arg RestartIn, out *RestartOut) error {
 		return errors.New("cannot restart process Delve did not create")
 	}
 	var err error
-	out.DiscardedBreakpoints, err = s.debugger.Restart()
+	out.DiscardedBreakpoints, err = s.debugger.Restart(arg.Position, arg.ResetArgs, arg.NewArgs)
 	return err
 }
 
 type StateIn struct {
+	// If NonBlocking is true State will return immediately even if the target process is running.
+	NonBlocking bool
 }
 
 type StateOut struct {
@@ -84,7 +100,7 @@ type StateOut struct {
 
 // State returns the current debugger state.
 func (s *RPCServer) State(arg StateIn, out *StateOut) error {
-	st, err := s.debugger.State()
+	st, err := s.debugger.State(arg.NonBlocking)
 	if err != nil {
 		return err
 	}
@@ -106,7 +122,6 @@ func (s *RPCServer) Command(command api.DebuggerCommand, cb service.RPCCallback)
 	var out CommandOut
 	out.State = *st
 	cb.Return(out, nil)
-	return
 }
 
 type GetBreakpointIn struct {
@@ -137,10 +152,11 @@ func (s *RPCServer) GetBreakpoint(arg GetBreakpointIn, out *GetBreakpointOut) er
 }
 
 type StacktraceIn struct {
-	Id    int
-	Depth int
-	Full  bool
-	Cfg   *api.LoadConfig
+	Id     int
+	Depth  int
+	Full   bool
+	Defers bool // read deferred functions
+	Cfg    *api.LoadConfig
 }
 
 type StacktraceOut struct {
@@ -156,11 +172,11 @@ func (s *RPCServer) Stacktrace(arg StacktraceIn, out *StacktraceOut) error {
 	if cfg == nil && arg.Full {
 		cfg = &api.LoadConfig{true, 1, 64, 64, -1}
 	}
-	locs, err := s.debugger.Stacktrace(arg.Id, arg.Depth, api.LoadConfigToProc(cfg))
+	var err error
+	out.Locations, err = s.debugger.Stacktrace(arg.Id, arg.Depth, arg.Defers, api.LoadConfigToProc(cfg))
 	if err != nil {
 		return err
 	}
-	out.Locations = locs
 	return nil
 }
 
@@ -309,7 +325,7 @@ type ListPackageVarsOut struct {
 
 // ListPackageVars lists all package variables in the context of the current thread.
 func (s *RPCServer) ListPackageVars(arg ListPackageVarsIn, out *ListPackageVarsOut) error {
-	state, err := s.debugger.State()
+	state, err := s.debugger.State(false)
 	if err != nil {
 		return err
 	}
@@ -340,7 +356,7 @@ type ListRegistersOut struct {
 // ListRegisters lists registers and their values.
 func (s *RPCServer) ListRegisters(arg ListRegistersIn, out *ListRegistersOut) error {
 	if arg.ThreadID == 0 {
-		state, err := s.debugger.State()
+		state, err := s.debugger.State(false)
 		if err != nil {
 			return err
 		}
@@ -565,11 +581,77 @@ type DisassembleOut struct {
 //
 // If both StartPC and EndPC are non-zero the specified range will be disassembled, otherwise the function containing StartPC will be disassembled.
 //
-// Scope is used to mark the instruction the specified gorutine is stopped at.
+// Scope is used to mark the instruction the specified goroutine is stopped at.
 //
 // Disassemble will also try to calculate the destination address of an absolute indirect CALL if it happens to be the instruction the selected goroutine is stopped at.
 func (c *RPCServer) Disassemble(arg DisassembleIn, out *DisassembleOut) error {
 	var err error
 	out.Disassemble, err = c.debugger.Disassemble(arg.Scope, arg.StartPC, arg.EndPC, arg.Flavour)
 	return err
+}
+
+type RecordedIn struct {
+}
+
+type RecordedOut struct {
+	Recorded       bool
+	TraceDirectory string
+}
+
+func (s *RPCServer) Recorded(arg RecordedIn, out *RecordedOut) error {
+	out.Recorded, out.TraceDirectory = s.debugger.Recorded()
+	return nil
+}
+
+type CheckpointIn struct {
+	Where string
+}
+
+type CheckpointOut struct {
+	ID int
+}
+
+func (s *RPCServer) Checkpoint(arg CheckpointIn, out *CheckpointOut) error {
+	var err error
+	out.ID, err = s.debugger.Checkpoint(arg.Where)
+	return err
+}
+
+type ListCheckpointsIn struct {
+}
+
+type ListCheckpointsOut struct {
+	Checkpoints []api.Checkpoint
+}
+
+func (s *RPCServer) ListCheckpoints(arg ListCheckpointsIn, out *ListCheckpointsOut) error {
+	var err error
+	out.Checkpoints, err = s.debugger.Checkpoints()
+	return err
+}
+
+type ClearCheckpointIn struct {
+	ID int
+}
+
+type ClearCheckpointOut struct {
+}
+
+func (s *RPCServer) ClearCheckpoint(arg ClearCheckpointIn, out *ClearCheckpointOut) error {
+	return s.debugger.ClearCheckpoint(arg.ID)
+}
+
+type IsMulticlientIn struct {
+}
+
+type IsMulticlientOut struct {
+	// IsMulticlient returns true if the headless instance was started with --accept-multiclient
+	IsMulticlient bool
+}
+
+func (s *RPCServer) IsMulticlient(arg IsMulticlientIn, out *IsMulticlientOut) error {
+	*out = IsMulticlientOut{
+		IsMulticlient: s.config.AcceptMulti,
+	}
+	return nil
 }

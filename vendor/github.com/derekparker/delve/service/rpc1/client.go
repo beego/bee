@@ -14,11 +14,10 @@ import (
 
 // Client is a RPC service.Client.
 type RPCClient struct {
-	addr       string
-	processPid int
-	client     *rpc.Client
-	haltMu     sync.Mutex
-	haltReq    bool
+	addr    string
+	client  *rpc.Client
+	haltMu  sync.Mutex
+	haltReq bool
 }
 
 var unsupportedApiError = errors.New("unsupported")
@@ -111,6 +110,12 @@ func (c *RPCClient) Next() (*api.DebuggerState, error) {
 func (c *RPCClient) Step() (*api.DebuggerState, error) {
 	state := new(api.DebuggerState)
 	err := c.call("Command", &api.DebuggerCommand{Name: api.Step}, state)
+	return state, err
+}
+
+func (c *RPCClient) Call(expr string) (*api.DebuggerState, error) {
+	state := new(api.DebuggerState)
+	err := c.call("Command", &api.DebuggerCommand{Name: api.Call, Expr: expr}, state)
 	return state, err
 }
 
@@ -301,10 +306,6 @@ func (c *RPCClient) DisassemblePC(scope api.EvalScope, pc uint64, flavour api.As
 	var r api.AsmInstructions
 	err := c.call("Disassemble", DisassembleRequest{scope, pc, 0, flavour}, &r)
 	return r, err
-}
-
-func (c *RPCClient) url(path string) string {
-	return fmt.Sprintf("http://%s%s", c.addr, path)
 }
 
 func (c *RPCClient) call(method string, args, reply interface{}) error {
