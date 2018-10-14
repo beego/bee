@@ -152,6 +152,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 		APIVersion:  2,
 		WorkingDir:  ".",
 		ProcessArgs: []string{abs},
+		Backend:     "default",
 	})
 	if err := server.Run(); err != nil {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
