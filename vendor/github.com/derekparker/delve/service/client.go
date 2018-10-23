@@ -20,18 +20,26 @@ type Client interface {
 
 	// Restarts program.
 	Restart() ([]api.DiscardedBreakpoint, error)
+	// Restarts program from the specified position.
+	RestartFrom(pos string, resetArgs bool, newArgs []string) ([]api.DiscardedBreakpoint, error)
 
 	// GetState returns the current debugger state.
 	GetState() (*api.DebuggerState, error)
+	// GetStateNonBlocking returns the current debugger state, returning immediately if the target is already running.
+	GetStateNonBlocking() (*api.DebuggerState, error)
 
 	// Continue resumes process execution.
 	Continue() <-chan *api.DebuggerState
+	// Rewind resumes process execution backwards.
+	Rewind() <-chan *api.DebuggerState
 	// Next continues to the next source line, not entering function calls.
 	Next() (*api.DebuggerState, error)
 	// Step continues to the next source line, entering function calls.
 	Step() (*api.DebuggerState, error)
 	// StepOut continues to the return address of the current function
 	StepOut() (*api.DebuggerState, error)
+	// Call resumes process execution while making a function call.
+	Call(expr string) (*api.DebuggerState, error)
 
 	// SingleStep will step a single cpu instruction.
 	StepInstruction() (*api.DebuggerState, error)
@@ -90,7 +98,7 @@ type Client interface {
 	ListGoroutines() ([]*api.Goroutine, error)
 
 	// Returns stacktrace
-	Stacktrace(int, int, *api.LoadConfig) ([]api.Stackframe, error)
+	Stacktrace(goroutineID int, depth int, readDefers bool, cfg *api.LoadConfig) ([]api.Stackframe, error)
 
 	// Returns whether we attached to a running process or not
 	AttachedToExistingProcess() bool
@@ -112,4 +120,25 @@ type Client interface {
 	DisassembleRange(scope api.EvalScope, startPC, endPC uint64, flavour api.AssemblyFlavour) (api.AsmInstructions, error)
 	// Disassemble code of the function containing PC
 	DisassemblePC(scope api.EvalScope, pc uint64, flavour api.AssemblyFlavour) (api.AsmInstructions, error)
+
+	// Recorded returns true if the target is a recording.
+	Recorded() bool
+	// TraceDirectory returns the path to the trace directory for a recording.
+	TraceDirectory() (string, error)
+	// Checkpoint sets a checkpoint at the current position.
+	Checkpoint(where string) (checkpointID int, err error)
+	// ListCheckpoints gets all checkpoints.
+	ListCheckpoints() ([]api.Checkpoint, error)
+	// ClearCheckpoint removes a checkpoint
+	ClearCheckpoint(id int) error
+
+	// SetReturnValuesLoadConfig sets the load configuration for return values.
+	SetReturnValuesLoadConfig(*api.LoadConfig)
+
+	// IsMulticlien returns true if the headless instance is multiclient.
+	IsMulticlient() bool
+
+	// Disconnect closes the connection to the server without sending a Detach request first.
+	// If cont is true a continue command will be sent instead.
+	Disconnect(cont bool) error
 }

@@ -2,15 +2,14 @@ package api
 
 import (
 	"bytes"
-	"debug/gosym"
 	"go/constant"
 	"go/printer"
 	"go/token"
 	"reflect"
 	"strconv"
 
-	"github.com/derekparker/delve/proc"
-	"golang.org/x/debug/dwarf"
+	"github.com/derekparker/delve/pkg/dwarf/godwarf"
+	"github.com/derekparker/delve/pkg/proc"
 )
 
 // ConvertBreakpoint converts from a proc.Breakpoint to
@@ -46,7 +45,7 @@ func ConvertBreakpoint(bp *proc.Breakpoint) *Breakpoint {
 
 // ConvertThread converts a proc.Thread into an
 // api thread.
-func ConvertThread(th *proc.Thread) *Thread {
+func ConvertThread(th proc.Thread) *Thread {
 	var (
 		function *Function
 		file     string
@@ -65,16 +64,16 @@ func ConvertThread(th *proc.Thread) *Thread {
 
 	var bp *Breakpoint
 
-	if th.CurrentBreakpoint != nil && th.BreakpointConditionMet {
-		bp = ConvertBreakpoint(th.CurrentBreakpoint)
+	if b := th.Breakpoint(); b.Active {
+		bp = ConvertBreakpoint(b.Breakpoint)
 	}
 
-	if g, _ := th.GetG(); g != nil {
+	if g, _ := proc.GetG(th); g != nil {
 		gid = g.ID
 	}
 
 	return &Thread{
-		ID:          th.ID,
+		ID:          th.ThreadID(),
 		PC:          pc,
 		File:        file,
 		Line:        line,
@@ -84,7 +83,7 @@ func ConvertThread(th *proc.Thread) *Thread {
 	}
 }
 
-func prettyTypeName(typ dwarf.Type) string {
+func prettyTypeName(typ godwarf.Type) string {
 	if typ == nil {
 		return ""
 	}
@@ -98,6 +97,19 @@ func prettyTypeName(typ dwarf.Type) string {
 	return r
 }
 
+func convertFloatValue(v *proc.Variable, sz int) string {
+	switch v.FloatSpecial {
+	case proc.FloatIsPosInf:
+		return "+Inf"
+	case proc.FloatIsNegInf:
+		return "-Inf"
+	case proc.FloatIsNaN:
+		return "NaN"
+	}
+	f, _ := constant.Float64Val(v.Value)
+	return strconv.FormatFloat(f, 'f', -1, sz)
+}
+
 // ConvertVar converts from proc.Variable to api.Variable.
 func ConvertVar(v *proc.Variable) *Variable {
 	r := Variable{
@@ -107,6 +119,11 @@ func ConvertVar(v *proc.Variable) *Variable {
 		Kind:     v.Kind,
 		Len:      v.Len,
 		Cap:      v.Cap,
+		Flags:    VariableFlags(v.Flags),
+		Base:     v.Base,
+
+		LocationExpr: v.LocationExpr,
+		DeclLine:     v.DeclLine,
 	}
 
 	r.Type = prettyTypeName(v.DwarfType)
@@ -119,15 +136,16 @@ func ConvertVar(v *proc.Variable) *Variable {
 	if v.Value != nil {
 		switch v.Kind {
 		case reflect.Float32:
-			f, _ := constant.Float64Val(v.Value)
-			r.Value = strconv.FormatFloat(f, 'f', -1, 32)
+			r.Value = convertFloatValue(v, 32)
 		case reflect.Float64:
-			f, _ := constant.Float64Val(v.Value)
-			r.Value = strconv.FormatFloat(f, 'f', -1, 64)
+			r.Value = convertFloatValue(v, 64)
 		case reflect.String, reflect.Func:
 			r.Value = constant.StringVal(v.Value)
 		default:
-			r.Value = v.Value.String()
+			r.Value = v.ConstDescr()
+			if r.Value == "" {
+				r.Value = v.Value.String()
+			}
 		}
 	}
 
@@ -136,30 +154,43 @@ func ConvertVar(v *proc.Variable) *Variable {
 		r.Children = make([]Variable, 2)
 		r.Len = 2
 
-		real, _ := constant.Float64Val(constant.Real(v.Value))
-		imag, _ := constant.Float64Val(constant.Imag(v.Value))
-
 		r.Children[0].Name = "real"
 		r.Children[0].Kind = reflect.Float32
-		r.Children[0].Value = strconv.FormatFloat(real, 'f', -1, 32)
 
 		r.Children[1].Name = "imaginary"
 		r.Children[1].Kind = reflect.Float32
-		r.Children[1].Value = strconv.FormatFloat(imag, 'f', -1, 32)
+
+		if v.Value != nil {
+			real, _ := constant.Float64Val(constant.Real(v.Value))
+			r.Children[0].Value = strconv.FormatFloat(real, 'f', -1, 32)
+
+			imag, _ := constant.Float64Val(constant.Imag(v.Value))
+			r.Children[1].Value = strconv.FormatFloat(imag, 'f', -1, 32)
+		} else {
+			r.Children[0].Value = "nil"
+			r.Children[1].Value = "nil"
+		}
+
 	case reflect.Complex128:
 		r.Children = make([]Variable, 2)
 		r.Len = 2
 
-		real, _ := constant.Float64Val(constant.Real(v.Value))
-		imag, _ := constant.Float64Val(constant.Imag(v.Value))
-
 		r.Children[0].Name = "real"
 		r.Children[0].Kind = reflect.Float64
-		r.Children[0].Value = strconv.FormatFloat(real, 'f', -1, 64)
 
 		r.Children[1].Name = "imaginary"
 		r.Children[1].Kind = reflect.Float64
-		r.Children[1].Value = strconv.FormatFloat(imag, 'f', -1, 64)
+
+		if v.Value != nil {
+			real, _ := constant.Float64Val(constant.Real(v.Value))
+			r.Children[0].Value = strconv.FormatFloat(real, 'f', -1, 64)
+
+			imag, _ := constant.Float64Val(constant.Imag(v.Value))
+			r.Children[1].Value = strconv.FormatFloat(imag, 'f', -1, 64)
+		} else {
+			r.Children[0].Value = "nil"
+			r.Children[1].Value = "nil"
+		}
 
 	default:
 		r.Children = make([]Variable, len(v.Children))
@@ -174,33 +205,43 @@ func ConvertVar(v *proc.Variable) *Variable {
 
 // ConvertFunction converts from gosym.Func to
 // api.Function.
-func ConvertFunction(fn *gosym.Func) *Function {
+func ConvertFunction(fn *proc.Function) *Function {
 	if fn == nil {
 		return nil
 	}
 
+	// fn here used to be a *gosym.Func, the fields Type and GoType below
+	// corresponded to the homonymous field of gosym.Func. Since the contents of
+	// those fields is not documented their value was replaced with 0 when
+	// gosym.Func was replaced by debug_info entries.
 	return &Function{
-		Name:   fn.Name,
-		Type:   fn.Type,
-		Value:  fn.Value,
-		GoType: fn.GoType,
+		Name_:     fn.Name,
+		Type:      0,
+		Value:     fn.Entry,
+		GoType:    0,
+		Optimized: fn.Optimized(),
 	}
 }
 
 // ConvertGoroutine converts from proc.G to api.Goroutine.
 func ConvertGoroutine(g *proc.G) *Goroutine {
-	th := g.Thread()
+	th := g.Thread
 	tid := 0
 	if th != nil {
-		tid = th.ID
+		tid = th.ThreadID()
 	}
-	return &Goroutine{
+	r := &Goroutine{
 		ID:             g.ID,
 		CurrentLoc:     ConvertLocation(g.CurrentLoc),
 		UserCurrentLoc: ConvertLocation(g.UserCurrent()),
 		GoStatementLoc: ConvertLocation(g.Go()),
+		StartLoc:       ConvertLocation(g.StartLoc()),
 		ThreadID:       tid,
 	}
+	if g.Unreadable != nil {
+		r.Unreadable = g.Unreadable.Error()
+	}
+	return r
 }
 
 // ConvertLocation converts from proc.Location to api.Location.
@@ -213,6 +254,7 @@ func ConvertLocation(loc proc.Location) Location {
 	}
 }
 
+// ConvertAsmInstruction converts from proc.AsmInstruction to api.AsmInstruction.
 func ConvertAsmInstruction(inst proc.AsmInstruction, text string) AsmInstruction {
 	var destloc *Location
 	if inst.DestLoc != nil {
@@ -229,6 +271,7 @@ func ConvertAsmInstruction(inst proc.AsmInstruction, text string) AsmInstruction
 	}
 }
 
+// LoadConfigToProc converts an api.LoadConfig to proc.LoadConfig.
 func LoadConfigToProc(cfg *LoadConfig) *proc.LoadConfig {
 	if cfg == nil {
 		return nil
@@ -242,6 +285,7 @@ func LoadConfigToProc(cfg *LoadConfig) *proc.LoadConfig {
 	}
 }
 
+// LoadConfigFromProc converts a proc.LoadConfig to api.LoadConfig.
 func LoadConfigFromProc(cfg *proc.LoadConfig) *LoadConfig {
 	if cfg == nil {
 		return nil
@@ -255,10 +299,16 @@ func LoadConfigFromProc(cfg *proc.LoadConfig) *LoadConfig {
 	}
 }
 
+// ConvertRegisters converts proc.Register to api.Register for a slice.
 func ConvertRegisters(in []proc.Register) (out []Register) {
 	out = make([]Register, len(in))
 	for i := range in {
 		out[i] = Register{in[i].Name, in[i].Value}
 	}
 	return
+}
+
+// ConvertCheckpoint converts proc.Chekcpoint to api.Checkpoint.
+func ConvertCheckpoint(in proc.Checkpoint) (out Checkpoint) {
+	return Checkpoint(in)
 }

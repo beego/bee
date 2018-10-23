@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/derekparker/delve/proc"
+	"github.com/derekparker/delve/pkg/proc"
 	"github.com/derekparker/delve/service"
 	"github.com/derekparker/delve/service/api"
 	"github.com/derekparker/delve/service/debugger"
@@ -29,19 +29,23 @@ func (s *RPCServer) ProcessPid(arg1 interface{}, pid *int) error {
 }
 
 func (s *RPCServer) Detach(kill bool, ret *int) error {
-	return s.debugger.Detach(kill)
+	err := s.debugger.Detach(kill)
+	if s.config.DisconnectChan != nil {
+		close(s.config.DisconnectChan)
+	}
+	return err
 }
 
 func (s *RPCServer) Restart(arg1 interface{}, arg2 *int) error {
 	if s.config.AttachPid != 0 {
 		return errors.New("cannot restart process Delve did not create")
 	}
-	_, err := s.debugger.Restart()
+	_, err := s.debugger.Restart("", false, nil)
 	return err
 }
 
 func (s *RPCServer) State(arg interface{}, state *api.DebuggerState) error {
-	st, err := s.debugger.State()
+	st, err := s.debugger.State(false)
 	if err != nil {
 		return err
 	}
@@ -83,7 +87,7 @@ func (s *RPCServer) StacktraceGoroutine(args *StacktraceGoroutineArgs, locations
 	if args.Full {
 		loadcfg = &defaultLoadConfig
 	}
-	locs, err := s.debugger.Stacktrace(args.Id, args.Depth, loadcfg)
+	locs, err := s.debugger.Stacktrace(args.Id, args.Depth, false, loadcfg)
 	if err != nil {
 		return err
 	}
@@ -154,7 +158,7 @@ func (s *RPCServer) GetThread(id int, thread *api.Thread) error {
 }
 
 func (s *RPCServer) ListPackageVars(filter string, variables *[]api.Variable) error {
-	state, err := s.debugger.State()
+	state, err := s.debugger.State(false)
 	if err != nil {
 		return err
 	}
@@ -195,7 +199,7 @@ func (s *RPCServer) ListThreadPackageVars(args *ThreadListArgs, variables *[]api
 }
 
 func (s *RPCServer) ListRegisters(arg interface{}, registers *string) error {
-	state, err := s.debugger.State()
+	state, err := s.debugger.State(false)
 	if err != nil {
 		return err
 	}
