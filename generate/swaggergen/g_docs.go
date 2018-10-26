@@ -36,7 +36,7 @@ import (
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	bu "github.com/beego/bee/utils"
 )
 
@@ -519,6 +519,17 @@ func peekNextSplitString(ss string) (s string, spacePos int) {
 	}
 	return
 }
+/**
+Comment format with a single space as the semantic segmentation,
+single comma for the array information division
+*/
+func formatComment(comment string) string {
+	spaceReg, _ := regexp.Compile("[ \t]+")
+	commaReg, _ := regexp.Compile(",[ \t]+")
+	comment = spaceReg.ReplaceAllString(comment, " ")
+	comment = commaReg.ReplaceAllString(comment, ",")
+	return comment
+}
 
 // parse the func comments
 func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
@@ -535,6 +546,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 		for _, c := range comments.List {
 			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
 			if strings.HasPrefix(t, "@router") {
+				t = formatComment(t)
 				elements := strings.TrimSpace(t[len("@router"):])
 				e1 := strings.SplitN(elements, " ", 2)
 				if len(e1) < 1 {
