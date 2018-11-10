@@ -79,6 +79,7 @@ var basicTypes = map[string]string{
 	"rune":       "string:byte",
 	// builtin golang objects
 	"time.Time": "string:string",
+	"interface": "object",
 }
 
 var stdlibObject = map[string]string{
@@ -330,6 +331,7 @@ func GenerateDocs(curpath string) {
 	defer fdyml.Close()
 	defer fd.Close()
 	dt, err := json.MarshalIndent(rootapi, "", "    ")
+	//ioutil.WriteFile("/Users/heldiam/Desktop/swagger.json", dt, 0777)
 	dtyml, erryml := yaml.Marshal(rootapi)
 	if err != nil || erryml != nil {
 		panic(err)
@@ -569,6 +571,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				}
 			} else if strings.HasPrefix(t, "@Title") {
 				opts.OperationID = controllerName + "." + strings.TrimSpace(t[len("@Title"):])
+				opts.Summary = strings.TrimSpace(t[len("@Title"):])
 			} else if strings.HasPrefix(t, "@Description") {
 				opts.Description = strings.TrimSpace(t[len("@Description"):])
 			} else if strings.HasPrefix(t, "@Summary") {
@@ -956,7 +959,7 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 		if find {
 			return getModel(strs[0] + "." + objectname)
 		} else {
-			beeLogger.Log.Warnf("Cannot find the object: %s", str)
+			beeLogger.Log.Warnf("Cannot find the object: %s", objectname)
 		}
 		// TODO remove when all type have been supported
 		//os.Exit(1)
@@ -972,9 +975,30 @@ func getModel(str string) (objectname string, m swagger.Schema, realTypes []stri
 func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
-		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v\n", d)
+		beeLogger.Log.Errorf("Unknown type without TypeSec: %v\n", d)
+		return
 	}
 	// TODO support other types, such as `ArrayType`, `MapType`, `InterfaceType` etc...
+	switch t := ts.Type.(type) {
+	case *ast.SelectorExpr:
+		_, m1, realTypes1 := getModel(fmt.Sprintf("%s.%s", t.X, t.Sel.Name))
+		m.Title = k
+		m.Type = m1.Type
+		m.Properties = m1.Properties
+		m.Ref = m1.Ref
+		*realTypes = append(*realTypes, realTypes1...)
+		return
+	case *ast.Ident:
+		if !isBasicType(t.Name) {
+			_, m1, realTypes1 := getModel(fmt.Sprintf("%s.%s", packageName, t.Name))
+			m.Title = k
+			m.Type = m1.Type
+			m.Properties = m1.Properties
+			m.Ref = m1.Ref
+			*realTypes = append(*realTypes, realTypes1...)
+			return
+		}
+	}
 	st, ok := ts.Type.(*ast.StructType)
 	if !ok {
 		m.Title = fmt.Sprintf("%v", reflect.ValueOf(ts.Type))
@@ -992,10 +1016,17 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 					realType = strings.Replace(realType, "&", "", -1)
 					realType = strings.Replace(realType, "{", "", -1)
 					realType = strings.Replace(realType, "}", "", -1)
-				} else {
+				} else if realType != "interface" && !strings.Contains(realType, ".") {
 					realType = packageName + "." + realType
 				}
 			}
+			if field.Tag != nil {
+				stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+				if stag.Get("json") == "-" {
+					continue
+				}
+			}
+
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
 			if isSlice {
@@ -1129,6 +1160,8 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return false, "map", basicTypes[val]
 		}
 		return false, val, "object"
+	case *ast.InterfaceType:
+		return false, "interface", "object"
 	}
 	basicType := fmt.Sprint(f.Type)
 	if v, ok := f.Type.(*ast.SelectorExpr); ok {
