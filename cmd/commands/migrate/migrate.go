@@ -98,11 +98,22 @@ func RunMigration(cmd *commands.Command, args []string) int {
 	}
 	if mDir == "" {
 		mDir = utils.DocValue(config.Conf.Database.Dir)
+		if mDir == "" {
+			mDir = utils.DocValue(path.Join(currpath, "database", "migrations"))
+		}
 	}
+
 	beeLogger.Log.Infof("Using '%s' as 'driver'", mDriver)
 	beeLogger.Log.Infof("Using '%s' as 'conn'", mConn)
 	beeLogger.Log.Infof("Using '%s' as 'dir'", mDir)
 	driverStr, connStr, dirStr := string(mDriver), string(mConn), string(mDir)
+
+	dirRune := []rune(dirStr)
+
+	if dirRune[0] != '/' && dirRune[1] != ':' {
+		dirStr = path.Join(currpath, dirStr)
+	}
+
 	if len(args) == 0 {
 		// run all outstanding migrations
 		beeLogger.Log.Info("Running all outstanding migrations")
