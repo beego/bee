@@ -77,6 +77,7 @@ type bale struct {
 type database struct {
 	Driver string
 	Conn   string
+	Dir    string
 }
 
 // LoadConfig loads the bee tool configuration.

@@ -58,10 +58,12 @@ var CmdMigrate = &commands.Command{
 
 var mDriver utils.DocValue
 var mConn utils.DocValue
+var mDir utils.DocValue
 
 func init() {
 	CmdMigrate.Flag.Var(&mDriver, "driver", "Database driver. Either mysql, postgres or sqlite.")
 	CmdMigrate.Flag.Var(&mConn, "conn", "Connection string used by the driver to connect to a database instance.")
+	CmdMigrate.Flag.Var(&mDir, "dir", "The directory where the migration files are stored")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdMigrate)
 }
 
@@ -94,25 +96,29 @@ func RunMigration(cmd *commands.Command, args []string) int {
 			mConn = "root:@tcp(127.0.0.1:3306)/test"
 		}
 	}
+	if mDir == "" {
+		mDir = utils.DocValue(config.Conf.Database.Dir)
+	}
 	beeLogger.Log.Infof("Using '%s' as 'driver'", mDriver)
 	beeLogger.Log.Infof("Using '%s' as 'conn'", mConn)
-	driverStr, connStr := string(mDriver), string(mConn)
+	beeLogger.Log.Infof("Using '%s' as 'dir'", mDir)
+	driverStr, connStr, dirStr := string(mDriver), string(mConn), string(mDir)
 	if len(args) == 0 {
 		// run all outstanding migrations
 		beeLogger.Log.Info("Running all outstanding migrations")
-		MigrateUpdate(currpath, driverStr, connStr)
+		MigrateUpdate(currpath, driverStr, connStr, dirStr)
 	} else {
 		mcmd := args[0]
 		switch mcmd {
 		case "rollback":
 			beeLogger.Log.Info("Rolling back the last migration operation")
-			MigrateRollback(currpath, driverStr, connStr)
+			MigrateRollback(currpath, driverStr, connStr, dirStr)
 		case "reset":
 			beeLogger.Log.Info("Reseting all migrations")
-			MigrateReset(currpath, driverStr, connStr)
+			MigrateReset(currpath, driverStr, connStr, dirStr)
 		case "refresh":
 			beeLogger.Log.Info("Refreshing all migrations")
-			MigrateRefresh(currpath, driverStr, connStr)
+			MigrateRefresh(currpath, driverStr, connStr, dirStr)
 		default:
 			beeLogger.Log.Fatal("Command is missing")
 		}
@@ -122,8 +128,10 @@ func RunMigration(cmd *commands.Command, args []string) int {
 }
 
 // migrate generates source code, build it, and invoke the binary who does the actual migration
-func migrate(goal, currpath, driver, connStr string) {
-	dir := path.Join(currpath, "database", "migrations")
+func migrate(goal, currpath, driver, connStr, dir string) {
+	if dir == "" {
+		dir = path.Join(currpath, "database", "migrations")
+	}
 	postfix := ""
 	if runtime.GOOS == "windows" {
 		postfix = ".exe"
@@ -415,21 +423,21 @@ CREATE TABLE migrations (
 )
 
 // MigrateUpdate does the schema update
-func MigrateUpdate(currpath, driver, connStr string) {
-	migrate("upgrade", currpath, driver, connStr)
+func MigrateUpdate(currpath, driver, connStr, dir string) {
+	migrate("upgrade", currpath, driver, connStr, dir)
 }
 
 // MigrateRollback rolls back the latest migration
-func MigrateRollback(currpath, driver, connStr string) {
-	migrate("rollback", currpath, driver, connStr)
+func MigrateRollback(currpath, driver, connStr, dir string) {
+	migrate("rollback", currpath, driver, connStr, dir)
 }
 
 // MigrateReset rolls back all migrations
-func MigrateReset(currpath, driver, connStr string) {
-	migrate("reset", currpath, driver, connStr)
+func MigrateReset(currpath, driver, connStr, dir string) {
+	migrate("reset", currpath, driver, connStr, dir)
 }
 
 // migrationRefresh rolls back all migrations and start over again
-func MigrateRefresh(currpath, driver, connStr string) {
-	migrate("refresh", currpath, driver, connStr)
+func MigrateRefresh(currpath, driver, connStr, dir string) {
+	migrate("refresh", currpath, driver, connStr, dir)
 }
