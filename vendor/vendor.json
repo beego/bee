@@ -3,16 +3,22 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "/ffb74fNK251iTEebGjybfFBAbs=",
-			"path": "github.com/astaxie/beego/swagger",
-			"revision": "a09bafbf2ab483742b17bb352f95dbc0a597e720",
-			"revisionTime": "2018-07-21T07:55:28Z"
+			"checksumSHA1": "2dBBBK43N/+GT+p4BTeNzYcZBJk=",
+			"path": "github.com/astaxie/beego",
+			"revision": "6fec0a7831b4c05c9a583db04cb0ff233f26b15f",
+			"revisionTime": "2018-07-12T02:48:50Z"
 		},
 		{
-			"checksumSHA1": "epd3Y7nD7QVzTW0ppwK+q4pKo/4=",
+			"checksumSHA1": "/ffb74fNK251iTEebGjybfFBAbs=",
+			"path": "github.com/astaxie/beego/swagger",
+			"revision": "6fec0a7831b4c05c9a583db04cb0ff233f26b15f",
+			"revisionTime": "2018-07-12T02:48:50Z"
+		},
+		{
+			"checksumSHA1": "W7HBzu7HlF18vCfNPgax7xvHXB0=",
 			"path": "github.com/astaxie/beego/utils",
-			"revision": "323a1c4214101331a4b71922c23d19b7409ac71f",
-			"revisionTime": "2017-03-06T13:59:04Z"
+			"revision": "6fec0a7831b4c05c9a583db04cb0ff233f26b15f",
+			"revisionTime": "2018-07-12T02:48:50Z"
 		},
 		{
 			"checksumSHA1": "71Ih+BWcUNqZZcKKWcCmDRTZBFw=",
@@ -233,7 +239,6 @@
 		},
 		{
 			"checksumSHA1": "Y7nctMxT58lRM78VtElPerhcnEs=",
-			"origin": "github.com/beego/bee/vendor/golang.org/x/sys/windows",
 			"path": "golang.org/x/sys/windows",
 			"revision": "fa43e7bc11baaae89f3f902b2b4d832b68234844",
 			"revisionTime": "2018-10-11T14:35:51Z"

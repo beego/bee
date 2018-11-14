@@ -18,6 +18,7 @@ import (
 	"syscall"
 	"time"
 
+	_ "github.com/astaxie/beego"
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
