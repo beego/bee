@@ -511,9 +511,9 @@ import (
 )
 
 func init() {
-	_, file, _, _ := runtime.Caller(1)
-	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
-	beego.TestBeegoInit(apppath)
+	appPath, _ := filepath.Abs("..")
+	beego.TestBeegoInit(appPath)
+	beego.AppPath = appPath
 }
 
 // TestGet is a sample to run an endpoint test
