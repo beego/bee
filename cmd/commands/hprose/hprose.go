@@ -24,7 +24,7 @@ var CmdHproseapp = &commands.Command{
 
   {{"To scaffold out your application, use:"|bold}}
 
-      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   If 'conn' is empty, the command will generate a sample application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
