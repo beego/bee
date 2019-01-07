@@ -541,7 +541,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 	//TODO: resultMap := buildParamMap(f.Type.Results)
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
-			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+			t := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
 			if strings.HasPrefix(t, "@router") {
 				elements := strings.TrimSpace(t[len("@router"):])
 				e1 := strings.SplitN(elements, " ", 2)
