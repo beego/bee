@@ -85,7 +85,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 					go func() {
 						// Wait 1s before autobuild until there is no file change.
 						scheduleTime = time.Now().Add(1 * time.Second)
-						time.Sleep(scheduleTime.Sub(time.Now()))
+						time.Until(scheduleTime)
 						AutoBuild(files, isgenerate)
 
 						if config.Conf.EnableReload {
@@ -148,7 +148,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 	appName := appname
 	if err == nil {
-		
+
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
