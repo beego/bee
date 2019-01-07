@@ -32,7 +32,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
@@ -124,7 +124,7 @@ func ParsePackagesFromDir(dirpath string) {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
 					// Send the error to through the channel and continue walking
-					c <- fmt.Errorf("Error while parsing directory: %s", err.Error())
+					c <- fmt.Errorf("error while parsing directory: %s", err.Error())
 					return nil
 				}
 			}
