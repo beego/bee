@@ -730,7 +730,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			}
 		}
 	}
-
+	routerPath = urlReplace(routerPath)
 	if routerPath != "" {
 		//Go over function parameters which were not mapped and create swagger params for them
 		for name, typ := range funcParamMap {
@@ -1198,7 +1198,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					for _, pkg := range astPkgs {
 						for _, fl := range pkg.Files {
 							for nameOfObj, obj := range fl.Scope.Objects {
-								if obj.Name == fmt.Sprint(field.Type) {
+								if pkg.Name+"."+obj.Name == realType {
 									parseObject(obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
 								}
 							}
