@@ -32,7 +32,7 @@ import (
 	"strings"
 	"unicode"
 
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
@@ -124,7 +124,7 @@ func ParsePackagesFromDir(dirpath string) {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
 					// Send the error to through the channel and continue walking
-					c <- fmt.Errorf("Error while parsing directory: %s", err.Error())
+					c <- fmt.Errorf("error while parsing directory: %s", err.Error())
 					return nil
 				}
 			}
@@ -541,7 +541,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 	//TODO: resultMap := buildParamMap(f.Type.Results)
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
-			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+			t := strings.TrimSpace(strings.TrimPrefix(c.Text, "//"))
 			if strings.HasPrefix(t, "@router") {
 				elements := strings.TrimSpace(t[len("@router"):])
 				e1 := strings.SplitN(elements, " ", 2)
