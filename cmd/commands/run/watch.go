@@ -183,9 +183,22 @@ func Kill() {
 		}
 	}()
 	if cmd != nil && cmd.Process != nil {
-		err := cmd.Process.Kill()
-		if err != nil {
-			beeLogger.Log.Errorf("Error while killing cmd process: %s", err)
+		cmd.Process.Signal(os.Interrupt)
+		ch := make(chan struct{}, 1)
+		go func() {
+			cmd.Wait()
+			ch <- struct{}{}
+		}()
+		select {
+		case <-ch:
+			return
+		case <-time.After(10 * time.Second):
+			beeLogger.Log.Info("Timeout; Force kill cmd process")
+			err := cmd.Process.Kill()
+			if err != nil {
+				beeLogger.Log.Errorf("Error while killing cmd process: %s", err)
+			}
+			return
 		}
 	}
 }
