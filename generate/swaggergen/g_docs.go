@@ -285,32 +285,7 @@ func GenerateDocs(curpath string) {
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
-									var controllerName string
-									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
-										s, params := analyseNewNamespace(pp)
-										for _, sp := range params {
-											switch pp := sp.(type) {
-											case *ast.CallExpr:
-												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-													controllerName = analyseNSInclude(s, pp)
-													if v, ok := controllerComments[controllerName]; ok {
-														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
-															Name:        strings.Trim(s, "/"),
-															Description: v,
-														})
-													}
-												}
-											}
-										}
-									} else if selname == "NSInclude" {
-										controllerName = analyseNSInclude("", pp)
-										if v, ok := controllerComments[controllerName]; ok {
-											rootapi.Tags = append(rootapi.Tags, swagger.Tag{
-												Name:        controllerName, // if the NSInclude has no prefix, we use the controllername as the tag
-												Description: v,
-											})
-										}
-									}
+									analyseNestedNamespace(pp, "")
 								}
 							}
 						}
@@ -343,6 +318,46 @@ func GenerateDocs(curpath string) {
 	}
 }
 
+// Added to support nested new namespace
+func analyseNestedNamespace(pp *ast.CallExpr, parentUrl string) {
+	var controllerName string
+	if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
+		s, params := analyseNewNamespace(pp)
+		for _, sp := range params {
+			switch pp := sp.(type) {
+			case *ast.CallExpr:
+				if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" || pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSRouter" {
+					if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
+						controllerName = analyseNSInclude(s, parentUrl, pp)
+					} else {
+						controllerName = analyseNSRouter(s, parentUrl, pp)
+					}
+					if v, ok := controllerComments[controllerName]; ok {
+						rootapi.Tags = append(rootapi.Tags, swagger.Tag{
+							Name:        strings.Trim(s, "/"),
+							Description: v,
+						})
+					}
+				} else if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSNamespace" {
+					analyseNestedNamespace(pp, parentUrl+s)
+				}
+			}
+		}
+	} else if selname == "NSInclude" || selname == "NSRouter" {
+		if selname == "NSInclude" {
+			controllerName = analyseNSInclude("", parentUrl, pp)
+		} else {
+			controllerName = analyseNSRouter("", parentUrl, pp)
+		}
+		if v, ok := controllerComments[controllerName]; ok {
+			rootapi.Tags = append(rootapi.Tags, swagger.Tag{
+				Name:        controllerName, // if the NSInclude has no prefix, we use the controllername as the tag
+				Description: v,
+			})
+		}
+	}
+}
+
 // analyseNewNamespace returns version and the others params
 func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	for i, p := range ce.Args {
@@ -357,8 +372,74 @@ func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	}
 	return
 }
+// Added to support analyseNSRouter namespace
+func analyseNSRouter(baseurl string, parentUrl string, ce *ast.CallExpr) string {
+	cname := ""
 
-func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
+	pp1 := ce.Args[0]
+	p := ce.Args[1]
+	if v, ok := pp1.(*ast.BasicLit); ok {
+		routerUrl := strings.Trim(v.Value, `"`)
+		baseurl = baseurl + routerUrl
+	}
+
+	var x *ast.SelectorExpr
+	var p1 interface{} = p
+	if ident, ok := p1.(*ast.Ident); ok {
+		if assign, ok := ident.Obj.Decl.(*ast.AssignStmt); ok {
+			if len(assign.Rhs) > 0 {
+				p1 = assign.Rhs[0].(*ast.UnaryExpr)
+			}
+		}
+	}
+	if _, ok := p1.(*ast.UnaryExpr); ok {
+		x = p1.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
+	} else {
+		beeLogger.Log.Warnf("Couldn't determine type\n")
+		return cname
+	}
+	if v, ok := importlist[fmt.Sprint(x.X)]; ok {
+		cname = v + x.Sel.Name
+	}
+	if apis, ok := controllerList[cname]; ok {
+		for rt, item := range apis {
+			tag := cname
+			if baseurl != "" {
+				rt = parentUrl + baseurl + rt
+				tag = strings.Trim(baseurl, "/")
+			}
+			if item.Get != nil {
+				item.Get.Tags = []string{tag}
+			}
+			if item.Post != nil {
+				item.Post.Tags = []string{tag}
+			}
+			if item.Put != nil {
+				item.Put.Tags = []string{tag}
+			}
+			if item.Patch != nil {
+				item.Patch.Tags = []string{tag}
+			}
+			if item.Head != nil {
+				item.Head.Tags = []string{tag}
+			}
+			if item.Delete != nil {
+				item.Delete.Tags = []string{tag}
+			}
+			if item.Options != nil {
+				item.Options.Tags = []string{tag}
+			}
+			if len(rootapi.Paths) == 0 {
+				rootapi.Paths = make(map[string]*swagger.Item)
+			}
+			rt = urlReplace(rt)
+			rootapi.Paths[rt] = item
+		}
+	}
+	return cname
+}
+
+func analyseNSInclude(baseurl string, parentUrl string, ce *ast.CallExpr) string {
 	cname := ""
 	for _, p := range ce.Args {
 		var x *ast.SelectorExpr
@@ -383,7 +464,7 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 			for rt, item := range apis {
 				tag := cname
 				if baseurl != "" {
-					rt = baseurl + rt
+					rt = parentUrl + baseurl + rt
 					tag = strings.Trim(baseurl, "/")
 				}
 				if item.Get != nil {
