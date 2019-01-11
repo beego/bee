@@ -28,10 +28,10 @@ import (
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
-	"github.com/derekparker/delve/service"
-	"github.com/derekparker/delve/service/rpc2"
-	"github.com/derekparker/delve/service/rpccommon"
-	"github.com/derekparker/delve/terminal"
+	"github.com/go-delve/delve/service"
+	"github.com/go-delve/delve/service/rpc2"
+	"github.com/go-delve/delve/service/rpccommon"
+	"github.com/go-delve/delve/terminal"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -43,7 +43,7 @@ var cmdDlv = &commands.Command{
 
   To debug your application using Delve, use: {{"$ bee dlv" | bold}}
 
-  For more information on Delve: https://github.com/derekparker/delve
+  For more information on Delve: https://github.com/go-delve/delve
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    runDlv,
