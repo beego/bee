@@ -227,7 +227,7 @@ func startWatcher(paths []string, ch chan int) {
 
 					// Wait 1s before re-build until there is no file change
 					scheduleTime := time.Now().Add(1 * time.Second)
-					time.Sleep(scheduleTime.Sub(time.Now()))
+					time.Sleep(time.Until(scheduleTime))
 					_, err := buildDebug()
 					if err != nil {
 						utils.Notify("Build Failed: "+err.Error(), "bee")

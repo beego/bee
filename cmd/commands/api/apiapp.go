@@ -35,7 +35,7 @@ var CmdApiapp = &commands.Command{
   The command 'api' creates a Beego API application.
 
   {{"Example:"|bold}}
-      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -511,7 +511,7 @@ import (
 )
 
 func init() {
-	_, file, _, _ := runtime.Caller(1)
+	_, file, _, _ := runtime.Caller(0)
 	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
 	beego.TestBeegoInit(apppath)
 }
