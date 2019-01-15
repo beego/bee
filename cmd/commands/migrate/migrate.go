@@ -38,19 +38,19 @@ var CmdMigrate = &commands.Command{
 
   ▶ {{"To run all the migrations:"|bold}}
 
-    $ bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-dir="path/to/migration"]
 
   ▶ {{"To rollback the last migration:"|bold}}
 
-    $ bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-dir="path/to/migration"]
 
   ▶ {{"To do a reset, which will rollback all the migrations:"|bold}}
 
-    $ bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-dir="path/to/migration"]
 
   ▶ {{"To update your schema:"|bold}}
 
-    $ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-dir="path/to/migration"]
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    RunMigration,
