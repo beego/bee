@@ -44,7 +44,7 @@ func GenerateScaffold(sname, fields, currpath, driver, conn string) {
 	// Run the migration
 	beeLogger.Log.Infof("Do you want to migrate the database? [Yes|No] ")
 	if utils.AskForConfirmation() {
-		migrate.MigrateUpdate(currpath, driver, conn)
+		migrate.MigrateUpdate(currpath, driver, conn, "")
 	}
 	beeLogger.Log.Successf("All done! Don't forget to add  beego.Router(\"/%s\" ,&controllers.%sController{}) to routers/route.go\n", sname, strings.Title(sname))
 }
