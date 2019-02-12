@@ -119,7 +119,7 @@ func ParsePackagesFromDir(dirpath string) {
 			// all 'tests' folders and dot folders wihin dirpath
 			d, _ := filepath.Rel(dirpath, fpath)
 			if !(d == "vendor" || strings.HasPrefix(d, "vendor"+string(os.PathSeparator))) &&
-				!strings.Contains(fpath, "tests") &&
+				!strings.Contains(d, "tests") &&
 				!(d[0] == '.') {
 				err = parsePackageFromDir(fpath)
 				if err != nil {
