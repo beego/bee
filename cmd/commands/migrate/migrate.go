@@ -38,19 +38,19 @@ var CmdMigrate = &commands.Command{
 
   ▶ {{"To run all the migrations:"|bold}}
 
-    $ bee migrate [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate [-gobin=go] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   ▶ {{"To rollback the last migration:"|bold}}
 
-    $ bee migrate rollback [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate rollback [-gobin=go] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   ▶ {{"To do a reset, which will rollback all the migrations:"|bold}}
 
-    $ bee migrate reset [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate reset [-gobin=go] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   ▶ {{"To update your schema:"|bold}}
 
-    $ bee migrate refresh [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
+    $ bee migrate refresh [-gobin=go] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    RunMigration,
@@ -58,8 +58,10 @@ var CmdMigrate = &commands.Command{
 
 var mDriver utils.DocValue
 var mConn utils.DocValue
+var cmdName = utils.DocValue("go")
 
 func init() {
+	CmdMigrate.Flag.Var(&cmdName, "gobin", "go executable file path or alias")
 	CmdMigrate.Flag.Var(&mDriver, "driver", "Database driver. Either mysql, postgres or sqlite.")
 	CmdMigrate.Flag.Var(&mConn, "conn", "Connection string used by the driver to connect to a database instance.")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdMigrate)
@@ -289,7 +291,7 @@ func writeMigrationSourceFile(dir, source, driver, connStr string, latestTime in
 // buildMigrationBinary changes directory to database/migrations folder and go-build the source
 func buildMigrationBinary(dir, binary string) {
 	changeDir(dir)
-	cmd := exec.Command("go", "build", "-o", binary)
+	cmd := exec.Command(string(cmdName), "build", "-o", binary)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		beeLogger.Log.Errorf("Could not build migration binary: %s", err)
 		formatShellErrOutput(string(out))
