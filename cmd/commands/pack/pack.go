@@ -511,7 +511,7 @@ func packApp(cmd *commands.Command, args []string) int {
 			fmt.Fprintf(output, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
 
-		execmd := exec.Command(string(cmdName), args...)
+		execmd := exec.Command(cmdName, args...)
 		execmd.Env = append(os.Environ(), envs...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr
