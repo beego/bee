@@ -48,7 +48,7 @@ const shortVersionBanner = `______
 `
 
 var CmdVersion = &commands.Command{
-	UsageLine: "version",
+	UsageLine: "version [-gobin=go] [-o=json] ",
 	Short:     "Prints the current Bee version",
 	Long: `
 Prints the current Bee, Beego and Go version alongside the platform information.
@@ -62,6 +62,7 @@ const version = "1.10.0"
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
 	fs.StringVar(&outputFormat, "o", "", "Set the output format. Either json or yaml.")
+	fs.StringVar(&commands.CmdName, "gobin", "go", "go executable file path or alias")
 	CmdVersion.Flag = *fs
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdVersion)
 }
@@ -168,7 +169,7 @@ func GetGoVersion() string {
 		err    error
 	)
 
-	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
+	if cmdOut, err = exec.Command(commands.CmdName, "version").Output(); err != nil {
 		beeLogger.Log.Fatalf("There was an error running 'go version' command: %s", err)
 	}
 	return strings.Split(string(cmdOut), " ")[2]

@@ -28,7 +28,7 @@ import (
 )
 
 var CmdRun = &commands.Command{
-	UsageLine: "run [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
+	UsageLine: "run [-gobin=go] [appname] [watchall] [-main=*.go] [-downdoc=true]  [-gendoc=true] [-vendor=true] [-e=folderToExclude] [-ex=extraPackageToWatch] [-tags=goBuildTags] [-runmode=BEEGO_RUNMODE]",
 	Short:     "Run the application by starting a local development server",
 	Long: `
 Run command will supervise the filesystem of the application for any changes, and recompile/restart it.
@@ -66,6 +66,7 @@ var (
 var started = make(chan bool)
 
 func init() {
+	CmdRun.Flag.StringVar(&commands.CmdName, "gobin", "go", "go executable file path or alias")
 	CmdRun.Flag.Var(&mainFiles, "main", "Specify main go files.")
 	CmdRun.Flag.Var(&gendoc, "gendoc", "Enable auto-generate the docs.")
 	CmdRun.Flag.Var(&downdoc, "downdoc", "Enable auto-download of the swagger file if it does not exist.")

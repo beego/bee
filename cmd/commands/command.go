@@ -42,6 +42,7 @@ type Command struct {
 
 var AvailableCommands = []*Command{}
 var cmdUsage = `Use {{printf "bee help %s" .Name | bold}} for more information.{{endline}}`
+var CmdName = "go"
 
 // Name returns the command's name: the first word in the Usage line.
 func (c *Command) Name() string {

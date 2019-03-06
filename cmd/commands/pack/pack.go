@@ -20,7 +20,7 @@ import (
 
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/version"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
 )
 
@@ -55,6 +55,7 @@ var (
 
 func init() {
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
+	fs.StringVar(&commands.CmdName, "gobin", "go", "go executable file path or alias")
 	fs.StringVar(&appPath, "p", "", "Set the application path. Defaults to the current path.")
 	fs.BoolVar(&build, "b", true, "Tell the command to do a build for the current platform. Defaults to true.")
 	fs.StringVar(&buildArgs, "ba", "", "Specify additional args for Go build.")
@@ -508,7 +509,7 @@ func packApp(cmd *commands.Command, args []string) int {
 			fmt.Fprintf(output, "\t%s%s+ go %s%s%s\n", "\x1b[32m", "\x1b[1m", strings.Join(args, " "), "\x1b[21m", "\x1b[0m")
 		}
 
-		execmd := exec.Command("go", args...)
+		execmd := exec.Command(commands.CmdName, args...)
 		execmd.Env = append(os.Environ(), envs...)
 		execmd.Stdout = os.Stdout
 		execmd.Stderr = os.Stderr

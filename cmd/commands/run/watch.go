@@ -16,6 +16,7 @@ package run
 
 import (
 	"bytes"
+	"github.com/beego/bee/cmd/commands"
 	"os"
 	"os/exec"
 	"regexp"
@@ -85,7 +86,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 					go func() {
 						// Wait 1s before autobuild until there is no file change.
 						scheduleTime = time.Now().Add(1 * time.Second)
-						time.Sleep(scheduleTime.Sub(time.Now()))
+						time.Sleep(time.Until(scheduleTime))
 						AutoBuild(files, isgenerate)
 
 						if config.Conf.EnableReload {
@@ -118,8 +119,6 @@ func AutoBuild(files []string, isgenerate bool) {
 
 	os.Chdir(currpath)
 
-	cmdName := "go"
-
 	var (
 		err    error
 		stderr bytes.Buffer
@@ -127,7 +126,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	// For applications use full import path like "github.com/.../.."
 	// are able to use "go install" to reduce build time.
 	if config.Conf.GoInstall {
-		icmd := exec.Command(cmdName, "install", "-v")
+		icmd := exec.Command(commands.CmdName, "install", "-v")
 		icmd.Stdout = os.Stdout
 		icmd.Stderr = os.Stderr
 		icmd.Env = append(os.Environ(), "GOGC=off")
@@ -148,7 +147,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 	appName := appname
 	if err == nil {
-		
+
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
@@ -160,7 +159,7 @@ func AutoBuild(files []string, isgenerate bool) {
 		}
 		args = append(args, files...)
 
-		bcmd := exec.Command(cmdName, args...)
+		bcmd := exec.Command(commands.CmdName, args...)
 		bcmd.Env = append(os.Environ(), "GOGC=off")
 		bcmd.Stderr = &stderr
 		err = bcmd.Run()
