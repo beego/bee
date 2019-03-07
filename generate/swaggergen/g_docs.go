@@ -1183,6 +1183,18 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 
 }
 
+func normalizeTypeName(packageName, typename string) string {
+	if len(strings.Split(typename, " ")) > 1 {
+		typename = strings.Replace(typename, " ", ".", -1)
+		typename = strings.Replace(typename, "&", "", -1)
+		typename = strings.Replace(typename, "{", "", -1)
+		typename = strings.Replace(typename, "}", "", -1)
+	} else {
+		typename = packageName + "." + typename
+	}
+	return typename
+}
+
 func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	m.Title = k
 	if st.Fields.List != nil {
@@ -1190,14 +1202,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 		for _, field := range st.Fields.List {
 			isSlice, realType, sType := typeAnalyser(field)
 			if (isSlice && isBasicType(realType)) || sType == astTypeObject {
-				if len(strings.Split(realType, " ")) > 1 {
-					realType = strings.Replace(realType, " ", ".", -1)
-					realType = strings.Replace(realType, "&", "", -1)
-					realType = strings.Replace(realType, "{", "", -1)
-					realType = strings.Replace(realType, "}", "", -1)
-				} else {
-					realType = packageName + "." + realType
-				}
+				realType = normalizeTypeName(packageName, realType)
 			}
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
@@ -1226,9 +1231,19 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 				} else if realType == astTypeMap {
 					typeFormat := strings.Split(sType, ":")
 					mp.Type = astTypeObject
-					mp.AdditionalProperties = &swagger.Propertie{
-						Type:   typeFormat[0],
-						Format: typeFormat[1],
+					if typeFormat[0] == astTypeObject && typeFormat[1] != "" {
+						// map[string]object
+						valType := normalizeTypeName(packageName, typeFormat[1])
+						*realTypes = append(*realTypes, valType)
+						mp.AdditionalProperties = &swagger.Propertie{
+							Ref: "#/definitions/" + valType,
+						}
+					} else {
+						// map[string]basicType
+						mp.AdditionalProperties = &swagger.Propertie{
+							Type:   typeFormat[0],
+							Format: typeFormat[1],
+						}
 					}
 				}
 			}
@@ -1344,7 +1359,14 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), astTypeObject
 		}
 		if star, ok := arr.Elt.(*ast.StarExpr); ok {
-			return true, fmt.Sprint(star.X), astTypeObject
+			basicType := fmt.Sprint(star.X)
+			if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
+				basicType = object
+			}
+			if k, ok := basicTypes[basicType]; ok {
+				return true, fmt.Sprintf("[]%v", basicType), k
+			}
+			return true, basicType, astTypeObject
 		}
 		return true, fmt.Sprint(arr.Elt), astTypeObject
 	}
@@ -1363,13 +1385,18 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 		switch t.Value.(type) {
 		case *ast.InterfaceType:
 			val = "json.RawMessage"
+		case *ast.StarExpr:
+			val = fmt.Sprint(t.Value.(*ast.StarExpr).X)
+			if object, isStdLibObject := stdlibObject[val]; isStdLibObject {
+				val = object
+			}
 		default:
 			val = fmt.Sprintf("%v", t.Value)
 		}
 		if isBasicType(val) {
 			return false, astTypeMap, basicTypes[val]
 		}
-		return false, astTypeMap, astTypeObject
+		return false, astTypeMap, astTypeObject + ":" + val
 	case *ast.InterfaceType:
 		// Interface as Map
 		val := "json.RawMessage"
