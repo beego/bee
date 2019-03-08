@@ -104,7 +104,8 @@ func RunMigration(cmd *commands.Command, args []string) int {
 	}
 
 	beeLogger.Log.Infof("Using '%s' as 'driver'", mDriver)
-	beeLogger.Log.Infof("Using '%s' as 'conn'", mConn)
+	//Log sensitive connection information only when DEBUG is set to true.
+	beeLogger.Log.Debugf("Conn: %s", utils.FILE(), utils.LINE(), mConn)
 	beeLogger.Log.Infof("Using '%s' as 'dir'", mDir)
 	driverStr, connStr, dirStr := string(mDriver), string(mConn), string(mDir)
 
