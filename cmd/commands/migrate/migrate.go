@@ -448,7 +448,7 @@ func MigrateReset(currpath, driver, connStr, dir string) {
 	migrate("reset", currpath, driver, connStr, dir)
 }
 
-// migrationRefresh rolls back all migrations and start over again
+// MigrateRefresh rolls back all migrations and start over again
 func MigrateRefresh(currpath, driver, connStr, dir string) {
 	migrate("refresh", currpath, driver, connStr, dir)
 }
