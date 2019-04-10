@@ -791,10 +791,21 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 	if typ == "string" || typ == "number" || typ == "integer" || typ == "boolean" ||
 		typ == astTypeArray || typ == "file" {
 		paraType = typ
+		if para.In == "body" {
+			para.Schema = &swagger.Schema{
+				Type: paraType,
+			}
+		}
 	} else if sType, ok := basicTypes[typ]; ok {
 		typeFormat := strings.Split(sType, ":")
 		paraType = typeFormat[0]
 		paraFormat = typeFormat[1]
+		if para.In == "body" {
+			para.Schema = &swagger.Schema{
+				Type: paraType,
+				Format: paraFormat,
+			}
+		}
 	} else {
 		m, mod, realTypes := getModel(typ)
 		para.Schema = &swagger.Schema{
