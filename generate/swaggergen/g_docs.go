@@ -93,6 +93,16 @@ var stdlibObject = map[string]string{
 	"&{json RawMessage}": "json.RawMessage",
 }
 
+var httpMethods = map[string]bool{
+	"GET":     true,
+	"POST":    true,
+	"PUT":     true,
+	"PATCH":   true,
+	"DELETE":  true,
+	"HEAD":    true,
+	"OPTIONS": true,
+}
+
 func init() {
 	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
@@ -278,41 +288,7 @@ func GenerateDocs(curpath string) {
 							if !selOK || selExpr.Sel.Name != "NewNamespace" {
 								continue
 							}
-							version, params := analyseNewNamespace(v)
-							if rootapi.BasePath == "" && version != "" {
-								rootapi.BasePath = version
-							}
-							for _, p := range params {
-								switch pp := p.(type) {
-								case *ast.CallExpr:
-									var controllerName string
-									if selname := pp.Fun.(*ast.SelectorExpr).Sel.String(); selname == "NSNamespace" {
-										s, params := analyseNewNamespace(pp)
-										for _, sp := range params {
-											switch pp := sp.(type) {
-											case *ast.CallExpr:
-												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-													controllerName = analyseNSInclude(s, pp)
-													if v, ok := controllerComments[controllerName]; ok {
-														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
-															Name:        strings.Trim(s, "/"),
-															Description: v,
-														})
-													}
-												}
-											}
-										}
-									} else if selname == "NSInclude" {
-										controllerName = analyseNSInclude("", pp)
-										if v, ok := controllerComments[controllerName]; ok {
-											rootapi.Tags = append(rootapi.Tags, swagger.Tag{
-												Name:        controllerName, // if the NSInclude has no prefix, we use the controllername as the tag
-												Description: v,
-											})
-										}
-									}
-								}
-							}
+							traverseNameSpace("", v)
 						}
 
 					}
@@ -343,6 +319,41 @@ func GenerateDocs(curpath string) {
 	}
 }
 
+func traverseNameSpace(baseURL string, pp *ast.CallExpr) {
+	s, params := analyseNewNamespace(pp)
+	if rootapi.BasePath == "" && baseURL == "" {
+		rootapi.BasePath = s // version
+		s = ""
+	}
+	for _, sp := range params {
+		switch pp := sp.(type) {
+		case *ast.CallExpr:
+			selname := pp.Fun.(*ast.SelectorExpr).Sel.String()
+			switch selname {
+			case "NSNamespace":
+				traverseNameSpace(baseURL+s, pp)
+			case "NSRouter":
+				rootpath := strings.Trim(pp.Args[0].(*ast.BasicLit).Value, "\"")
+				controllerName := analyseNSRouter(baseURL+s, rootpath, pp)
+				if v, ok := controllerComments[controllerName]; ok {
+					rootapi.Tags = append(rootapi.Tags, swagger.Tag{
+						Name:        strings.Trim(s, "/"),
+						Description: v,
+					})
+				}
+			case "NSInclude":
+				controllerName := analyseNSInclude(baseURL+s, pp)
+				if v, ok := controllerComments[controllerName]; ok {
+					rootapi.Tags = append(rootapi.Tags, swagger.Tag{
+						Name:        strings.Trim(s, "/"),
+						Description: v,
+					})
+				}
+			}
+		}
+	}
+}
+
 // analyseNewNamespace returns version and the others params
 func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 	for i, p := range ce.Args {
@@ -356,6 +367,66 @@ func analyseNewNamespace(ce *ast.CallExpr) (first string, others []ast.Expr) {
 		others = append(others, p)
 	}
 	return
+}
+
+func appendController(pkgname, cname, baseurl, routeurl string) string {
+	if v, ok := importlist[pkgname]; ok {
+		cname = v + cname
+	}
+	if apis, ok := controllerList[cname]; ok {
+		for rt, item := range apis {
+			if routeurl != "" {
+				if rt != "" {
+					continue
+				}
+				rt = routeurl // routers without '@router' annotation
+			}
+			tag := cname
+			if baseurl != "" {
+				rt = baseurl + rt
+				tag = strings.Trim(baseurl, "/")
+			}
+			if item.Get != nil {
+				item.Get.Tags = []string{tag}
+			}
+			if item.Post != nil {
+				item.Post.Tags = []string{tag}
+			}
+			if item.Put != nil {
+				item.Put.Tags = []string{tag}
+			}
+			if item.Patch != nil {
+				item.Patch.Tags = []string{tag}
+			}
+			if item.Head != nil {
+				item.Head.Tags = []string{tag}
+			}
+			if item.Delete != nil {
+				item.Delete.Tags = []string{tag}
+			}
+			if item.Options != nil {
+				item.Options.Tags = []string{tag}
+			}
+			if len(rootapi.Paths) == 0 {
+				rootapi.Paths = make(map[string]*swagger.Item)
+			}
+			rt = urlReplace(rt)
+			rootapi.Paths[rt] = item
+		}
+	}
+	return cname
+}
+
+func analyseNSRouter(baseurl, routeurl string, ce *ast.CallExpr) string {
+	var x *ast.SelectorExpr
+	var p interface{} = ce.Args[1]
+
+	if _, ok := p.(*ast.UnaryExpr); ok {
+		x = p.(*ast.UnaryExpr).X.(*ast.CompositeLit).Type.(*ast.SelectorExpr)
+	} else {
+		beeLogger.Log.Warnf("Couldn't determine type\n")
+	}
+	return appendController(fmt.Sprint(x.X), x.Sel.Name, baseurl, routeurl)
 }
 
 func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
@@ -376,44 +447,8 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 			beeLogger.Log.Warnf("Couldn't determine type\n")
 			continue
 		}
-		if v, ok := importlist[fmt.Sprint(x.X)]; ok {
-			cname = v + x.Sel.Name
-		}
-		if apis, ok := controllerList[cname]; ok {
-			for rt, item := range apis {
-				tag := cname
-				if baseurl != "" {
-					rt = baseurl + rt
-					tag = strings.Trim(baseurl, "/")
-				}
-				if item.Get != nil {
-					item.Get.Tags = []string{tag}
-				}
-				if item.Post != nil {
-					item.Post.Tags = []string{tag}
-				}
-				if item.Put != nil {
-					item.Put.Tags = []string{tag}
-				}
-				if item.Patch != nil {
-					item.Patch.Tags = []string{tag}
-				}
-				if item.Head != nil {
-					item.Head.Tags = []string{tag}
-				}
-				if item.Delete != nil {
-					item.Delete.Tags = []string{tag}
-				}
-				if item.Options != nil {
-					item.Options.Tags = []string{tag}
-				}
-				if len(rootapi.Paths) == 0 {
-					rootapi.Paths = make(map[string]*swagger.Item)
-				}
-				rt = urlReplace(rt)
-				rootapi.Paths[rt] = item
-			}
-		}
+
+		cname = appendController(fmt.Sprint(x.X), x.Sel.Name, baseurl, "")
 	}
 	return cname
 }
@@ -538,6 +573,10 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 	funcName := f.Name.String()
 	comments := f.Doc
 	funcParamMap := buildParamMap(f.Type.Params)
+
+	if fn := strings.ToUpper(funcName); httpMethods[fn] {
+		HTTPMethod = fn
+	}
 	//TODO: resultMap := buildParamMap(f.Type.Results)
 	if comments != nil && comments.List != nil {
 		for _, c := range comments.List {
@@ -731,7 +770,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 		}
 	}
 
-	if routerPath != "" {
+	if HTTPMethod != "" {
 		//Go over function parameters which were not mapped and create swagger params for them
 		for name, typ := range funcParamMap {
 			para := swagger.Parameter{}
