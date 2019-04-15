@@ -28,11 +28,11 @@ import (
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
-	"github.com/derekparker/delve/pkg/terminal"
-	"github.com/derekparker/delve/service"
-	"github.com/derekparker/delve/service/rpc2"
-	"github.com/derekparker/delve/service/rpccommon"
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-delve/delve/pkg/terminal"
+	"github.com/go-delve/delve/service"
+	"github.com/go-delve/delve/service/rpc2"
+	"github.com/go-delve/delve/service/rpccommon"
 )
 
 var cmdDlv = &commands.Command{
@@ -43,7 +43,7 @@ var cmdDlv = &commands.Command{
 
   To debug your application using Delve, use: {{"$ bee dlv" | bold}}
 
-  For more information on Delve: https://github.com/derekparker/delve
+  For more information on Delve: https://github.com/go-delve/delve
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    runDlv,
@@ -228,7 +228,7 @@ func startWatcher(paths []string, ch chan int) {
 
 					// Wait 1s before re-build until there is no file change
 					scheduleTime := time.Now().Add(1 * time.Second)
-					time.Sleep(scheduleTime.Sub(time.Now()))
+					time.Sleep(time.Until(scheduleTime))
 					_, err := buildDebug()
 					if err != nil {
 						utils.Notify("Build Failed: "+err.Error(), "bee")
