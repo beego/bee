@@ -501,7 +501,7 @@ func packApp(cmd *commands.Command, args []string) int {
 
 		args := []string{"build", "-o", binPath}
 		if len(buildArgs) > 0 {
-			args = append(args, strings.Fields(buildArgs)...)
+			args = append(args, buildArgs)
 		}
 
 		if verbose {

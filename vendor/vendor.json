@@ -15,100 +15,161 @@
 			"revisionTime": "2017-03-06T13:59:04Z"
 		},
 		{
-			"checksumSHA1": "7o4Bn5wmWhqiC6QERVE+eFuMVxE=",
-			"path": "github.com/derekparker/delve/config",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "z9dNXc4EocXzA7shhyD9ICYzqMU=",
-			"path": "github.com/derekparker/delve/dwarf/frame",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "1fsK0IHP5Gdnj2jdJqWGb+IiSbg=",
-			"path": "github.com/derekparker/delve/dwarf/line",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "qGcXmO+L1RuCsl1rNxvBfHFF7xQ=",
-			"path": "github.com/derekparker/delve/dwarf/op",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "B4ANlFg/tsjxgw6VGKvymnqmFSs=",
-			"path": "github.com/derekparker/delve/dwarf/reader",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "sfJBUZjAjg9jlWnYvxxpXSteEfw=",
-			"path": "github.com/derekparker/delve/dwarf/util",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "EV76KO6c8eV4x6qu7feUxpBbIyQ=",
-			"path": "github.com/derekparker/delve/proc",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "BPHre0My8iszpkoNcX4ljtrz1dA=",
-			"path": "github.com/derekparker/delve/service",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "EaIRvHNXgLb3yU/nwEkM48sA4Xc=",
-			"path": "github.com/derekparker/delve/service/api",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "zi0XsumHd/tKG0fIMNQsmZHSkM8=",
-			"path": "github.com/derekparker/delve/service/debugger",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "MVw0jbqnWHLX41UsSftGP7BZ6xU=",
-			"path": "github.com/derekparker/delve/service/rpc1",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "B+J0KRNuX0anRlif3mWXhBQhnVo=",
-			"path": "github.com/derekparker/delve/service/rpc2",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "qCMUUT6PtR1jsrZcqkDkQHycBXM=",
-			"path": "github.com/derekparker/delve/service/rpccommon",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "KUK2wagVoGOYEIy2vpH7up+DpXA=",
-			"path": "github.com/derekparker/delve/terminal",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
-		},
-		{
-			"checksumSHA1": "013Reixyv4BwEJF/J8vHeaSTtSI=",
-			"path": "github.com/derekparker/delve/version",
-			"revision": "449b276fe1ce7e20a0c7ffffbdd47d97f40022a1",
-			"revisionTime": "2017-01-11T19:37:04Z"
+			"checksumSHA1": "RT7G1na3Buq45tRUN+39hTRQfB8=",
+			"origin": "github.com/go-delve/delve/vendor/github.com/cosiner/argv",
+			"path": "github.com/cosiner/argv",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
 			"checksumSHA1": "hveFTNQ9YEyYRs6SWuXM+XU9qRI=",
 			"path": "github.com/fsnotify/fsnotify",
 			"revision": "fd9ec7deca8bf46ecd2a795baaacf2b3a9be1197",
 			"revisionTime": "2016-10-26T20:31:22Z"
+		},
+		{
+			"checksumSHA1": "fp8iJjvryUGswhpYc32d/0BqCaU=",
+			"path": "github.com/go-delve/delve/pkg/config",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "UxU+rBogEV80d8zKVpdFRO/6q9E=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/frame",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "sENH0C+S3jEa80BTfUhZKLILyCk=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/godwarf",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "ZO1Xiq5WpdnJsKtuTuHbXj89gM8=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/line",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "RpupChLlqEw3mTF4Vd24dGHp1is=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/op",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "rt20EAj6YKLQTq8I04MAJSVBlL0=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/reader",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "7t8NqlzPV23du/GdZtTPRhF8V9s=",
+			"path": "github.com/go-delve/delve/pkg/dwarf/util",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "MUXMNLwltzOHg1tS9NW0i23iaIw=",
+			"path": "github.com/go-delve/delve/pkg/goversion",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "eaY/BDlqkwjU9icE+kWclfxPcJM=",
+			"path": "github.com/go-delve/delve/pkg/logflags",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "jUYhbQVuBUMhTAatmrGNSiWMYkc=",
+			"path": "github.com/go-delve/delve/pkg/proc",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "2MZJHAtoC33D4aY+TGbgXY3zrEI=",
+			"path": "github.com/go-delve/delve/pkg/proc/core",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "3go6qO59K/8qBwWMrh+uejMC/ks=",
+			"path": "github.com/go-delve/delve/pkg/proc/core/minidump",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "HiKHMgML6t6kgu/xIaQkNcbi4jU=",
+			"path": "github.com/go-delve/delve/pkg/proc/gdbserial",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "KE39qmqFbVr62FotevrmiSYpcvc=",
+			"path": "github.com/go-delve/delve/pkg/proc/linutil",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "ry65N9mANSiyzaLzoV54FIIyc3k=",
+			"path": "github.com/go-delve/delve/pkg/proc/native",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "SurwM9wvUtFDTCi0MU0a2QpTQB4=",
+			"path": "github.com/go-delve/delve/pkg/proc/winutil",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "selgT31LR/kxkYi8rEfugt1xByk=",
+			"path": "github.com/go-delve/delve/pkg/terminal",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "A3QVD3uNjiKzN82F0lhk2b5RWrY=",
+			"path": "github.com/go-delve/delve/pkg/version",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "k0Zt5Vjg9J6PTC2rv4zH9Uu8R98=",
+			"path": "github.com/go-delve/delve/service",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "Ck8PPrW6UWtzceQFSbVRnA5jyN0=",
+			"path": "github.com/go-delve/delve/service/api",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "IPPSKVkBXS1+N6GHQLI1O++impc=",
+			"path": "github.com/go-delve/delve/service/debugger",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "FwZylP9YWkeDhcBUrQU3imwggFg=",
+			"path": "github.com/go-delve/delve/service/rpc1",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "jweed9UomrG6/+5eGv5ug+qisho=",
+			"path": "github.com/go-delve/delve/service/rpc2",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
+		},
+		{
+			"checksumSHA1": "LDLdEfcp8Y0GBw3GF1z+w9KVrIQ=",
+			"path": "github.com/go-delve/delve/service/rpccommon",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
 			"checksumSHA1": "59kg2xC3rBxV0/5SIv+LA4qva08=",
@@ -129,78 +190,71 @@
 			"revisionTime": "2016-08-06T14:40:29Z"
 		},
 		{
-			"checksumSHA1": "xppHi82MLqVx1eyQmbhTesAEjx8=",
+			"checksumSHA1": "KzsJ/GkPEyvxG8eBcKrHRFoPhzU=",
 			"path": "github.com/lib/pq/oid",
 			"revision": "80f8150043c80fb52dee6bc863a709cdac7ec8f8",
 			"revisionTime": "2016-08-06T14:40:29Z"
 		},
 		{
-			"checksumSHA1": "rCffFCN6TpDAN3Jylyo8RFzhQ9E=",
-			"origin": "github.com/derekparker/delve/vendor/github.com/mattn/go-colorable",
+			"checksumSHA1": "uAVg4Tj5Fxi62z7/ScDEkHr6Ue8=",
+			"origin": "github.com/go-delve/delve/vendor/github.com/mattn/go-colorable",
 			"path": "github.com/mattn/go-colorable",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "NkbetqlpWBi3gP08JDneC+axTKw=",
-			"origin": "github.com/derekparker/delve/vendor/github.com/mattn/go-isatty",
+			"checksumSHA1": "y/A5iuvwjytQE2CqVuphQRXR2nI=",
+			"origin": "github.com/go-delve/delve/vendor/github.com/mattn/go-isatty",
 			"path": "github.com/mattn/go-isatty",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "i8KS96zyCztA4003YeqcAmpcXXs=",
-			"origin": "github.com/derekparker/delve/vendor/github.com/peterh/liner",
+			"checksumSHA1": "BcKVRsLhMzSj4ksVqslEThK6tjA=",
+			"origin": "github.com/go-delve/delve/vendor/github.com/peterh/liner",
 			"path": "github.com/peterh/liner",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "1TxpZhEa9Ez1pq+kffwve9VUMug=",
-			"origin": "github.com/derekparker/delve/vendor/golang.org/x/debug/dwarf",
-			"path": "golang.org/x/debug/dwarf",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"checksumSHA1": "PNnR2QlZlBudLfws/cQRbzhuMRg=",
+			"origin": "github.com/go-delve/delve/vendor/github.com/sirupsen/logrus",
+			"path": "github.com/sirupsen/logrus",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "dVu8Q/oko6zBz5UkwkrDyPHR8fU=",
-			"origin": "github.com/derekparker/delve/vendor/golang.org/x/debug/elf",
-			"path": "golang.org/x/debug/elf",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"checksumSHA1": "Tfz3fwv4nEPRjPefO3GY/UY4TFs=",
+			"origin": "github.com/go-delve/delve/vendor/golang.org/x/arch/x86/x86asm",
+			"path": "golang.org/x/arch/x86/x86asm",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "OktQbhBwXQo+frEBu9j+mbSn2T8=",
-			"origin": "github.com/derekparker/delve/vendor/golang.org/x/debug/macho",
-			"path": "golang.org/x/debug/macho",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"checksumSHA1": "BGm8lKZmvJbf/YOJLeL1rw2WVjA=",
+			"origin": "github.com/go-delve/delve/vendor/golang.org/x/crypto/ssh/terminal",
+			"path": "golang.org/x/crypto/ssh/terminal",
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
-			"checksumSHA1": "NIg5qnKx/D8Th7YX882++siXTDY=",
+			"checksumSHA1": "SiJNkx+YGtq3Gtr6Ldu6OW83O+U=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "131454b5606f5f11f6926156504d8ec772484f1d",
-			"revisionTime": "2015-09-10T19:29:23Z"
+			"revision": "fa43e7bc11baaae89f3f902b2b4d832b68234844",
+			"revisionTime": "2018-10-11T14:35:51Z"
 		},
 		{
-			"checksumSHA1": "K/B/XoWtkUDe+j1yIR8JPbpPW7Y=",
-			"origin": "github.com/derekparker/delve/vendor/golang.org/x/sys/windows",
+			"checksumSHA1": "cFNQekaQ8KckfywxwWwZauiz9BY=",
+			"origin": "github.com/go-delve/delve/vendor/golang.org/x/sys/windows",
 			"path": "golang.org/x/sys/windows",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
+			"revision": "cba328f83404a02bc7a71842590a5c9a434f6015",
+			"revisionTime": "2019-03-29T16:14:16Z"
 		},
 		{
 			"checksumSHA1": "+OgOXBoiQ+X+C2dsAeiOHwBIEH0=",
 			"path": "gopkg.in/yaml.v2",
 			"revision": "a83829b6f1293c91addabc89d0571c246397bbf4",
 			"revisionTime": "2016-03-01T20:40:22Z"
-		},
-		{
-			"checksumSHA1": "AfKaQYT0TjxxZewjMk36e3GsVV4=",
-			"origin": "github.com/derekparker/delve/vendor/rsc.io/x86/x86asm",
-			"path": "rsc.io/x86/x86asm",
-			"revision": "ab7367ed2bf15044f7bca97147a802f77b875797",
-			"revisionTime": "2017-03-13T17:59:34Z"
 		}
 	],
 	"rootPath": "github.com/beego/bee"
