@@ -1400,7 +1400,7 @@ func analyseImportPkg(ims []*ast.ImportSpec, realType string) error {
 		}
 
 		for _, pkg := range folderPkgs {
-			if pkgName == pkg.Name || pkgName == fmt.Sprintf("%s", im.Name) {
+			if pkgName == pkg.Name || pkgName == im.Name.Name {
 				astPkgs = append(astPkgs, pkg)
 				pkgCache[pkgPath] = pkgName
 			}
