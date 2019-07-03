@@ -6,7 +6,7 @@ import (
 	"golang.org/x/arch/x86/x86asm"
 	sys "golang.org/x/sys/unix"
 
-	"github.com/derekparker/delve/pkg/proc"
+	"github.com/go-delve/delve/pkg/proc"
 )
 
 // Regs is a wrapper for sys.PtraceRegs.

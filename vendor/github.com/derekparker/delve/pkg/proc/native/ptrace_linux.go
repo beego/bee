@@ -6,7 +6,7 @@ import (
 
 	sys "golang.org/x/sys/unix"
 
-	"github.com/derekparker/delve/pkg/proc"
+	"github.com/go-delve/delve/pkg/proc"
 )
 
 // PtraceAttach executes the sys.PtraceAttach call.
@@ -69,7 +69,7 @@ func PtraceGetRegset(tid int) (regset proc.LinuxX86Xstate, err error) {
 	_, _, err = syscall.Syscall6(syscall.SYS_PTRACE, sys.PTRACE_GETREGSET, uintptr(tid), _NT_X86_XSTATE, uintptr(unsafe.Pointer(&iov)), 0, 0)
 	if err != syscall.Errno(0) {
 		if err == syscall.ENODEV {
-			// ignore ENODEV, it just means this CPU or kernel doesn't support XSTATE, see https://github.com/derekparker/delve/issues/1022
+			// ignore ENODEV, it just means this CPU or kernel doesn't support XSTATE, see https://github.com/go-delve/delve/issues/1022
 			err = nil
 		}
 		return
