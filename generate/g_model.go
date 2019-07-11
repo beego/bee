@@ -176,7 +176,7 @@ func Get{{modelName}}ById(id int64) (v *{{modelName}}, err error) {
 // GetAll{{modelName}} retrieves all {{modelName}} matches certain condition. Returns empty list if
 // no records exist
 func GetAll{{modelName}}(query map[string]string, fields []string, sortby []string, order []string,
-	offset int64, limit int64) (ml []interface{}, err error) {
+	offset int64, limit int64) (interface{}, error) {
 	o := orm.NewOrm()
 	qs := o.QueryTable(new({{modelName}}))
 	// query k=v
@@ -223,13 +223,21 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 			return nil, errors.New("Error: unused 'order' fields")
 		}
 	}
+	
+	m := make(map[string]interface{})
+	if i, ex := qs.Count(); ex != nil {
+		return nil, errors.New("Error: get total record failed")
+	} else {
+		m["TotalRecord"] = i
+	}
 
 	var l []{{modelName}}
+	var list []interface{}
 	qs = qs.OrderBy(sortFields...).RelatedSel()
 	if _, err = qs.Limit(limit, offset).All(&l, fields...); err == nil {
 		if len(fields) == 0 {
 			for _, v := range l {
-				ml = append(ml, v)
+				list = append(list, v)
 			}
 		} else {
 			// trim unused fields
@@ -239,12 +247,14 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				for _, fname := range fields {
 					m[fname] = val.FieldByName(fname).Interface()
 				}
-				ml = append(ml, m)
+				list = append(list, m)
 			}
 		}
-		return ml, nil
+		m["List"] = list
+		return m, nil
+	}else {
+		return nil, err
 	}
-	return nil, err
 }
 
 // Update{{modelName}} updates {{modelName}} by Id and returns error if
