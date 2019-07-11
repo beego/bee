@@ -224,11 +224,11 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 		}
 	}
 	
-	m := make(map[string]interface{})
+	result := make(map[string]interface{})
 	if i, ex := qs.Count(); ex != nil {
 		return nil, errors.New("Error: get total record failed")
 	} else {
-		m["TotalRecord"] = i
+		result["TotalRecord"] = i
 	}
 
 	var l []{{modelName}}
@@ -250,8 +250,8 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 				list = append(list, m)
 			}
 		}
-		m["List"] = list
-		return m, nil
+		result["List"] = list
+		return result, nil
 	}else {
 		return nil, err
 	}
