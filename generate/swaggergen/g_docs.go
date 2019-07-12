@@ -263,7 +263,7 @@ func GenerateDocs(curpath string) {
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analyseControllerPkg(path.Join(curpath, "vendor"), localName, im.Path.Value)
+		analyseControllerPkg(curpath, localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -418,7 +418,7 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analyseControllerPkg(vendorPath, localName, pkgpath string) {
+func analyseControllerPkg(curpath, localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
@@ -432,25 +432,9 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		pps := strings.Split(pkgpath, "/")
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
-	gopaths := bu.GetGOPATHs()
-	if len(gopaths) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
-	pkgRealpath := ""
 
-	wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
-	if utils.FileExists(wg) {
-		pkgRealpath = wg
-	} else {
-		wgopath := gopaths
-		for _, wg := range wgopath {
-			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-			if utils.FileExists(wg) {
-				pkgRealpath = wg
-				break
-			}
-		}
-	}
+	pkgRealpath := resolvePkgPath(pkgpath, curpath)
+
 	if pkgRealpath != "" {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
@@ -496,6 +480,41 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 			}
 		}
 	}
+}
+
+// resolvePkgPath resolves the package directory
+func resolvePkgPath(pkgpath, curpath string) string {
+	wg, _ := filepath.EvalSymlinks(filepath.Join(path.Join(curpath, "vendor"), pkgpath))
+	if utils.FileExists(wg) {
+		return wg
+	}
+
+	gopaths := bu.GetGOPATHs()
+	modulesEnabled := bu.IsModuleEnabled(gopaths, curpath)
+	if modulesEnabled {
+		dirpath := ""
+		for i, r := range pkgpath {
+			if r != '/' {
+				continue
+			}
+			dirpath = filepath.Join(curpath, pkgpath[i:])
+			if utils.FileExists(dirpath) {
+				return dirpath
+			}
+		}
+		panic("go module is enabled, and the package path of controllers can not be resolved")
+	}
+
+	if len(gopaths) == 0 {
+		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty, or go module is not enabled")
+	}
+	for _, gp := range gopaths {
+		gp, _ = filepath.EvalSymlinks(filepath.Join(gp, "src", pkgpath))
+		if utils.FileExists(gp) {
+			return gp
+		}
+	}
+	return ""
 }
 
 func isSystemPackage(pkgpath string) bool {
@@ -802,7 +821,7 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		paraFormat = typeFormat[1]
 		if para.In == "body" {
 			para.Schema = &swagger.Schema{
-				Type: paraType,
+				Type:   paraType,
 				Format: paraFormat,
 			}
 		}
