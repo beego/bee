@@ -29,6 +29,7 @@ import (
 	"time"
 	"unicode"
 
+	"github.com/astaxie/beego/utils"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
 )
@@ -457,8 +458,11 @@ func IsModuleEnabled(gopaths []string, cwd string) bool {
 				return false
 			}
 		}
-		return true
+		if utils.FileExists(filepath.Join(cwd, "go.mod")) {
+			return true
+		}
 	}
+	return false
 }
 
 // InDir checks whether path is in the file tree rooted at dir.
