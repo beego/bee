@@ -832,6 +832,7 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 				Type:   paraType,
 				Format: paraFormat,
 			}
+            para.CollectionFormat = "multi"
 		}
 	} else {
 		para.Type = paraType
