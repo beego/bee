@@ -98,6 +98,7 @@ type Parameter struct {
 	Type        string          `json:"type,omitempty" yaml:"type,omitempty"`
 	Format      string          `json:"format,omitempty" yaml:"format,omitempty"`
 	Items       *ParameterItems `json:"items,omitempty" yaml:"items,omitempty"`
+	CollectionFormat string     `json:"collectionFormat,omitempty" yaml:"collectionFormat,omitempty"`
 	Default     interface{}     `json:"default,omitempty" yaml:"default,omitempty"`
 }
 
