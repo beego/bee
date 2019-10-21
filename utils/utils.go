@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -52,7 +53,10 @@ func IsExist(path string) bool {
 // GetGOPATHs returns all paths in GOPATH variable.
 func GetGOPATHs() []string {
 	gopath := os.Getenv("GOPATH")
-	if gopath == "" && strings.Compare(runtime.Version(), "go1.8") >= 0 {
+	v := (strings.Replace(runtime.Version(), ".", "", 1))
+	runtimeVersion, _ := strconv.Atoi(strings.Replace(v, "go", "", 1))
+	oldVersion := 18 //refere to "go1.8"
+	if gopath == "" && runtimeVersion > oldVersion {
 		gopath = defaultGOPATH()
 	}
 	return filepath.SplitList(gopath)
