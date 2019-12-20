@@ -4,9 +4,9 @@ go:
 install:
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -u github.com/opennota/check/cmd/structcheck
-  - go get -u honnef.co/go/tools/cmd/gosimple
+  # - go get -u honnef.co/go/tools/cmd/gosimple
   - go get -u honnef.co/go/tools/cmd/staticcheck
-  - go get -u honnef.co/go/tools/cmd/unused
+  # - go get -u honnef.co/go/tools/cmd/unused
   - go get -u github.com/mdempsky/unconvert
   - go get -u github.com/gordonklaus/ineffassign
 script:
