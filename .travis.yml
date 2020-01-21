@@ -1,20 +1,11 @@
 language: go
 go:
-  - 1.10.3
+  - "1.12.x"
 install:
+  - export GO111MODULE=on
   - export PATH=$PATH:$HOME/gopath/bin
-  - go get -u github.com/opennota/check/cmd/structcheck
-  - go get -u honnef.co/go/tools/cmd/gosimple
-  - go get -u honnef.co/go/tools/cmd/staticcheck
-  - go get -u honnef.co/go/tools/cmd/unused
-  - go get -u github.com/mdempsky/unconvert
-  - go get -u github.com/gordonklaus/ineffassign
+  - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.23.1
+
 script:
-  - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
-  - go vet  $(go list ./... | grep -v /vendor/)
-  - structcheck  $(go list ./... | grep -v /vendor/)
-  - gosimple -ignore "$(cat gosimple.ignore)" $(go list ./... | grep -v /vendor/)
-  - staticcheck -ignore "$(cat staticcheck.ignore)" $(go list ./... | grep -v /vendor/)
-  - unused $(go list ./... | grep -v /vendor/)
-  - unconvert $(go list ./... | grep -v /vendor/)
-  - ineffassign .
+  - go mod download
+  - golangci-lint run -D errcheck
