@@ -24,7 +24,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/beego/bee/logger/colors"
+	"github.com/gadelkareem/bee/logger/colors"
 )
 
 var errInvalidLogLevel = errors.New("logger: invalid log level")

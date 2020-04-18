@@ -24,6 +24,6 @@ clean:
 publish:
 	mkdir -p bin/$(VERSION)
 	cd bin/$(VERSION)
-	xgo -v -x --targets="windows/*,darwin/*,linux/386,linux/amd64,linux/arm-5,linux/arm64" -out bee_$(VERSION) github.com/beego/bee
+	xgo -v -x --targets="windows/*,darwin/*,linux/386,linux/amd64,linux/arm-5,linux/arm64" -out bee_$(VERSION) github.com/gadelkareem/bee
 	cd ..
 	ghr -u beego -r bee $(VERSION) $(VERSION)

@@ -24,12 +24,12 @@ import (
 
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	"github.com/gadelkareem/bee/cmd/commands"
+	"github.com/gadelkareem/bee/cmd/commands/version"
+	"github.com/gadelkareem/bee/config"
+	"github.com/gadelkareem/bee/logger"
+	"github.com/gadelkareem/bee/logger/colors"
+	"github.com/gadelkareem/bee/utils"
 )
 
 var cmdRs = &commands.Command{
