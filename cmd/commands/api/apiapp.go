@@ -20,11 +20,11 @@ import (
 	path "path/filepath"
 	"strings"
 
-	"github.com/gadelkareem/bee/cmd/commands"
-	"github.com/gadelkareem/bee/cmd/commands/version"
-	"github.com/gadelkareem/bee/generate"
-	beeLogger "github.com/gadelkareem/bee/logger"
-	"github.com/gadelkareem/bee/utils"
+	"github.com/beego/bee/cmd/commands"
+	"github.com/beego/bee/cmd/commands/version"
+	"github.com/beego/bee/generate"
+	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/utils"
 )
 
 var CmdApiapp = &commands.Command{

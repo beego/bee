@@ -1,4 +1,4 @@
-module github.com/gadelkareem/bee
+module github.com/beego/bee
 
 go 1.14
 
