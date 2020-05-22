@@ -152,7 +152,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 		APIVersion:  2,
 		WorkingDir:  ".",
 		ProcessArgs: []string{abs},
-	}, false)
+	})
 	if err := server.Run(); err != nil {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
 	}
@@ -182,7 +182,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 	}
 
 	// Stop and kill the debugger server once user quits the REPL
-	if err := server.Stop(true); err != nil {
+	if err := server.Stop(); err != nil {
 		beeLogger.Log.Fatalf("Could not stop Delve server: %v", err)
 	}
 	return status
