@@ -32,11 +32,11 @@ import (
 	"strings"
 	"unicode"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	bu "github.com/beego/bee/utils"
 )
 
@@ -159,6 +159,7 @@ func parsePackageFromDir(path string) error {
 func GenerateDocs(curpath string) {
 	fset := token.NewFileSet()
 
+	beeLogger.Log.Infof("curpath: %s", curpath)
 	f, err := parser.ParseFile(fset, filepath.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
@@ -263,6 +264,7 @@ func GenerateDocs(curpath string) {
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
+		beeLogger.Log.Infof("localName: %s, %v", localName, im.Path.Value)
 		analyseControllerPkg(path.Join(curpath, "vendor"), localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
@@ -432,25 +434,33 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		pps := strings.Split(pkgpath, "/")
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
-	gopaths := bu.GetGOPATHs()
-	if len(gopaths) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
+
 	pkgRealpath := ""
 
-	wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
-	if utils.FileExists(wg) {
-		pkgRealpath = wg
+	if os.Getenv(`GO111MODULE`) == `on` {
+		pkgRealpath = filepath.Join(bu.GetBeeWorkPath(), "..", pkgpath)
 	} else {
-		wgopath := gopaths
-		for _, wg := range wgopath {
-			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-			if utils.FileExists(wg) {
-				pkgRealpath = wg
-				break
+		gopaths := bu.GetGOPATHs()
+		if len(gopaths) == 0 {
+			beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
+		}
+		//首先去vendor目录里面去找源码
+		wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
+		if utils.FileExists(wg) {
+			pkgRealpath = wg
+		} else {
+			wgopath := gopaths
+			// 然后去gopath下面去找代码
+			for _, wg := range wgopath {
+				wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
+				if utils.FileExists(wg) {
+					pkgRealpath = wg
+					break
+				}
 			}
 		}
 	}
+	beeLogger.Log.Infof("pkgRealpath:%v", pkgRealpath)
 	if pkgRealpath != "" {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
@@ -468,6 +478,7 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
+
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for _, d := range fl.Decls {
@@ -802,7 +813,7 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		paraFormat = typeFormat[1]
 		if para.In == "body" {
 			para.Schema = &swagger.Schema{
-				Type: paraType,
+				Type:   paraType,
 				Format: paraFormat,
 			}
 		}
