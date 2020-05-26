@@ -34,7 +34,7 @@ var CmdHproseapp = &commands.Command{
   The command 'hprose' creates a folder named [appname] with the following structure:
 
 	    ├── main.go
-		├── go.mod
+	    ├── go.mod
 	    ├── {{"conf"|foldername}}
 	    │     └── app.conf
 	    └── {{"models"|foldername}}
@@ -67,17 +67,12 @@ func init() {
 
 func createhprose(cmd *commands.Command, args []string) int {
 	output := cmd.Out()
-
-	if len(args) != 1 {
+	if len(args) == 0 {
 		beeLogger.Log.Fatal("Argument [appname] is missing")
 	}
 
 	curpath, _ := os.Getwd()
 	if len(args) > 1 {
-		cmd.Flag.Parse(args[1:])
-	}
-
-	if len(args) >= 2 {
 		cmd.Flag.Parse(args[1:])
 	} else {
 		module = "false"
