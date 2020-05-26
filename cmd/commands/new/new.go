@@ -302,6 +302,10 @@ func CreateApp(cmd *commands.Command, args []string) int {
 	beeLogger.Log.Info("Creating application...")
 
 	os.MkdirAll(appPath, 0755)
+	if module == `true` {
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "go.mod"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, runtime.Version()[2:], beegoVersion.String()))
+	}
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", appPath+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(appPath, "conf"), 0755)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf")+string(path.Separator), "\x1b[0m")
@@ -341,11 +345,6 @@ func CreateApp(cmd *commands.Command, args []string) int {
 
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "main.go"), "\x1b[0m")
 	utils.WriteToFile(path.Join(appPath, "main.go"), strings.Replace(maingo, "{{.Appname}}", packPath, -1))
-
-	if module == `true` {
-		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "go.mod"), "\x1b[0m")
-		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, runtime.Version()[2:], beegoVersion.String()))
-	}
 	beeLogger.Log.Success("New application successfully created!")
 	return 0
 }
