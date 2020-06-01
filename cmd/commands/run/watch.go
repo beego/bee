@@ -39,11 +39,11 @@ var (
 	watchExts           = config.Conf.WatchExts
 	watchExtsStatic     = config.Conf.WatchExtsStatic
 	ignoredFilesRegExps = []string{
-		`.#(\w+).go`,
-		`.(\w+).go.swp`,
-		`(\w+).go~`,
-		`(\w+).tmp`,
-		`commentsRouter_controllers.go`,
+		`.#(\w+).go$`,
+		`.(\w+).go.swp$`,
+		`(\w+).go~$`,
+		`(\w+).tmp$`,
+		`commentsRouter_controllers.go$`,
 	}
 )
 
@@ -239,6 +239,7 @@ func Start(appname string) {
 	go cmd.Run()
 	beeLogger.Log.Successf("'%s' is running...", appname)
 	started <- true
+
 }
 
 func ifStaticFile(filename string) bool {
