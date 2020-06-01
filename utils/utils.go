@@ -313,6 +313,7 @@ func Tmpl(text string, data interface{}) {
 func CheckEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
+		beeLogger.Log.Error("if you want new a go module project,please add param `-module=true` and set env `G111MODULE=on`")
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
