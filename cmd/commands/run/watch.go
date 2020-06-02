@@ -25,7 +25,7 @@ import (
 	"time"
 
 	"github.com/beego/bee/config"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
 	"github.com/beego/bee/utils"
 	"github.com/fsnotify/fsnotify"
@@ -157,6 +157,9 @@ func AutoBuild(files []string, isgenerate bool) {
 		args = append(args, "-o", appName)
 		if buildTags != "" {
 			args = append(args, "-tags", buildTags)
+		}
+		if buildLDFlags != "" {
+			args = append(args, "-ldflags", buildLDFlags)
 		}
 		args = append(args, files...)
 
