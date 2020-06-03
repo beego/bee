@@ -568,8 +568,8 @@ func createAPI(cmd *commands.Command, args []string) int {
 	} else {
 		module = "false"
 	}
-	appPath := ``
-	packPath := ``
+	var appPath string
+	var packPath string
 	var err error
 	if module != `true` {
 		beeLogger.Log.Info("generate api project support GOPATH")

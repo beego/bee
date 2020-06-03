@@ -78,8 +78,8 @@ func createhprose(cmd *commands.Command, args []string) int {
 	} else {
 		module = "false"
 	}
-	apppath := ``
-	packpath := ``
+	var apppath string
+	var packpath string
 	var err error
 	if module != `true` {
 		beeLogger.Log.Info("generate api project support GOPATH")

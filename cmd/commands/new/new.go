@@ -273,8 +273,8 @@ func CreateApp(cmd *commands.Command, args []string) int {
 	} else {
 		module = "false"
 	}
-	appPath := ``
-	packPath := ``
+	var appPath string
+	var packPath string
 	var err error
 	if module != `true` {
 		beeLogger.Log.Info("generate new project support GOPATH")
