@@ -9,10 +9,7 @@ install:
   - go get -u github.com/gordonklaus/ineffassign
 script:
   - pwd
-  - | #mkdir
-    if [[ ! -d $(dirname `dirname $(pwd)`)/beego/bee ]] ; then
-      mkdir -p $(dirname `dirname $(pwd)`)/beego/bee
-    fi
+  - test ! -d $(dirname `dirname $(pwd)`)/beego/bee && mkdir -p $(dirname `dirname $(pwd)`)/beego/bee
   - cp -rf ./ $(dirname `dirname $(pwd)`)/beego/bee
   - cd $(dirname `dirname $(pwd)`)/beego/bee
   - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
