@@ -12,9 +12,11 @@ script:
   - test ! -d $(dirname `dirname $(pwd)`)/beego/bee && mkdir -p $(dirname `dirname $(pwd)`)/beego/bee
   - cp -rf ./ $(dirname `dirname $(pwd)`)/beego/bee
   - cd $(dirname `dirname $(pwd)`)/beego/bee
+  - pwd
+  - go mod download
   - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
   - go vet  $(go list ./... | grep -v /vendor/)
   - structcheck  $(go list ./... | grep -v /vendor/)
-  - staticcheck -ignore "$(cat staticcheck.ignore)" $(go list ./... | grep -v /vendor/)
+  - staticcheck  $(go list ./... | grep -v /vendor/)
   - unconvert $(go list ./... | grep -v /vendor/)
   - ineffassign .
