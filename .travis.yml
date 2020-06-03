@@ -10,7 +10,7 @@ install:
 script:
   - pwd
   - | #mkdir
-    if [[ ! -d $(dirname `dirname $(pwd)`)/beego/bee]];then
+    if [[ ! -d $(dirname `dirname $(pwd)`)/beego/bee ]] ; then
       mkdir -p $(dirname `dirname $(pwd)`)/beego/bee
     fi
   - cp -rf ./ $(dirname `dirname $(pwd)`)/beego/bee
