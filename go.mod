@@ -11,5 +11,3 @@ require (
 	github.com/lib/pq v1.3.0
 	gopkg.in/yaml.v2 v2.2.8
 )
-
-replace github.com/astaxie/beego v1.12.1 => /Users/qiantao/work/beego
