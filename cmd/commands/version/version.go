@@ -57,7 +57,7 @@ Prints the current Bee, Beego and Go version alongside the platform information.
 }
 var outputFormat string
 
-const version = "1.10.1"
+const version = "1.10.2"
 
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
@@ -124,7 +124,7 @@ func GetBeegoVersion() string {
 	}
 	wgopath := utils.GetGOPATHs()
 	if len(wgopath) == 0 {
-		beeLogger.Log.Error("You need to set GOPATH environment variable")
+		beeLogger.Log.Error("GOPATH environment is empty,may be you use `go module`")
 		return ""
 	}
 	for _, wg := range wgopath {
