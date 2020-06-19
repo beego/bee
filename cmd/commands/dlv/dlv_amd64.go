@@ -28,10 +28,10 @@ import (
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
-	"github.com/go-delve/delve/service"
-	"github.com/go-delve/delve/service/rpc2"
-	"github.com/go-delve/delve/service/rpccommon"
-	"github.com/go-delve/delve/pkg/terminal"
+	"github.com/gadelkareem/delve/service"
+	"github.com/gadelkareem/delve/service/rpc2"
+	"github.com/gadelkareem/delve/service/rpccommon"
+	"github.com/gadelkareem/delve/pkg/terminal"
 	"github.com/fsnotify/fsnotify"
 )
 
@@ -43,7 +43,7 @@ var cmdDlv = &commands.Command{
 
   To debug your application using Delve, use: {{"$ bee dlv" | bold}}
 
-  For more information on Delve: https://github.com/go-delve/delve
+  For more information on Delve: https://github.com/gadelkareem/delve
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    runDlv,
@@ -148,9 +148,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 	server := rpccommon.NewServer(&service.Config{
 		Listener:    listener,
 		AcceptMulti: true,
-		AttachPid:   0,
 		APIVersion:  2,
-		WorkingDir:  ".",
 		ProcessArgs: []string{abs},
 	})
 	if err := server.Run(); err != nil {
@@ -163,7 +161,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 	go func() {
 		for {
 			if val := <-ch; val == 0 {
-				if _, err := client.Restart(); err != nil {
+				if _, err := client.Restart(true); err != nil {
 					utils.Notify("Error while restarting the client: "+err.Error(), "bee")
 				} else {
 					if verbose {
