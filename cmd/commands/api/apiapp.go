@@ -35,7 +35,7 @@ var CmdApiapp = &commands.Command{
   The command 'api' creates a Beego API application.
 
   {{"Example:"|bold}}
-      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn=root:@tcp(127.0.0.1:3306)/test]
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]
 
   If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -65,6 +65,7 @@ runmode = dev
 autorender = false
 copyrequestbody = true
 EnableDocs = true
+sqlconn = {{.SQLConnStr}}
 `
 var apiMaingo = `package main
 
@@ -93,11 +94,8 @@ import (
 	{{.DriverPkg}}
 )
 
-func init() {
-	orm.RegisterDataBase("default", "{{.DriverName}}", "{{.conn}}")
-}
-
 func main() {
+	orm.RegisterDataBase("default", "{{.DriverName}}", beego.AppConfig.String("sqlconn"))
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
@@ -511,7 +509,7 @@ import (
 )
 
 func init() {
-	_, file, _, _ := runtime.Caller(1)
+	_, file, _, _ := runtime.Caller(0)
 	apppath, _ := filepath.Abs(filepath.Dir(filepath.Join(file, ".." + string(filepath.Separator))))
 	beego.TestBeegoInit(apppath)
 }
@@ -558,6 +556,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 	}
 
 	appPath, packPath, err := utils.CheckEnv(args[0])
+	appName := path.Base(args[0])
 	if err != nil {
 		beeLogger.Log.Fatalf("%s", err)
 	}
@@ -575,11 +574,13 @@ func createAPI(cmd *commands.Command, args []string) int {
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "controllers"), "\x1b[0m")
 	os.Mkdir(path.Join(appPath, "tests"), 0755)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "tests"), "\x1b[0m")
-	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf", "app.conf"), "\x1b[0m")
-	utils.WriteToFile(path.Join(appPath, "conf", "app.conf"),
-		strings.Replace(apiconf, "{{.Appname}}", path.Base(args[0]), -1))
 
 	if generate.SQLConn != "" {
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf", "app.conf"), "\x1b[0m")
+		confContent := strings.Replace(apiconf, "{{.Appname}}", appName, -1)
+		confContent = strings.Replace(confContent, "{{.SQLConnStr}}", generate.SQLConn.String(), -1)
+		utils.WriteToFile(path.Join(appPath, "conf", "app.conf"), confContent)
+
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "main.go"), "\x1b[0m")
 		mainGoContent := strings.Replace(apiMainconngo, "{{.Appname}}", packPath, -1)
 		mainGoContent = strings.Replace(mainGoContent, "{{.DriverName}}", string(generate.SQLDriver), -1)
@@ -601,6 +602,11 @@ func createAPI(cmd *commands.Command, args []string) int {
 		beeLogger.Log.Infof("Using '%s' as 'tables'", generate.Tables)
 		generate.GenerateAppcode(string(generate.SQLDriver), string(generate.SQLConn), "3", string(generate.Tables), appPath)
 	} else {
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf", "app.conf"), "\x1b[0m")
+		confContent := strings.Replace(apiconf, "{{.Appname}}", appName, -1)
+		confContent = strings.Replace(confContent, "{{.SQLConnStr}}", "", -1)
+		utils.WriteToFile(path.Join(appPath, "conf", "app.conf"), confContent)
+
 		os.Mkdir(path.Join(appPath, "models"), 0755)
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "models"), "\x1b[0m")
 		os.Mkdir(path.Join(appPath, "routers"), 0755)

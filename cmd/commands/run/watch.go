@@ -85,7 +85,7 @@ func NewWatcher(paths []string, files []string, isgenerate bool) {
 					go func() {
 						// Wait 1s before autobuild until there is no file change.
 						scheduleTime = time.Now().Add(1 * time.Second)
-						time.Sleep(scheduleTime.Sub(time.Now()))
+						time.Sleep(time.Until(scheduleTime))
 						AutoBuild(files, isgenerate)
 
 						if config.Conf.EnableReload {
@@ -148,7 +148,7 @@ func AutoBuild(files []string, isgenerate bool) {
 	}
 	appName := appname
 	if err == nil {
-		
+
 		if runtime.GOOS == "windows" {
 			appName += ".exe"
 		}
@@ -183,9 +183,29 @@ func Kill() {
 		}
 	}()
 	if cmd != nil && cmd.Process != nil {
-		err := cmd.Process.Kill()
-		if err != nil {
-			beeLogger.Log.Errorf("Error while killing cmd process: %s", err)
+		// Windows does not support Interrupt
+		if runtime.GOOS == "windows" {
+			cmd.Process.Signal(os.Kill)
+		} else {
+			cmd.Process.Signal(os.Interrupt)
+		}
+
+		ch := make(chan struct{}, 1)
+		go func() {
+			cmd.Wait()
+			ch <- struct{}{}
+		}()
+
+		select {
+		case <-ch:
+			return
+		case <-time.After(10 * time.Second):
+			beeLogger.Log.Info("Timeout. Force kill cmd process")
+			err := cmd.Process.Kill()
+			if err != nil {
+				beeLogger.Log.Errorf("Error while killing cmd process: %s", err)
+			}
+			return
 		}
 	}
 }
