@@ -29,6 +29,7 @@ import (
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
 	"github.com/gadelkareem/delve/service"
+	"github.com/gadelkareem/delve/service/debugger"
 	"github.com/gadelkareem/delve/service/rpc2"
 	"github.com/gadelkareem/delve/service/rpccommon"
 	"github.com/gadelkareem/delve/pkg/terminal"
@@ -150,6 +151,11 @@ func startDelveDebugger(addr string, ch chan int) int {
 		AcceptMulti: true,
 		APIVersion:  2,
 		ProcessArgs: []string{abs},
+		Debugger: debugger.Config{
+			AttachPid:  0,
+			WorkingDir: ".",
+			Backend:    "default",
+		},
 	})
 	if err := server.Run(); err != nil {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
