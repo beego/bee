@@ -418,6 +418,11 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
+//
+func trimGithubPrefix(fullpath string) string {
+	return strings.Join(strings.Split(fullpath, "/")[3:], "/")
+}
+
 func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
@@ -433,12 +438,9 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
 	gopaths := bu.GetGOPATHs()
-	if len(gopaths) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
 	pkgRealpath := ""
-
 	wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
+	wd, _ := os.Getwd()
 	if utils.FileExists(wg) {
 		pkgRealpath = wg
 	} else {
@@ -448,6 +450,13 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 			if utils.FileExists(wg) {
 				pkgRealpath = wg
 				break
+			} else {
+				trimmed := trimGithubPrefix(pkgpath)
+				wg, _ = filepath.EvalSymlinks(filepath.Join(wd, trimmed))
+				if utils.FileExists(wg) {
+					pkgRealpath = wg
+					break
+				}
 			}
 		}
 	}
