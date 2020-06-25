@@ -39,11 +39,11 @@ var (
 	watchExts           = config.Conf.WatchExts
 	watchExtsStatic     = config.Conf.WatchExtsStatic
 	ignoredFilesRegExps = []string{
-		`.#(\w+).go`,
-		`.(\w+).go.swp`,
-		`(\w+).go~`,
-		`(\w+).tmp`,
-		`commentsRouter_controllers.go`,
+		`.#(\w+).go$`,
+		`.(\w+).go.swp$`,
+		`(\w+).go~$`,
+		`(\w+).tmp$`,
+		`commentsRouter_controllers.go$`,
 	}
 )
 
@@ -157,6 +157,9 @@ func AutoBuild(files []string, isgenerate bool) {
 		args = append(args, "-o", appName)
 		if buildTags != "" {
 			args = append(args, "-tags", buildTags)
+		}
+		if buildLDFlags != "" {
+			args = append(args, "-ldflags", buildLDFlags)
 		}
 		args = append(args, files...)
 

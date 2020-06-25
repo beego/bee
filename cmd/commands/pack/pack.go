@@ -40,6 +40,7 @@ var CmdPack = &commands.Command{
 
 var (
 	appPath   string
+	appName   string
 	excludeP  string
 	excludeS  string
 	outputP   string
@@ -57,6 +58,7 @@ func init() {
 	fs := flag.NewFlagSet("pack", flag.ContinueOnError)
 	fs.StringVar(&appPath, "p", "", "Set the application path. Defaults to the current path.")
 	fs.BoolVar(&build, "b", true, "Tell the command to do a build for the current platform. Defaults to true.")
+	fs.StringVar(&appName, "a", "", "Set the application name. Defaults to the dir name.")
 	fs.StringVar(&buildArgs, "ba", "", "Specify additional args for Go build.")
 	fs.Var(&buildEnvs, "be", "Specify additional env variables for Go build. e.g. GOARCH=arm.")
 	fs.StringVar(&outputP, "o", "", "Set the compressed file output path. Defaults to the current path.")
@@ -445,7 +447,9 @@ func packApp(cmd *commands.Command, args []string) int {
 
 	beeLogger.Log.Infof("Packaging application on '%s'...", thePath)
 
-	appName := path.Base(thePath)
+	if len(appName) == 0 {
+		appName = path.Base(thePath)
+	}
 
 	goos := runtime.GOOS
 	if v, found := syscall.Getenv("GOOS"); found {
@@ -470,7 +474,7 @@ func packApp(cmd *commands.Command, args []string) int {
 	}()
 
 	if build {
-		beeLogger.Log.Info("Building application...")
+		beeLogger.Log.Infof("Building application (%v)...", appName)
 		var envs []string
 		for _, env := range buildEnvs {
 			parts := strings.SplitN(env, "=", 2)
@@ -553,7 +557,8 @@ func packApp(cmd *commands.Command, args []string) int {
 			exs = append(exs, p)
 		}
 	}
-
+	exs = append(exs, `go.mod`)
+	exs = append(exs, `go.sum`)
 	var exr []*regexp.Regexp
 	for _, r := range excludeR {
 		if len(r) > 0 {
