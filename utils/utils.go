@@ -33,6 +33,14 @@ import (
 	"github.com/beego/bee/logger/colors"
 )
 
+func GetBeeWorkPath() string {
+	beePath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		panic(err)
+	}
+	return beePath
+}
+
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
 // and returns a channel which will later return the function's return value.
 func Go(f func() error) chan error {
@@ -305,6 +313,7 @@ func Tmpl(text string, data interface{}) {
 func CheckEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
+		beeLogger.Log.Error("if you want new a go module project,please add param `-module=true` and set env `G111MODULE=on`")
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()

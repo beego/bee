@@ -15,8 +15,10 @@
 package generate
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -948,10 +950,39 @@ func getFileName(tbName string) (filename string) {
 func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
+		info := "GOPATH environment variable is not set or empty"
+		gomodpath := filepath.Join(curpath, `go.mod`)
+		re, err := regexp.Compile(`^module\s+(.+)$`)
+		if err != nil {
+			beeLogger.Log.Error(info)
+			beeLogger.Log.Fatalf("try `go.mod` generate regexp error:%s", err)
+			return ""
+		}
+		fd, err := os.Open(gomodpath)
+		if err != nil {
+			beeLogger.Log.Error(info)
+			beeLogger.Log.Fatalf("try `go.mod`  Error while reading 'go.mod',%s", gomodpath)
+		}
+		reader := bufio.NewReader(fd)
+		for {
+			byteLine, _, er := reader.ReadLine()
+			if er != nil && er != io.EOF {
+				return ""
+			}
+			if er == io.EOF {
+				break
+			}
+			line := string(byteLine)
+			s := re.FindStringSubmatch(line)
+			if len(s) >= 2 {
+				return s[1]
+			}
+		}
+		beeLogger.Log.Error(info)
+		beeLogger.Log.Fatalf("try `go.mod` Error while parse 'go.mod',%s", gomodpath)
+	} else {
+		beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 	}
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 
 	appsrcpath := ""
 	haspath := false

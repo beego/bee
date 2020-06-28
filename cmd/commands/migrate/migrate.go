@@ -71,15 +71,6 @@ func init() {
 func RunMigration(cmd *commands.Command, args []string) int {
 	currpath, _ := os.Getwd()
 
-	gps := utils.GetGOPATHs()
-	if len(gps) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
-
-	gopath := gps[0]
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
-
 	// Getting command line arguments
 	if len(args) != 0 {
 		cmd.Flag.Parse(args[1:])
