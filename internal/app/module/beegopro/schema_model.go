@@ -1,18 +1,11 @@
 package beegopro
 
 import (
-	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
 	"strings"
 )
 
-type ModelContent struct {
-	Names    []string
-	Orms     []string
-	Comments []string
-	Extends  []string
-}
-
+// parse get the model info
 type ModelInfo struct {
 	Name      string `json:"name"`      // mysql name
 	InputType string `json:"inputType"` // user input type
@@ -37,49 +30,12 @@ func (m ModelInfo) IsPrimaryKey() (flag bool) {
 	return
 }
 
-func (content ModelContent) ToModelInfoArr() (output []ModelInfo) {
-	namesLen := len(content.Names)
-	ormsLen := len(content.Orms)
-	commentsLen := len(content.Comments)
-	if namesLen != ormsLen && namesLen != commentsLen {
-		beeLogger.Log.Fatalf("length error, namesLen is %d, ormsLen is %d, commentsLen is %d", namesLen, ormsLen, commentsLen)
-	}
-	extendLen := len(content.Extends)
-	if extendLen != 0 && extendLen != namesLen {
-		beeLogger.Log.Fatalf("extend length error, namesLen is %d, extendsLen is %d", namesLen, extendLen)
-	}
+type ModelInfos []ModelInfo
 
-	output = make([]ModelInfo, 0)
-	for i, name := range content.Names {
-		comment := content.Comments[i]
-		if comment == "" {
-			comment = name
-		}
-		inputType, goType, mysqlType, ormTag := getModelType(content.Orms[i])
-
-		m := ModelInfo{
-			Name:      name,
-			InputType: inputType,
-			GoType:    goType,
-			Orm:       ormTag,
-			Comment:   comment,
-			MysqlType: mysqlType,
-			Extend:    "",
-		}
-		// extend value
-		if extendLen != 0 {
-			m.Extend = content.Extends[i]
-		}
-		output = append(output, m)
-	}
-	return
-}
-
-func (content ModelContent) ToModelSchemas() (output ModelSchemas) {
-	modelInfoArr := content.ToModelInfoArr()
-
+// to render model schemas
+func (modelInfos ModelInfos) ToModelSchemas() (output ModelSchemas) {
 	output = make(ModelSchemas, 0)
-	for i, value := range modelInfoArr {
+	for i, value := range modelInfos {
 		if i == 0 && !value.IsPrimaryKey() {
 			inputType, goType, mysqlType, ormTag := getModelType("auto")
 			output = append(output, &ModelSchema{

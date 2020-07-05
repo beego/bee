@@ -18,46 +18,41 @@ type Container struct {
 	BeegoProFile     string                 // beego pro toml
 	TimestampFile    string                 // store ts file
 	GoModFile        string                 // go mod file
-	Option           Option                 // user option
-	Tmpl             Tmpl                   // remote tmpl
+	UserOption       UserOption             // user option
+	TmplOption       TmplOption             // tmpl option
 	CurPath          string                 // user current path
 	EnableModules    map[string]interface{} // beego pro provider a collection of module
 	FunctionOnce     map[string]sync.Once   // exec function once
 	Timestamp        Timestamp
 	GenerateTime     string
 	GenerateTimeUnix int64
+	Parser           Parser
 }
 
 // user option
-type Option struct {
-	Debug          bool                    `json:"debug"`
-	ContextDebug   bool                    `json:"contextDebug"`
-	Dsn            string                  `json:"dsn"`
-	Driver         string                  `json:"driver"`
-	ProType        string                  `json:"proType"`
-	ApiPrefix      string                  `json:"apiPrefix"`
-	EnableModule   []string                `json:"enableModule"`
-	Models         map[string]ModelContent `json:"models"`
-	GitRemotePath  string                  `json:"gitRemotePath"`
-	Branch         string                  `json:"branch"`
-	GitLocalPath   string                  `json:"gitLocalPath"`
-	EnableFormat   bool                    `json:"enableFormat"`
-	SourceGen      string                  `json:"sourceGen"`
-	EnableGitPull  bool                    `json:"enbaleGitPull"`
-	Path           map[string]string       `json:"path"`
-	EnableGomod    bool                    `json:"enableGomod"`
-	RefreshGitTime int64                   `json:"refreshGitTime"`
-	Extend         map[string]string       `json:"extend"` // extend user data
-}
-
-type BeegoPro struct {
-	FilePath string
-	CurPath  string
-	Option   Option
+type UserOption struct {
+	Debug          bool                 `json:"debug"`
+	ContextDebug   bool                 `json:"contextDebug"`
+	Dsn            string               `json:"dsn"`
+	Driver         string               `json:"driver"`
+	ProType        string               `json:"proType"`
+	ApiPrefix      string               `json:"apiPrefix"`
+	EnableModule   []string             `json:"enableModule"`
+	Models         map[string]TextModel `json:"models"`
+	GitRemotePath  string               `json:"gitRemotePath"`
+	Branch         string               `json:"branch"`
+	GitLocalPath   string               `json:"gitLocalPath"`
+	EnableFormat   bool                 `json:"enableFormat"`
+	SourceGen      string               `json:"sourceGen"`
+	EnableGitPull  bool                 `json:"enbaleGitPull"`
+	Path           map[string]string    `json:"path"`
+	EnableGomod    bool                 `json:"enableGomod"`
+	RefreshGitTime int64                `json:"refreshGitTime"`
+	Extend         map[string]string    `json:"extend"` // extend user data
 }
 
 // tmpl option
-type Tmpl struct {
+type TmplOption struct {
 	RenderPath string `toml:"renderPath"`
 	Descriptor []Descriptor
 }
@@ -126,7 +121,6 @@ func (d Descriptor) ExecScript(path string) (err error) {
 	if len(arr) == 0 {
 		return
 	}
-	fmt.Println("path------>", path)
 
 	stdout, stderr, err := command.ExecCmdDir(path, arr[0], arr[1:]...)
 	if err != nil {
@@ -134,7 +128,6 @@ func (d Descriptor) ExecScript(path string) (err error) {
 	}
 
 	beeLogger.Log.Info(stdout)
-
 	return nil
 }
 

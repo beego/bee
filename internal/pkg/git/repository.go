@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-// 获取某项目代码库的标签列表
+// git tag
 func GetTags(repoPath string, limit int) ([]string, error) {
 	repo, err := OpenRepository(repoPath)
 	if err != nil {
@@ -57,13 +57,6 @@ func CloneORPullRepo(url string, dst string) error {
 	if !utils.IsDir(dst) {
 		return CloneRepo(url, dst)
 	} else {
-		//projectName, err := getGitProjectName(url)
-		//if err != nil {
-		//	return err
-		//}
-
-		//fmt.Println("dst------>", dst)
-		//projectDir := dst + "/" + projectName
 		utils.Mkdir(dst)
 
 		repo, err := OpenRepository(dst)

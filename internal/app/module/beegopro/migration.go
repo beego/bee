@@ -11,10 +11,10 @@ import (
 var SQL utils.DocValue
 
 func (c *Container) Migration(args []string) {
-	c.initBeegoPro()
-	db, err := sql.Open(c.Option.Driver, c.Option.Dsn)
+	c.initUserOption()
+	db, err := sql.Open(c.UserOption.Driver, c.UserOption.Dsn)
 	if err != nil {
-		beeLogger.Log.Fatalf("Could not connect to '%s' database using '%s': %s", c.Option.Driver, c.Option.Dsn, err)
+		beeLogger.Log.Fatalf("Could not connect to '%s' database using '%s': %s", c.UserOption.Driver, c.UserOption.Dsn, err)
 		return
 	}
 

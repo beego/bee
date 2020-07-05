@@ -15,7 +15,7 @@ type RenderFile struct {
 	*pongo2render.Render
 	Context      pongo2.Context
 	GenerateTime string
-	Option       Option
+	Option       UserOption
 	ModelName    string
 	PackageName  string
 	FlushFile    string
@@ -24,7 +24,7 @@ type RenderFile struct {
 	Descriptor   Descriptor
 }
 
-func NewRender(m modelInfo) *RenderFile {
+func NewRender(m RenderInfo) *RenderFile {
 	var (
 		pathCtx       pongo2.Context
 		newDescriptor Descriptor

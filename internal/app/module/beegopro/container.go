@@ -20,7 +20,7 @@ var DefaultBeegoPro = &Container{
 	BeegoProFile:  system.CurrentDir + "/beegopro.toml",
 	TimestampFile: system.CurrentDir + "/beegopro.timestamp",
 	GoModFile:     system.CurrentDir + "/go.mod",
-	Option: Option{
+	UserOption: UserOption{
 		Debug:          false,
 		ContextDebug:   false,
 		Dsn:            "",
@@ -28,7 +28,7 @@ var DefaultBeegoPro = &Container{
 		ProType:        "default",
 		ApiPrefix:      "/",
 		EnableModule:   nil,
-		Models:         make(map[string]ModelContent, 0),
+		Models:         make(map[string]TextModel, 0),
 		GitRemotePath:  "https://github.com/beego-dev/beego-pro.git",
 		Branch:         "master",
 		GitLocalPath:   system.BeegoHome + "/beego-pro",
@@ -43,7 +43,7 @@ var DefaultBeegoPro = &Container{
 	},
 	GenerateTime:     time.Now().Format(MDateFormat),
 	GenerateTimeUnix: time.Now().Unix(),
-	Tmpl:             Tmpl{},
+	TmplOption:       TmplOption{},
 	CurPath:          system.CurrentDir,
 	EnableModules:    make(map[string]interface{}, 0), // get the user configuration, get the enable module result
 	FunctionOnce:     make(map[string]sync.Once, 0),   // get the tmpl configuration, get the function once result
@@ -52,13 +52,14 @@ var DefaultBeegoPro = &Container{
 func (c *Container) Run() {
 	// init git refresh cache time
 	c.initTimestamp()
-	c.initBeegoPro()
-	c.initBeegoTmpl()
+	c.initUserOption()
+	c.initTemplateOption()
+	c.initParser()
 	c.initRender()
 	c.flushTimestamp()
 }
 
-func (c *Container) initBeegoPro() {
+func (c *Container) initUserOption() {
 	if !utils.IsExist(c.BeegoProFile) {
 		beeLogger.Log.Fatalf("beego pro config is not exist, beego json path: %s", c.BeegoProFile)
 		return
@@ -70,23 +71,23 @@ func (c *Container) initBeegoPro() {
 		return
 	}
 
-	err = viper.Unmarshal(&c.Option)
+	err = viper.Unmarshal(&c.UserOption)
 	if err != nil {
 		beeLogger.Log.Fatalf("beego pro config unmarshal error, err: %s", err.Error())
 		return
 	}
-	if c.Option.Debug {
+	if c.UserOption.Debug {
 		viper.Debug()
 	}
 
-	if c.Option.EnableGomod {
+	if c.UserOption.EnableGomod {
 		if !utils.IsExist(c.GoModFile) {
 			beeLogger.Log.Fatalf("go mod not exist, please create go mod file")
 			return
 		}
 	}
 
-	for _, value := range c.Option.EnableModule {
+	for _, value := range c.UserOption.EnableModule {
 		c.EnableModules[value] = struct{}{}
 	}
 
@@ -94,14 +95,15 @@ func (c *Container) initBeegoPro() {
 		c.EnableModules["*"] = struct{}{}
 	}
 
-	if c.Option.Debug {
+	if c.UserOption.Debug {
 		fmt.Println("c.modules", c.EnableModules)
 	}
+
 }
 
-func (c *Container) initBeegoTmpl() {
-	if c.Option.EnableGitPull && (c.GenerateTimeUnix-c.Timestamp.GitCacheLastRefresh > c.Option.RefreshGitTime) {
-		err := git.CloneORPullRepo(c.Option.GitRemotePath, c.Option.GitLocalPath)
+func (c *Container) initTemplateOption() {
+	if c.UserOption.EnableGitPull && (c.GenerateTimeUnix-c.Timestamp.GitCacheLastRefresh > c.UserOption.RefreshGitTime) {
+		err := git.CloneORPullRepo(c.UserOption.GitRemotePath, c.UserOption.GitLocalPath)
 		if err != nil {
 			beeLogger.Log.Fatalf("beego pro git clone or pull repo error, err: %s", err)
 			return
@@ -109,59 +111,49 @@ func (c *Container) initBeegoTmpl() {
 		c.Timestamp.GitCacheLastRefresh = c.GenerateTimeUnix
 	}
 
-	tree, err := toml.LoadFile(c.Option.GitLocalPath + "/" + c.Option.ProType + "/bee.toml")
+	tree, err := toml.LoadFile(c.UserOption.GitLocalPath + "/" + c.UserOption.ProType + "/bee.toml")
 
 	if err != nil {
 		beeLogger.Log.Fatalf("beego tmpl exec error, err: %s", err)
 		return
 	}
-	err = tree.Unmarshal(&c.Tmpl)
+	err = tree.Unmarshal(&c.TmplOption)
 	if err != nil {
 		beeLogger.Log.Fatalf("beego tmpl parse error, err: %s", err)
 		return
 	}
 
-	if c.Option.Debug {
-		spew.Dump("tmpl", c.Tmpl)
+	if c.UserOption.Debug {
+		spew.Dump("tmpl", c.TmplOption)
 	}
 
-	for _, value := range c.Tmpl.Descriptor {
+	for _, value := range c.TmplOption.Descriptor {
 		if value.Once == true {
 			c.FunctionOnce[value.SrcName] = sync.Once{}
 		}
 	}
 }
 
-type modelInfo struct {
-	Module       string
-	ModelName    string
-	Option       Option
-	Content      ModelContent
-	Descriptor   Descriptor
-	TmplPath     string
-	GenerateTime string
+func (c *Container) initParser() {
+	driver, flag := ParserDriver[c.UserOption.SourceGen]
+	if !flag {
+		beeLogger.Log.Fatalf("parse driver not exit, source gen %s", c.UserOption.SourceGen)
+	}
+	driver.RegisterOption(c.UserOption, c.TmplOption)
+	c.Parser = driver
 }
 
 func (c *Container) initRender() {
-	for _, desc := range c.Tmpl.Descriptor {
+	for _, desc := range c.TmplOption.Descriptor {
 		_, allFlag := c.EnableModules["*"]
 		_, moduleFlag := c.EnableModules[desc.Module]
 		if !allFlag && !moduleFlag {
 			continue
 		}
 
+		models := c.Parser.GetRenderInfos(desc)
 		// model table name, model table schema
-		for modelName, content := range c.Option.Models {
-			m := modelInfo{
-				Module:       desc.Module,
-				ModelName:    modelName,
-				Content:      content,
-				Option:       c.Option,
-				Descriptor:   desc,
-				TmplPath:     c.Tmpl.RenderPath,
-				GenerateTime: c.GenerateTime,
-			}
-
+		for _, m := range models {
 			// some render exec once
 			syncOnce, flag := c.FunctionOnce[desc.SrcName]
 			if flag {
@@ -175,7 +167,9 @@ func (c *Container) initRender() {
 	}
 }
 
-func (c *Container) renderModel(m modelInfo) {
+func (c *Container) renderModel(m RenderInfo) {
+	// todo optimize
+	m.GenerateTime = c.GenerateTime
 	render := NewRender(m)
 	render.Exec(m.Descriptor.SrcName)
 	if render.Descriptor.IsExistScript() {
