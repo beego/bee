@@ -32,6 +32,8 @@ var CmdBeegoPro = &commands.Command{
 
 func init() {
 	CmdBeegoPro.Flag.Var(&beegopro.SQL, "sql", "sql file path")
+	CmdBeegoPro.Flag.Var(&beegopro.SQLMode, "sqlmode", "sql mode")
+	CmdBeegoPro.Flag.Var(&beegopro.SQLModePath, "sqlpath", "sql mode path")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdBeegoPro)
 }
 
