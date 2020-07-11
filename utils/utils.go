@@ -447,3 +447,8 @@ func defaultGOPATH() string {
 	}
 	return ""
 }
+
+func GetGoVersionSkipMinor() string {
+	strArray := strings.Split(runtime.Version()[2:], `.`)
+	return strArray[0] + `.` + strArray[1]
+}
