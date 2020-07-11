@@ -435,7 +435,7 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 
 	pkgRealpath := ""
 
-	if os.Getenv(`GO111MODULE`) == `on` {
+	if bu.IsGOMODULE() {
 		pkgRealpath = filepath.Join(bu.GetBeeWorkPath(), "..", pkgpath)
 	} else {
 		gopaths := bu.GetGOPATHs()
