@@ -18,7 +18,7 @@ const MDateFormat = "20060102_150405"
 
 var DefaultBeegoPro = &Container{
 	BeegoProFile:  system.CurrentDir + "/beegopro.toml",
-	TimestampFile: system.CurrentDir + "/beegopro.timestamp",
+	TimestampFile: system.CurrentDir + "/.beegopro.timestamp",
 	GoModFile:     system.CurrentDir + "/go.mod",
 	UserOption: UserOption{
 		Debug:          false,

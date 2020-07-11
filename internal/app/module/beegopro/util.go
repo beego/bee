@@ -76,7 +76,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 func isNeedOverwrite(fileName string) (flag bool) {
 	seg := "//"
 	ext := filepath.Ext(fileName)
-	if ext == "sql" {
+	if ext == ".sql" {
 		seg = "--"
 	}
 
@@ -179,7 +179,7 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 	}
 	// user set orm tag
 	if len(kv) == 2 {
-		tag = orm
+		tag = kv[1]
 	}
 	return
 }
