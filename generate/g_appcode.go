@@ -379,7 +379,7 @@ func (*MysqlDB) GetConstraints(db *sql.DB, table *Table, blackList map[string]bo
 			c.table_schema = database() AND c.table_name = ? AND u.table_schema = database() AND u.table_name = ?`,
 		table.Name, table.Name) //  u.position_in_unique_constraint,
 	if err != nil {
-		beeLogger.Log.Fatal("Could not query INFORMATION_SCHEMA for PK/UK/FK information")
+		beeLogger.Log.Fatalf("Could not query INFORMATION_SCHEMA for PK/UK/FK information: %s", err)
 	}
 	for rows.Next() {
 		var constraintTypeBytes, columnNameBytes, refTableSchemaBytes, refTableNameBytes, refColumnNameBytes, refOrdinalPosBytes []byte
