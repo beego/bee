@@ -14,19 +14,16 @@
 package beegopro
 
 import (
-	"strings"
-
 	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
 	"github.com/beego/bee/internal/app/module/beegopro"
 	"github.com/beego/bee/logger"
+	"strings"
 )
 
 var CmdBeegoPro = &commands.Command{
 	UsageLine: "pro [command]",
 	Short:     "Source code generator",
 	Long:      ``,
-	PreRun:    func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:       BeegoPro,
 }
 
