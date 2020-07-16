@@ -447,3 +447,19 @@ func defaultGOPATH() string {
 	}
 	return ""
 }
+
+func GetGoVersionSkipMinor() string {
+	strArray := strings.Split(runtime.Version()[2:], `.`)
+	return strArray[0] + `.` + strArray[1]
+}
+
+func IsGOMODULE() bool {
+	if combinedOutput, e := exec.Command(`go`, `env`).CombinedOutput(); e != nil {
+		beeLogger.Log.Errorf("i cann't find go.")
+	} else {
+		regex := regexp.MustCompile(`GOMOD="?(.+go.mod)"?`)
+		stringSubmatch := regex.FindStringSubmatch(string(combinedOutput))
+		return len(stringSubmatch) == 2
+	}
+	return false
+}

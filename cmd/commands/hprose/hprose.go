@@ -1,11 +1,9 @@
 package hprose
 
 import (
+	"fmt"
 	"github.com/beego/bee/logger/colors"
 	"os"
-	"runtime"
-
-	"fmt"
 	"path"
 	"strings"
 
@@ -113,7 +111,7 @@ func createhprose(cmd *commands.Command, args []string) int {
 	os.MkdirAll(apppath, 0755)
 	if module == `true` { //generate first for calc model name
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "go.mod"), "\x1b[0m")
-		utils.WriteToFile(path.Join(apppath, "go.mod"), fmt.Sprintf(goMod, packpath, runtime.Version()[2:], beegoVersion.String()))
+		utils.WriteToFile(path.Join(apppath, "go.mod"), fmt.Sprintf(goMod, packpath, utils.GetGoVersionSkipMinor(), beegoVersion.String()))
 	}
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", apppath, "\x1b[0m")
 	os.Mkdir(path.Join(apppath, "conf"), 0755)

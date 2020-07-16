@@ -19,7 +19,6 @@ import (
 	"github.com/beego/bee/logger/colors"
 	"os"
 	path "path/filepath"
-	"runtime"
 	"strings"
 
 	"github.com/beego/bee/cmd/commands"
@@ -608,7 +607,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 	os.MkdirAll(appPath, 0755)
 	if module == `true` { //generate first for calc model name
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "go.mod"), "\x1b[0m")
-		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, runtime.Version()[2:], beegoVersion.String()))
+		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, utils.GetGoVersionSkipMinor(), beegoVersion.String()))
 	}
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", appPath, "\x1b[0m")
 	os.Mkdir(path.Join(appPath, "conf"), 0755)
