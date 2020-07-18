@@ -26,7 +26,7 @@ var DefaultBeegoPro = &Container{
 		Dsn:            "",
 		Driver:         "mysql",
 		ProType:        "default",
-		ApiPrefix:      "/",
+		ApiPrefix:      "/api",
 		EnableModule:   nil,
 		Models:         make(map[string]TextModel, 0),
 		GitRemotePath:  "https://github.com/beego-dev/beego-pro.git",
