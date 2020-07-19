@@ -124,7 +124,7 @@ func GetBeegoVersion() string {
 	}
 	wgopath := utils.GetGOPATHs()
 	if len(wgopath) == 0 {
-		beeLogger.Log.Error("You need to set GOPATH environment variable")
+		beeLogger.Log.Error("GOPATH environment is empty,may be you use `go module`")
 		return ""
 	}
 	for _, wg := range wgopath {

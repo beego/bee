@@ -71,15 +71,6 @@ func init() {
 func RunMigration(cmd *commands.Command, args []string) int {
 	currpath, _ := os.Getwd()
 
-	gps := utils.GetGOPATHs()
-	if len(gps) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
-
-	gopath := gps[0]
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
-
 	// Getting command line arguments
 	if len(args) != 0 {
 		cmd.Flag.Parse(args[1:])
@@ -207,8 +198,8 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 					beeLogger.Log.Fatalf("Column migration.name type mismatch: TYPE: %s, NULL: %s", typeStr, nullStr)
 				}
 			} else if fieldStr == "created_at" {
-				if typeStr != "timestamp" || defaultStr != "CURRENT_TIMESTAMP" {
-					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP")
+				if typeStr != "timestamp" || (!strings.EqualFold(defaultStr, "CURRENT_TIMESTAMP") && !strings.EqualFold(defaultStr, "CURRENT_TIMESTAMP()")) {
+					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP || CURRENT_TIMESTAMP()")
 					beeLogger.Log.Fatalf("Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s", typeStr, defaultStr)
 				}
 			}

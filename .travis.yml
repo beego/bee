@@ -1,20 +1,21 @@
 language: go
 go:
-  - 1.10.3
+  - 1.12.17
 install:
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -u github.com/opennota/check/cmd/structcheck
-  - go get -u honnef.co/go/tools/cmd/gosimple
   - go get -u honnef.co/go/tools/cmd/staticcheck
-  - go get -u honnef.co/go/tools/cmd/unused
   - go get -u github.com/mdempsky/unconvert
   - go get -u github.com/gordonklaus/ineffassign
 script:
+  - pwd
+  - cd $(dirname `dirname $(pwd)`)/beego/bee
+  - export GO111MODULE="on"
+  - go mod download
   - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
-  - go vet  $(go list ./... | grep -v /vendor/)
-  - structcheck  $(go list ./... | grep -v /vendor/)
-  - gosimple -ignore "$(cat gosimple.ignore)" $(go list ./... | grep -v /vendor/)
-  - staticcheck -ignore "$(cat staticcheck.ignore)" $(go list ./... | grep -v /vendor/)
-  - unused $(go list ./... | grep -v /vendor/)
-  - unconvert $(go list ./... | grep -v /vendor/)
+  - go list ./... | grep -v /vendor/  | grep -v /pkg/mod/
+  - go vet  $(go list ./... | grep -v /vendor/  | grep -v /pkg/mod/ )
+  - structcheck  $(go list ./... | grep -v /vendor/  | grep -v /pkg/mod/ )
+  - staticcheck  $(go list ./... | grep -v /vendor/  | grep -v /pkg/mod/ )
+  - unconvert $(go list ./... | grep -v /vendor/  | grep -v /pkg/mod/ )
   - ineffassign .

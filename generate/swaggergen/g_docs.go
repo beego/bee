@@ -432,22 +432,27 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		pps := strings.Split(pkgpath, "/")
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
-	gopaths := bu.GetGOPATHs()
-	if len(gopaths) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
+
 	pkgRealpath := ""
 
-	wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
-	if utils.FileExists(wg) {
-		pkgRealpath = wg
+	if bu.IsGOMODULE() {
+		pkgRealpath = filepath.Join(bu.GetBeeWorkPath(), "..", pkgpath)
 	} else {
-		wgopath := gopaths
-		for _, wg := range wgopath {
-			wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-			if utils.FileExists(wg) {
-				pkgRealpath = wg
-				break
+		gopaths := bu.GetGOPATHs()
+		if len(gopaths) == 0 {
+			beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
+		}
+		wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
+		if utils.FileExists(wg) {
+			pkgRealpath = wg
+		} else {
+			wgopath := gopaths
+			for _, wg := range wgopath {
+				wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
+				if utils.FileExists(wg) {
+					pkgRealpath = wg
+					break
+				}
 			}
 		}
 	}
@@ -468,6 +473,7 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgpath, err)
 	}
+
 	for _, pkg := range astPkgs {
 		for _, fl := range pkg.Files {
 			for _, d := range fl.Decls {
@@ -730,7 +736,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			}
 		}
 	}
-
+	routerPath = urlReplace(routerPath)
 	if routerPath != "" {
 		//Go over function parameters which were not mapped and create swagger params for them
 		for name, typ := range funcParamMap {
@@ -802,7 +808,7 @@ func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName s
 		paraFormat = typeFormat[1]
 		if para.In == "body" {
 			para.Schema = &swagger.Schema{
-				Type: paraType,
+				Type:   paraType,
 				Format: paraFormat,
 			}
 		}
@@ -1209,7 +1215,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					for _, pkg := range astPkgs {
 						for _, fl := range pkg.Files {
 							for nameOfObj, obj := range fl.Scope.Objects {
-								if obj.Name == fmt.Sprint(field.Type) {
+								if pkg.Name+"."+obj.Name == realType {
 									parseObject(obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
 								}
 							}
