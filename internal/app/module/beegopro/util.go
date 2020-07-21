@@ -46,7 +46,12 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 	}
 
 	file, err := os.Create(filename)
-	defer file.Close()
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			beeLogger.Log.Fatalf("file close error, err %s", err)
+		}
+	}()
 	if err != nil {
 		err = errors.New("write create file " + err.Error())
 		return

@@ -34,7 +34,7 @@ func NewRender(m RenderInfo) *RenderFile {
 	newDescriptor, pathCtx = m.Descriptor.Parse(m.ModelName, m.Option.Path)
 
 	obj := &RenderFile{
-		Context:      make(pongo2.Context, 0),
+		Context:      make(pongo2.Context),
 		Option:       m.Option,
 		ModelName:    m.ModelName,
 		GenerateTime: m.GenerateTime,
@@ -61,7 +61,7 @@ func NewRender(m RenderInfo) *RenderFile {
 
 	modelSchemas := m.Content.ToModelSchemas()
 	camelPrimaryKey := modelSchemas.GetPrimaryKey()
-	importMaps := make(map[string]struct{}, 0)
+	importMaps := make(map[string]struct{})
 	if modelSchemas.IsExistTime() {
 		importMaps["time"] = struct{}{}
 	}
