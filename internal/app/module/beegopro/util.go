@@ -20,7 +20,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 		return
 	}
 
-	filePath := path.Dir(filename)
+	filePath := filepath.Dir(filename)
 	err = createPath(filePath)
 	if err != nil {
 		err = errors.New("write create path " + err.Error())
@@ -37,7 +37,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 	name := path.Base(filename)
 
 	if utils.IsExist(filename) {
-		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, name, time.Now().Format("2006.01.02.15.04.05"))
+		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, filepath.Base(name), time.Now().Format("2006.01.02.15.04.05"))
 		beeLogger.Log.Infof("bak file '%s'", bakName)
 		if err := os.Rename(filename, bakName); err != nil {
 			err = errors.New("file is bak error, path is " + bakName)
