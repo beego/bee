@@ -34,11 +34,11 @@ import (
 )
 
 func GetBeeWorkPath() string {
-	beePath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	curpath, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	return beePath
+	return curpath
 }
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -313,7 +313,7 @@ func Tmpl(text string, data interface{}) {
 func CheckEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		beeLogger.Log.Error("if you want new a go module project,please add param `-module=true` and set env `G111MODULE=on`")
+		beeLogger.Log.Error("if you want new a go module project,please add param `-gopath=false`.")
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()

@@ -34,9 +34,10 @@ var CmdApiapp = &commands.Command{
 	Short:     "Creates a Beego API application",
 	Long: `
   The command 'api' creates a Beego API application.
+  now default supoort generate a go modules project.
 
   {{"Example:"|bold}}
-      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-module=true] [-beego=v1.12.1]
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.1]
 
   If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -44,7 +45,7 @@ var CmdApiapp = &commands.Command{
   The command 'api' creates a folder named [appname] with the following structure:
 
 	    ├── main.go
-		├── go.mod
+	    ├── go.mod
 	    ├── {{"conf"|foldername}}
 	    │     └── app.conf
 	    ├── {{"controllers"|foldername}}
@@ -543,15 +544,15 @@ func TestGet(t *testing.T) {
 }
 
 `
-var module utils.DocValue
+var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 func init() {
 	CmdApiapp.Flag.Var(&generate.Tables, "tables", "List of table names separated by a comma.")
 	CmdApiapp.Flag.Var(&generate.SQLDriver, "driver", "Database driver. Either mysql, postgres or sqlite.")
 	CmdApiapp.Flag.Var(&generate.SQLConn, "conn", "Connection string used by the driver to connect to a database instance.")
-	CmdApiapp.Flag.Var(&module, "module", "Support go modules")
-	CmdApiapp.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by -module=true")
+	CmdApiapp.Flag.Var(&gopath, "gopath", "Support go path,default false")
+	CmdApiapp.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by go mod")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdApiapp)
 }
 
@@ -563,14 +564,15 @@ func createAPI(cmd *commands.Command, args []string) int {
 	}
 
 	if len(args) >= 2 {
-		cmd.Flag.Parse(args[1:])
-	} else {
-		module = "false"
+		err := cmd.Flag.Parse(args[1:])
+		if err != nil {
+			beeLogger.Log.Fatal("Parse args err " + err.Error())
+		}
 	}
 	var appPath string
 	var packPath string
 	var err error
-	if module != `true` {
+	if gopath == `true` {
 		beeLogger.Log.Info("generate api project support GOPATH")
 		version.ShowShortVersionBanner()
 		appPath, packPath, err = utils.CheckEnv(args[0])
@@ -605,7 +607,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 	beeLogger.Log.Info("Creating API...")
 
 	os.MkdirAll(appPath, 0755)
-	if module == `true` { //generate first for calc model name
+	if gopath != `true` { //generate first for calc model name
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "go.mod"), "\x1b[0m")
 		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, utils.GetGoVersionSkipMinor(), beegoVersion.String()))
 	}
