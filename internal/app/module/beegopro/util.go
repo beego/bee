@@ -244,6 +244,7 @@ func UpdateSelf() {
 	} else {
 		if cf, err := os.OpenFile(fp, os.O_CREATE, 0644); err == nil {
 			cf.Close()
+		} else {
 			beeLogger.Log.Warnf("Create file err: %s", err)
 		}
 	}
