@@ -6,18 +6,16 @@ import (
 	"fmt"
 	"github.com/beego/bee/internal/pkg/utils"
 	beeLogger "github.com/beego/bee/logger"
-	"go/format"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
 
 // write to file
-func (c *RenderFile) write(filename string, buf string) (err error) {
+func (c *RenderFile) write(filename string, buf []byte) (err error) {
 	if utils.IsExist(filename) && !isNeedOverwrite(filename) {
 		return
 	}
@@ -42,6 +40,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, filepath.Base(name), time.Now().Format("2006.01.02.15.04.05"))
 		beeLogger.Log.Infof("bak file '%s'", bakName)
 		if err := os.Rename(filename, bakName); err != nil {
+			fmt.Println(err)
 			err = errors.New("file is bak error, path is " + bakName)
 			return err
 		}
@@ -54,20 +53,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 		return
 	}
 
-	output := []byte(buf)
-
-	if c.Option.EnableFormat && filepath.Ext(filename) == ".go" {
-		// format code
-		var bts []byte
-		bts, err = format.Source([]byte(buf))
-		if err != nil {
-			err = errors.New("format buf error " + err.Error())
-			return
-		}
-		output = bts
-	}
-
-	err = ioutil.WriteFile(filename, output, 0644)
+	err = ioutil.WriteFile(filename, buf, 0644)
 	if err != nil {
 		err = errors.New("write write file " + err.Error())
 		return
@@ -186,34 +172,19 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 	return
 }
 
-func FileContentChange(org,new string) bool {
-	if org == "" {
-		return false
+func FileContentChange(org,new []byte) bool {
+	if len(org) == 0 {
+		return true
 	}
 	var orgContent,newContent string
-	jump := false
-	// expect tab character and blank space and "import（***）"
-	reg := regexp.MustCompile("\\s+")
-	for i, s := range strings.Split(org, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			orgContent += reg.ReplaceAllString(s, "")
+	for i, s := range strings.Split(string(org), "\n") {
+		if i > 1 {
+			orgContent += s
 		}
 	}
-	for i, s := range strings.Split(new, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			newContent += reg.ReplaceAllString(s, "")
+	for i, s := range strings.Split(string(new), "\n") {
+		if i > 1 {
+			newContent += s
 		}
 	}
 	orgMd5 := md5.Sum([]byte(orgContent))
@@ -221,5 +192,6 @@ func FileContentChange(org,new string) bool {
 	if orgMd5 != newMd5 {
 		return true
 	}
+	beeLogger.Log.Infof("File has no change in the content")
 	return false
 }
