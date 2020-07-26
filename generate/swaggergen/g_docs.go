@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"os"
@@ -37,7 +38,6 @@ import (
 	"github.com/astaxie/beego/swagger"
 	"github.com/astaxie/beego/utils"
 	beeLogger "github.com/beego/bee/logger"
-	bu "github.com/beego/bee/utils"
 )
 
 const (
@@ -263,7 +263,7 @@ func GenerateDocs(curpath string) {
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analyseControllerPkg(path.Join(curpath, "vendor"), localName, im.Path.Value)
+		analyseControllerPkg(localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -418,7 +418,7 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analyseControllerPkg(vendorPath, localName, pkgpath string) {
+func analyseControllerPkg(localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
@@ -433,36 +433,18 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
 
-	pkgRealpath := ""
-
-	if bu.IsGOMODULE() {
-		pkgRealpath = filepath.Join(bu.GetBeeWorkPath(), "..", pkgpath)
-	} else {
-		gopaths := bu.GetGOPATHs()
-		if len(gopaths) == 0 {
-			beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-		}
-		wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
-		if utils.FileExists(wg) {
-			pkgRealpath = wg
-		} else {
-			wgopath := gopaths
-			for _, wg := range wgopath {
-				wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-				if utils.FileExists(wg) {
-					pkgRealpath = wg
-					break
-				}
-			}
-		}
+	pkg, err := build.Default.Import(pkgpath, ".", build.FindOnly)
+	if err != nil {
+		beeLogger.Log.Fatalf("Package %s cannot be imported: %v", pkgpath, err)
 	}
+	pkgRealpath := pkg.Dir
 	if pkgRealpath != "" {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH or vendor path", pkgpath)
+		beeLogger.Log.Fatalf("Package '%s' does not have source directory", pkgpath)
 	}
 
 	fileSet := token.NewFileSet()
