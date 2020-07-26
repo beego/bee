@@ -69,7 +69,7 @@ func main() {
 
 			// Check if current directory is inside the GOPATH,
 			// if so parse the packages inside it.
-			if utils.IsInGOPATH(currentpath) && cmd.IfGenerateDocs(c.Name(), args) {
+			if cmd.IfGenerateDocs(c.Name(), args) {
 				swaggergen.ParsePackagesFromDir(currentpath)
 			}
 			os.Exit(c.Run(c, args))
