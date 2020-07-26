@@ -11,13 +11,12 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
 
 // write to file
-func (c *RenderFile) write(filename string, buf string) (err error) {
+func (c *RenderFile) write(filename string, buf []byte) (err error) {
 	if utils.IsExist(filename) && !isNeedOverwrite(filename) {
 		return
 	}
@@ -191,34 +190,19 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 	return
 }
 
-func FileContentChange(org,new string) bool {
-	if org == "" {
-		return false
+func FileContentChange(org,new []byte) bool {
+	if len(org) == 0 {
+		return true
 	}
 	var orgContent,newContent string
-	jump := false
-	// expect tab character and blank space and "import（***）"
-	reg := regexp.MustCompile("\\s+")
-	for i, s := range strings.Split(org, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			orgContent += reg.ReplaceAllString(s, "")
+	for i, s := range strings.Split(string(org), "\n") {
+		if i > 1 {
+			orgContent += s
 		}
 	}
-	for i, s := range strings.Split(new, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			newContent += reg.ReplaceAllString(s, "")
+	for i, s := range strings.Split(string(new), "\n") {
+		if i > 1 {
+			newContent += s
 		}
 	}
 	orgMd5 := md5.Sum([]byte(orgContent))
@@ -226,5 +210,6 @@ func FileContentChange(org,new string) bool {
 	if orgMd5 != newMd5 {
 		return true
 	}
+	beeLogger.Log.Infof("File has no change in the content")
 	return false
 }
