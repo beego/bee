@@ -194,7 +194,7 @@ func FileContentChange(org,new []byte, seg string) bool {
 		return true
 	}
 	orgContent := GetFilterContent(string(org),seg)
-	newContent := GetFilterContent(string(org),string(new))
+	newContent := GetFilterContent(string(new),seg)
 	orgMd5 := md5.Sum([]byte(orgContent))
 	newMd5:= md5.Sum([]byte(newContent))
 	if orgMd5 != newMd5 {
