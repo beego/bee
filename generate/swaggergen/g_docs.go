@@ -102,8 +102,8 @@ func init() {
 	astPkgs = make([]*ast.Package, 0)
 }
 
-// ParsePackagesFromDir parses packages from a given directory
-func ParsePackagesFromDir(dirpath string) {
+// parsePackagesFromDir parses packages from a given directory
+func parsePackagesFromDir(dirpath string) {
 	c := make(chan error)
 
 	go func() {
@@ -157,8 +157,14 @@ func parsePackageFromDir(path string) error {
 
 // GenerateDocs generates documentations for a given path.
 func GenerateDocs(curpath string) {
-	fset := token.NewFileSet()
+	pkgspath := curpath
+	workspace := os.Getenv("BeeWorkspace")
+	if workspace != "" {
+		pkgspath = workspace
+	}
+	parsePackagesFromDir(pkgspath)
 
+	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filepath.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
