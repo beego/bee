@@ -4,6 +4,8 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
+	"github.com/beego/bee/internal/pkg/command"
+	"github.com/beego/bee/internal/pkg/system"
 	"github.com/beego/bee/internal/pkg/utils"
 	beeLogger "github.com/beego/bee/logger"
 	"go/format"
@@ -11,6 +13,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -224,5 +227,58 @@ func GetSeg(ext string) string {
 		return "--"
 	default:
 		return "//"
+	}
+}
+
+func UpdateSelf() {
+	path := system.BeegoHome
+	fp := path + "/.updateBee"
+	timeNow := time.Now().Unix()
+	var timeOld int64
+	if utils.IsExist(fp) {
+		oldContent, err := ioutil.ReadFile(fp)
+		if err != nil {
+			beeLogger.Log.Warnf("read file err: %s", err)
+		}
+		timeOld, _ = strconv.ParseInt(string(oldContent), 10, 64)
+	} else {
+		if cf, err := os.OpenFile(fp, os.O_CREATE, 0644); err == nil {
+			cf.Close()
+			beeLogger.Log.Warnf("Create file err: %s", err)
+		}
+	}
+	if timeNow-timeOld > 24*60*60 {
+		if w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC, 0644); err == nil {
+			defer w.Close()
+			timeNowStr := strconv.FormatInt(timeNow, 10)
+			if _, err := w.WriteString(timeNowStr); err != nil {
+				beeLogger.Log.Warnf("Update file err: %s", err)
+			}
+			beeLogger.Log.Info("Updating bee")
+			goGetBee()
+		} else {
+			beeLogger.Log.Warnf("Update Bee file err: %s", err)
+		}
+	}
+}
+
+func goGetBee() {
+	beePath := "github.com/beego/bee"
+	done := make(chan int, 1)
+	go func() {
+		stdout, stderr, err := command.ExecCmd("go", "get", "-u", beePath)
+		if err != nil {
+			beeLogger.Log.Warnf("Update Bee err: %s", err)
+			beeLogger.Log.Warnf("Update Bee err: %s", stderr)
+		}
+		beeLogger.Log.Infof("Bee was updated successfully %s", stdout)
+		done <- 1
+	}()
+	// wait 30 second
+	select {
+	case <-done:
+		return
+	case <-time.After(time.Duration(30 * time.Second)):
+		beeLogger.Log.Warn("Update Bee timeout!!!")
 	}
 }

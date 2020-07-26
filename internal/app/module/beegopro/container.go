@@ -51,6 +51,7 @@ var DefaultBeegoPro = &Container{
 }
 
 func (c *Container) Run() {
+	UpdateSelf()
 	// init git refresh cache time
 	c.initTimestamp()
 	c.initUserOption()
