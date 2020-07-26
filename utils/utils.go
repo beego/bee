@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
@@ -31,6 +32,7 @@ import (
 
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/internal/pkg/system"
 )
 
 func GetBeeWorkPath() string {
@@ -462,4 +464,65 @@ func IsGOMODULE() bool {
 		return len(stringSubmatch) == 2
 	}
 	return false
+}
+
+func UpdateBee() {
+	cmd := exec.Command("go", "version")
+	cmd.Output()
+	if cmd.Process == nil || cmd.Process.Pid <= 0 {
+		beeLogger.Log.Warn("There is no go environment")
+		return
+	}
+	path := system.BeegoHome
+	fp := path + "/.updateBee"
+	timeNow := time.Now().Unix()
+	var timeOld int64
+	if IsExist(fp) {
+		oldContent, err := ioutil.ReadFile(fp)
+		if err != nil {
+			beeLogger.Log.Warnf("read file err: %s", err)
+		}
+		timeOld, _ = strconv.ParseInt(string(oldContent), 10, 64)
+	} else {
+		if cf, err := os.OpenFile(fp, os.O_CREATE, 0644); err == nil {
+			cf.Close()
+		} else {
+			beeLogger.Log.Warnf("Create file err: %s", err)
+		}
+	}
+	if timeNow-timeOld > 24*60*60 {
+		if w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC, 0644); err == nil {
+			defer w.Close()
+			timeNowStr := strconv.FormatInt(timeNow, 10)
+			if _, err := w.WriteString(timeNowStr); err != nil {
+				beeLogger.Log.Warnf("Update file err: %s", err)
+			}
+			beeLogger.Log.Info("Updating bee")
+			goGetBee()
+		} else {
+			beeLogger.Log.Warnf("Update Bee file err: %s", err)
+		}
+	}
+}
+
+func goGetBee() {
+	beePath := "github.com/beego/bee"
+	done := make(chan int, 1)
+	go func() {
+		cmd := exec.Command("go", "get", "-u", beePath)
+		output, err := cmd.Output()
+		if err != nil {
+			beeLogger.Log.Warnf("Update Bee err: %s", err)
+			beeLogger.Log.Warnf("Update Bee err: %s", output)
+		}
+		beeLogger.Log.Infof("Bee was updated successfully %s", output)
+		done <- 1
+	}()
+	// wait 30 second
+	select {
+	case <-done:
+		return
+	case <-time.After(time.Duration(30 * time.Second)):
+		beeLogger.Log.Warn("Update Bee timeout!!!")
+	}
 }

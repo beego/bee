@@ -30,6 +30,7 @@ var (
 )
 
 func main() {
+	utils.UpdateBee()
 	currentpath, _ := os.Getwd()
 	if workspace != "" {
 		currentpath = workspace
