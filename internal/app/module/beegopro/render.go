@@ -1,13 +1,11 @@
 package beegopro
 
 import (
-	"errors"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/davecgh/go-spew/spew"
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
-	"go/format"
 	"io/ioutil"
 	"os"
 	"path"
@@ -122,27 +120,15 @@ func (r *RenderFile) Exec(name string) {
 	var orgContent []byte
 	if err == nil {
 		if org, err := os.OpenFile(r.Descriptor.DstPath, os.O_RDONLY, 0666); err == nil {
+			defer org.Close()
 			orgContent,_ = ioutil.ReadAll(org)
-			org.Close()
 		} else {
 			beeLogger.Log.Infof("file err %s", err)
 		}
 	}
 	// Replace or create when content changes
-	output := []byte(buf)
-	if r.Option.EnableFormat && filepath.Ext(r.FlushFile) == ".go" {
-		// format code
-		var bts []byte
-		bts, err = format.Source([]byte(buf))
-		if err != nil {
-			err = errors.New("format buf error " + err.Error())
-			return
-		}
-		output = bts
-	}
-
-	if FileContentChange(orgContent,output) {
-		err = r.write(r.FlushFile, output)
+	if len(orgContent) == 0 || FileContentChange(string(orgContent),buf) {
+		err = r.write(r.FlushFile, buf)
 		if err != nil {
 			beeLogger.Log.Fatalf("Could not create file: %s", err)
 			return
