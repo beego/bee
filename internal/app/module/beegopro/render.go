@@ -6,8 +6,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
-	"io/ioutil"
-	"os"
 	"path"
 	"path/filepath"
 )
@@ -116,24 +114,10 @@ func (r *RenderFile) Exec(name string) {
 		beeLogger.Log.Fatalf("Could not create the %s render tmpl: %s", name, err)
 		return
 	}
-	_, err = os.Stat(r.Descriptor.DstPath)
-	var orgContent []byte
-	if err == nil {
-		if org, err := os.OpenFile(r.Descriptor.DstPath, os.O_RDONLY, 0666); err == nil {
-			defer org.Close()
-			orgContent,_ = ioutil.ReadAll(org)
-		} else {
-			beeLogger.Log.Infof("file err %s", err)
-		}
+	err = r.write(r.FlushFile, buf)
+	if err != nil {
+		beeLogger.Log.Fatalf("Could not create file: %s", err)
+		return
 	}
-	// Replace or create when content changes
-	if len(orgContent) == 0 || FileContentChange(string(orgContent),buf) {
-		err = r.write(r.FlushFile, buf)
-		if err != nil {
-			beeLogger.Log.Fatalf("Could not create file: %s", err)
-			return
-		}
-		beeLogger.Log.Infof("create file '%s' from %s", r.FlushFile, r.PackageName)
-	}
+	beeLogger.Log.Infof("create file '%s' from %s", r.FlushFile, r.PackageName)
 }
-
