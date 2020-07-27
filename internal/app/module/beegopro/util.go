@@ -58,12 +58,12 @@ func (c *RenderFile) write(filename string, buf []byte) (err error) {
 		return
 	}
 
-	output := []byte(buf)
+	var output []byte
 
 	if c.Option.EnableFormat && filepath.Ext(filename) == ".go" {
 		// format code
 		var bts []byte
-		bts, err = format.Source([]byte(buf))
+		bts, err = format.Source(buf)
 		if err != nil {
 			err = errors.New("format buf error " + err.Error())
 			return

@@ -522,7 +522,7 @@ func goGetBee() {
 	select {
 	case <-done:
 		return
-	case <-time.After(time.Duration(30 * time.Second)):
+	case <-time.After(time.Second * 30):
 		beeLogger.Log.Warn("Update Bee timeout!!!")
 	}
 }

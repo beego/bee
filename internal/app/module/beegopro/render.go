@@ -1,7 +1,6 @@
 package beegopro
 
 import (
-	"errors"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/davecgh/go-spew/spew"
@@ -136,8 +135,7 @@ func (r *RenderFile) Exec(name string) {
 		var bts []byte
 		bts, err = format.Source([]byte(buf))
 		if err != nil {
-			err = errors.New("format buf error " + err.Error())
-			return
+			beeLogger.Log.Warnf("format buf error %s", err.Error())
 		}
 		output = bts
 	}
