@@ -80,7 +80,11 @@ func (c *RenderFile) write(filename string, buf []byte) (err error) {
 }
 
 func isNeedOverwrite(fileName string) (flag bool) {
-	seg := GetSeg(filepath.Ext(fileName))
+	seg := "//"
+	ext := filepath.Ext(fileName)
+	if ext == ".sql" {
+		seg = "--"
+	}
 
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -186,12 +190,21 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 	return
 }
 
-func FileContentChange(org,new []byte, seg string) bool {
+func FileContentChange(org,new []byte) bool {
 	if len(org) == 0 {
 		return true
 	}
-	orgContent := GetFilterContent(string(org),seg)
-	newContent := GetFilterContent(string(org),string(new))
+	var orgContent,newContent string
+	for i, s := range strings.Split(string(org), "\n") {
+		if i > 1 {
+			orgContent += s
+		}
+	}
+	for i, s := range strings.Split(string(new), "\n") {
+		if i > 1 {
+			newContent += s
+		}
+	}
 	orgMd5 := md5.Sum([]byte(orgContent))
 	newMd5:= md5.Sum([]byte(newContent))
 	if orgMd5 != newMd5 {
@@ -199,30 +212,4 @@ func FileContentChange(org,new []byte, seg string) bool {
 	}
 	beeLogger.Log.Infof("File has no change in the content")
 	return false
-}
-
-func GetFilterContent(content string, seg string) string {
-	res := ""
-	for _, s := range strings.Split(content, "\n") {
-		s = strings.TrimSpace(strings.TrimPrefix(s, seg))
-		var have  = false
-		for _,except := range CompareExcept{
-			if strings.HasPrefix(s, except) {
-				have = true
-			}
-		}
-		if !have {
-			res += s
-		}
-	}
-	return res
-}
-
-func GetSeg(ext string) string {
-	switch ext {
-	case ".sql":
-		return "--"
-	default:
-		return "//"
-	}
 }
