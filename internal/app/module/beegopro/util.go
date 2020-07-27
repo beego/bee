@@ -1,7 +1,6 @@
 package beegopro
 
 import (
-	"crypto/md5"
 	"errors"
 	"fmt"
 	"github.com/beego/bee/internal/pkg/utils"
@@ -11,7 +10,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"regexp"
 	"strings"
 	"time"
 )
@@ -189,42 +187,4 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 		tag = kv[1]
 	}
 	return
-}
-
-func FileContentChange(org,new string) bool {
-	if org == "" {
-		return false
-	}
-	var orgContent,newContent string
-	jump := false
-	// expect tab character and blank space and "import（***）"
-	reg := regexp.MustCompile("\\s+")
-	for i, s := range strings.Split(org, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			orgContent += reg.ReplaceAllString(s, "")
-		}
-	}
-	for i, s := range strings.Split(new, "\n") {
-		if s == "import (" {
-			jump = true
-		}
-		if jump && s == ")" {
-			jump = false
-		}
-		if i > 2 && !jump {
-			newContent += reg.ReplaceAllString(s, "")
-		}
-	}
-	orgMd5 := md5.Sum([]byte(orgContent))
-	newMd5:= md5.Sum([]byte(newContent))
-	if orgMd5 != newMd5 {
-		return true
-	}
-	return false
 }
