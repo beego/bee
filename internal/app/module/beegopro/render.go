@@ -130,8 +130,7 @@ func (r *RenderFile) Exec(name string) {
 	}
 	// Replace or create when content changes
 	output := []byte(buf)
-	ext := filepath.Ext(r.FlushFile)
-	if r.Option.EnableFormat && ext == ".go" {
+	if r.Option.EnableFormat && filepath.Ext(r.FlushFile) == ".go" {
 		// format code
 		var bts []byte
 		bts, err = format.Source([]byte(buf))
@@ -142,7 +141,7 @@ func (r *RenderFile) Exec(name string) {
 		output = bts
 	}
 
-	if FileContentChange(orgContent,output,GetSeg(ext)) {
+	if FileContentChange(orgContent,output) {
 		err = r.write(r.FlushFile, output)
 		if err != nil {
 			beeLogger.Log.Fatalf("Could not create file: %s", err)
