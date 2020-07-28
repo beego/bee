@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/beego/bee/internal/pkg/utils"
 	beeLogger "github.com/beego/bee/logger"
-	"go/format"
 	"io/ioutil"
 	"os"
 	"path"
@@ -58,20 +57,7 @@ func (c *RenderFile) write(filename string, buf []byte) (err error) {
 		return
 	}
 
-	var output []byte
-
-	if c.Option.EnableFormat && filepath.Ext(filename) == ".go" {
-		// format code
-		var bts []byte
-		bts, err = format.Source(buf)
-		if err != nil {
-			err = errors.New("format buf error " + err.Error())
-			return
-		}
-		output = bts
-	}
-
-	err = ioutil.WriteFile(filename, output, 0644)
+	err = ioutil.WriteFile(filename, buf, 0644)
 	if err != nil {
 		err = errors.New("write write file " + err.Error())
 		return
