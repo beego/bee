@@ -1185,6 +1185,10 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 						mp.Example = str2RealType(example, realType)
 					}
 
+					if len(tagValues) == 2 && tagValues[1] == "string" {
+						mp.Type = "string"
+					}
+
 					m.Properties[name] = mp
 				}
 				if ignore := stag.Get("ignore"); ignore != "" {
