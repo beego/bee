@@ -25,6 +25,7 @@ import (
 )
 
 func main() {
+	utils.UpdateBee()
 	flag.Usage = cmd.Usage
 	flag.Parse()
 	log.SetFlags(0)
