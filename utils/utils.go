@@ -16,8 +16,10 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
@@ -31,12 +33,14 @@ import (
 	"unicode"
 
 	"github.com/beego/bee/config"
-	"github.com/beego/bee/internal/pkg/git"
-
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
 )
+
+type tagName struct {
+	Name	string	`json:"name"`
+}
 
 func GetBeeWorkPath() string {
 	curpath, err := os.Getwd()
@@ -508,34 +512,44 @@ func NoticeUpdateBee() {
 		beeLogger.Log.Warnf("Update noticeUpdateBee file err: %s", err)
 		return
 	}
-	newVersion()
-}
-
-func newVersion() {
-	hs, _, workPath := SearchGOPATHs(config.GitRemotePath)
-	if hs == false {
-		beeLogger.Log.Warn("Fail to open repository")
-	}
-	repo, err := git.OpenRepository(workPath)
-	if err != nil {
-		beeLogger.Log.Fatalf("Fail to open repository, err: %s", err)
-		return
-	}
-	tags, err := repo.GetTags()
-	if err != nil {
-		beeLogger.Log.Fatalf("Fail to get tags, err: %s", err)
-		return
-	}
-	// v1.12.0 | V_1.12.0 => 1.12.0
-	re, _ := regexp.Compile(`[0-9.]+`)
-	var versionLast string
-	versionList := re.FindStringSubmatch(tags[0])
-	if len(versionList) >= 1 {
-		versionLast = versionList[0]
-	}
+	beeLogger.Log.Info("Getting bee latest version...")
+	versionLast := BeeLastVersion()
 	versionNow := config.Version
+	if versionLast == ""{
+		beeLogger.Log.Warn("Get latest version err")
+		return
+	}
 	if versionNow != versionLast {
 		beeLogger.Log.Warnf("Update available %s ==> %s", versionNow, versionLast)
 		beeLogger.Log.Warn("Run `bee update` to update")
 	}
+	beeLogger.Log.Info("Your bee are up to date")
+}
+
+func BeeLastVersion() (version string) {
+	var url = "https://api.github.com/repos/beego/bee/tags"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee tags from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	var tags []tagName
+	if err = json.Unmarshal(bodyContent, &tags); err != nil {
+		beeLogger.Log.Warnf("Unmarshal tags body error: %s", err)
+		return
+	}
+	if len(tags) < 1 {
+		beeLogger.Log.Warn("There is no tags！")
+		return
+	}
+	last := tags[0]
+	re, _ := regexp.Compile(`[0-9.]+`)
+	versionList := re.FindStringSubmatch(last.Name)
+	if len(versionList) > 0 {
+		return versionList[0]
+	}
+	beeLogger.Log.Warn("There is no tags！")
+	return
 }
