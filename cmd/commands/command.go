@@ -65,6 +65,7 @@ func (c *Command) Out() io.Writer {
 	if c.output != nil {
 		return *c.output
 	}
+
 	return colors.NewColorWriter(os.Stderr)
 }
 
