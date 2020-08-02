@@ -4,14 +4,15 @@ import (
 	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/beego/bee/internal/pkg/utils"
-	beeLogger "github.com/beego/bee/logger"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/beego/bee/internal/pkg/utils"
+	beeLogger "github.com/beego/bee/logger"
 )
 
 // write to file
@@ -191,7 +192,7 @@ func GetFilterContent(content string, seg string) string {
 	res := ""
 	for _, s := range strings.Split(content, "\n") {
 		s = strings.TrimSpace(strings.TrimPrefix(s, seg))
-		var have  = false
+		var have bool
 		for _,except := range CompareExcept{
 			if strings.HasPrefix(s, except) {
 				have = true

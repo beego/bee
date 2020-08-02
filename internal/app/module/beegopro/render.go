@@ -1,16 +1,18 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/flosch/pongo2"
-	"github.com/smartwalle/pongo2render"
 	"go/format"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/flosch/pongo2"
+	"github.com/smartwalle/pongo2render"
+
+	"github.com/beego/bee/internal/pkg/system"
+	beeLogger "github.com/beego/bee/logger"
 )
 
 // render
@@ -140,7 +142,7 @@ func (r *RenderFile) Exec(name string) {
 		output = bts
 	}
 
-	if FileContentChange(orgContent,output,GetSeg(ext)) {
+	if FileContentChange(orgContent, output, GetSeg(ext)) {
 		err = r.write(r.FlushFile, output)
 		if err != nil {
 			beeLogger.Log.Fatalf("Could not create file: %s", err)
