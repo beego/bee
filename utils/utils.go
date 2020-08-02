@@ -512,7 +512,10 @@ func NoticeUpdateBee() {
 }
 
 func newVersion() {
-	workPath := GetBeeWorkPath()
+	hs, _, workPath := SearchGOPATHs(config.GitRemotePath)
+	if hs == false {
+		beeLogger.Log.Warn("Fail to open repository")
+	}
 	repo, err := git.OpenRepository(workPath)
 	if err != nil {
 		beeLogger.Log.Fatalf("Fail to open repository, err: %s", err)
