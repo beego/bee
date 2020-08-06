@@ -153,8 +153,10 @@ func AskForConfirmation() bool {
 	if err != nil {
 		beeLogger.Log.Fatalf("%s", err)
 	}
-	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
-	nokayResponses := []string{"n", "N", "no", "No", "NO"}
+	response = strings.ToLower(strings.TrimSpace(response))
+
+	okayResponses := []string{"y", "yes"}
+	nokayResponses := []string{"n", "no"}
 	if containsString(okayResponses, response) {
 		return true
 	} else if containsString(nokayResponses, response) {
