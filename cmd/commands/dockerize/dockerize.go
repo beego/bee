@@ -40,7 +40,6 @@ COPY . .
 
 # Compile the binary and statically link
 RUN dep init
-# RUN dep ensure
 RUN go mod vendor
 RUN CGO_ENABLED=0 go build -ldflags '-d -w -s'
 
