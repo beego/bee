@@ -29,22 +29,23 @@ import (
 )
 
 const dockerBuildTemplate = `FROM {{.BaseImage}}
-
-# Godep for vendoring
-RUN go get github.com/tools/godep
+RUN apt-get update
+RUN apt-get install -y go-dep
 
 # Recompile the standard library without CGO
 RUN CGO_ENABLED=0 go install -a std
 
-ENV APP_DIR $GOPATH{{.Appdir}}
-RUN mkdir -p $APP_DIR
-
-# Set the entrypoint
-ENTRYPOINT (cd $APP_DIR && ./{{.Entrypoint}})
-ADD . $APP_DIR
+WORKDIR $GOPATH{{.Appdir}}
+COPY . .
 
 # Compile the binary and statically link
-RUN cd $APP_DIR && CGO_ENABLED=0 godep go build -ldflags '-d -w -s'
+RUN dep init
+# RUN dep ensure
+RUN go mod vendor
+RUN CGO_ENABLED=0 go build -ldflags '-d -w -s'
+
+# Set the entrypoint
+ENTRYPOINT ./{{.Entrypoint}}
 
 EXPOSE {{.Expose}}
 `
@@ -62,7 +63,7 @@ var CmdDockerize = &commands.Command{
 	UsageLine:   "dockerize",
 	Short:       "Generates a Dockerfile for your Beego application",
 	Long: `Dockerize generates a Dockerfile for your Beego Web Application.
-  The Dockerfile will compile, get the dependencies with {{"godep"|bold}}, and set the entrypoint.
+  The Dockerfile will compile, get the dependencies with {{"dep"|bold}}, and set the entrypoint.
 
   {{"Example:"|bold}}
     $ bee dockerize -expose="3000,80,25"
