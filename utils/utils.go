@@ -481,6 +481,12 @@ func NoticeUpdateBee() {
 		return
 	}
 	beeHome := system.BeegoHome
+	if !IsExist(beeHome) {
+		if err := os.MkdirAll(beeHome, 0755); err != nil {
+			beeLogger.Log.Fatalf("Could not create the directory: %s", err)
+			return
+		}
+	}
 	fp := beeHome + "/.noticeUpdateBee"
 	timeNow := time.Now().Unix()
 	var timeOld int64
