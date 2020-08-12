@@ -1143,6 +1143,10 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					}
 				}
 
+				if ignore := stag.Get("ignore"); ignore != "" {
+					continue
+				}
+
 				tag := stag.Get("json")
 				if tag != "" {
 					tagValues = strings.Split(tag, ",")
@@ -1154,6 +1158,14 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					// set property name to the left most json tag value only if is not omitempty
 					if len(tagValues) > 0 && tagValues[0] != "omitempty" {
 						name = tagValues[0]
+					}
+
+					// set property type to the second tag value only if it is not omitempty and isBasicType
+					if len(tagValues) > 1 && tagValues[1] != "omitempty" && isBasicType(tagValues[1]) {
+						typeFormat := strings.Split(basicTypes[tagValues[1]], ":")
+						mp.Type = typeFormat[0]
+						mp.Format = typeFormat[1]
+						mp.Ref = ""
 					}
 
 					if thrifttag := stag.Get("thrift"); thrifttag != "" {
@@ -1175,15 +1187,15 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 
 					m.Properties[name] = mp
 				}
-				if ignore := stag.Get("ignore"); ignore != "" {
-					continue
-				}
 			} else {
 				// only parse case of when embedded field is TypeName
 				// cases of *TypeName and Interface are not handled, maybe useless for swagger spec
 				tag := ""
 				if field.Tag != nil {
 					stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+					if ignore := stag.Get("ignore"); ignore != "" {
+						continue
+					}
 					tag = stag.Get("json")
 				}
 
