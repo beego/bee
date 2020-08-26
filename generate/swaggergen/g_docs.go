@@ -93,6 +93,10 @@ var stdlibObject = map[string]string{
 	"&{json RawMessage}": "json.RawMessage",
 }
 
+var customObject = map[string]string{
+	"&{base ObjectID}": "string",
+}
+
 func init() {
 	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
@@ -1235,6 +1239,9 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
 			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+		}
+		if object, isCustomObject := customObject[fmt.Sprint(arr.Elt)]; isCustomObject {
+			return true, fmt.Sprintf("[]%v", object), basicTypes[object]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), astTypeObject
