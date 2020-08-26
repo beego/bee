@@ -1260,6 +1260,8 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return false, astTypeMap, basicTypes[val]
 		}
 		return false, val, astTypeObject
+	case *ast.InterfaceType:
+		return false, "interface", astTypeObject
 	}
 	basicType := fmt.Sprint(f.Type)
 	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
