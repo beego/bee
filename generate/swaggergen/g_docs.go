@@ -1266,7 +1266,7 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 		if isBasicType(val) {
 			return false, astTypeMap, basicTypes[val]
 		}
-		return false, val, astTypeObject
+		return false, fmt.Sprintf("map[%v][%v]", t.Key, t.Value), astTypeObject
 	case *ast.InterfaceType:
 		return false, "interface", astTypeObject
 	}
