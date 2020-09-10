@@ -2,16 +2,18 @@ package beegopro
 
 import (
 	"fmt"
+	"io/ioutil"
+	"sync"
+	"time"
+
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pelletier/go-toml"
+	"github.com/spf13/viper"
+
 	"github.com/beego/bee/internal/pkg/git"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/pelletier/go-toml"
-	"github.com/spf13/viper"
-	"io/ioutil"
-	"sync"
-	"time"
 )
 
 const MDateFormat = "20060102_150405"
@@ -58,6 +60,24 @@ func (c *Container) Run() {
 	c.initParser()
 	c.initRender()
 	c.flushTimestamp()
+}
+
+func (c *Container) InitToml() {
+	if exist := utils.IsExist(c.BeegoProFile); exist {
+		beeLogger.Log.Fatalf("file beegopro.toml already exists")
+	}
+	sourceFile := c.UserOption.GitLocalPath + "/beegopro.toml"
+	input, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		beeLogger.Log.Fatalf("read beegopro.toml file err, %s", err.Error())
+		return
+	}
+	err = ioutil.WriteFile(c.BeegoProFile, input, 0644)
+	if err != nil {
+		beeLogger.Log.Fatalf("create beegopro.toml file err, %s", err.Error())
+		return
+	}
+	beeLogger.Log.Success("Successfully created file beegopro.toml")
 }
 
 func (c *Container) initUserOption() {

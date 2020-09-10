@@ -47,6 +47,8 @@ func BeegoPro(cmd *commands.Command, args []string) int {
 	switch gcmd {
 	case "gen":
 		beegopro.DefaultBeegoPro.Run()
+	case "toml":
+		beegopro.DefaultBeegoPro.InitToml()
 	case "config":
 		beegopro.DefaultBeegoPro.GenConfig()
 	case "migration":
