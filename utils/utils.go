@@ -607,7 +607,6 @@ func BeeReleasesInfo() (repos []Releases) {
 //TODO merge UpdateLastPublishedTime and NoticeUpdateBee
 func UpdateLastPublishedTime() {
 	info := BeeReleasesInfo()
-	fmt.Printf("%+v", info)
 	if len(info) == 0 {
 		beeLogger.Log.Warn("Has no releases")
 		return
