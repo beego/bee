@@ -75,7 +75,7 @@ ______
 ├── GOPATH    : /home/beeuser/.go
 ├── GOROOT    : /usr/local/Cellar/go/1.14.1/libexec
 ├── Compiler  : gc
-└── UpdatedAt : 2020-09-13
+└── Published : 2020-09-13
 ```
 
 You can also change the output format using `-o` flag:
@@ -92,7 +92,7 @@ $ bee version -o json
     "Compiler": "gc",
     "BeeVersion": "1.12.1",
     "BeegoVersion": "1.12.2",
-    "UpdatedAt": "2020-09-13"
+    "Published": "2020-09-13"
 }
 ```
 
