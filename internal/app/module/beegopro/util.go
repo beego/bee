@@ -173,14 +173,14 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 	return
 }
 
-func FileContentChange(org,new []byte, seg string) bool {
+func FileContentChange(org, new []byte, seg string) bool {
 	if len(org) == 0 {
 		return true
 	}
-	orgContent := GetFilterContent(string(org),seg)
-	newContent := GetFilterContent(string(new),seg)
+	orgContent := GetFilterContent(string(org), seg)
+	newContent := GetFilterContent(string(new), seg)
 	orgMd5 := md5.Sum([]byte(orgContent))
-	newMd5:= md5.Sum([]byte(newContent))
+	newMd5 := md5.Sum([]byte(newContent))
 	if orgMd5 != newMd5 {
 		return true
 	}
@@ -193,7 +193,7 @@ func GetFilterContent(content string, seg string) string {
 	for _, s := range strings.Split(content, "\n") {
 		s = strings.TrimSpace(strings.TrimPrefix(s, seg))
 		var have bool
-		for _,except := range CompareExcept{
+		for _, except := range CompareExcept {
 			if strings.HasPrefix(s, except) {
 				have = true
 			}

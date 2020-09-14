@@ -39,7 +39,12 @@ import (
 )
 
 type tagName struct {
-	Name	string	`json:"name"`
+	Name string `json:"name"`
+}
+
+type Repos struct {
+	UpdatedAt time.Time `json:"updated_at"`
+	PushedAt  time.Time `json:"pushed_at"`
 }
 
 func GetBeeWorkPath() string {
@@ -521,7 +526,7 @@ func NoticeUpdateBee() {
 	beeLogger.Log.Info("Getting bee latest version...")
 	versionLast := BeeLastVersion()
 	versionNow := config.Version
-	if versionLast == ""{
+	if versionLast == "" {
 		beeLogger.Log.Warn("Get latest version err")
 		return
 	}
@@ -558,4 +563,64 @@ func BeeLastVersion() (version string) {
 	}
 	beeLogger.Log.Warn("There is no tags！")
 	return
+}
+
+// get info of repos bee
+func BeeReposInfo() (repos Repos) {
+	var url = "https://api.github.com/repos/beego/bee"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee repos from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(bodyContent, &repos); err != nil {
+		beeLogger.Log.Warnf("Unmarshal repos body error: %s", err)
+		return
+	}
+	return
+}
+
+//TODO UpdateLastTime and NoticeUpdateBee
+func UpdateLastPushedTime() {
+	info := BeeReposInfo()
+	createdAt := info.PushedAt.Format("2006-01-02")
+	beeHome := system.BeegoHome
+	if !IsExist(beeHome) {
+		if err := os.MkdirAll(beeHome, 0755); err != nil {
+			beeLogger.Log.Fatalf("Could not create the directory: %s", err)
+			return
+		}
+	}
+	fp := beeHome + "/.lastUpdatedAt"
+	w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open .lastUpdatedAt file err: %s", err)
+		return
+	}
+	defer w.Close()
+	if _, err := w.WriteString(createdAt); err != nil {
+		beeLogger.Log.Warnf("Update lastUpdatedAt file err: %s", err)
+		return
+	}
+}
+
+func GetLastPushedTime() string {
+	fp := system.BeegoHome + "/.lastUpdatedAt"
+	if !IsExist(fp) {
+		UpdateLastPushedTime()
+	}
+	w, err := os.OpenFile(fp, os.O_RDONLY, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open .lastUpdatedAt file err: %s", err)
+		return "unknown"
+	}
+	t := make([]byte, 1024)
+	read, err := w.Read(t)
+	if err != nil {
+		beeLogger.Log.Warnf("read .lastUpdatedAt file err: %s", err)
+		return "unknown"
+	}
+	return string(t[:read])
 }
