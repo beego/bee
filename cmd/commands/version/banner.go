@@ -24,7 +24,7 @@ type RuntimeInfo struct {
 	Compiler     string
 	BeeVersion   string
 	BeegoVersion string
-	UpdatedAt    string
+	Published    string
 }
 
 // InitBanner loads the banner and prints it to output
@@ -62,7 +62,7 @@ func show(out io.Writer, content string) {
 		runtime.Compiler,
 		version,
 		GetBeegoVersion(),
-		utils.GetLastPushedTime(),
+		utils.GetLastPublishedTime(),
 	})
 	if err != nil {
 		beeLogger.Log.Error(err.Error())

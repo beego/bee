@@ -38,7 +38,7 @@ const verboseVersionBanner string = `%s%s______
 ├── GOPATH    : {{ .GOPATH }}
 ├── GOROOT    : {{ .GOROOT }}
 ├── Compiler  : {{ .Compiler }}
-└── UpdatedAt : {{ .UpdatedAt }}%s
+└── Published : {{ .Published }}%s
 `
 
 const shortVersionBanner = `______
@@ -84,7 +84,7 @@ func versionCmd(cmd *commands.Command, args []string) int {
 			runtime.Compiler,
 			version,
 			GetBeegoVersion(),
-			utils.GetLastPushedTime(),
+			utils.GetLastPublishedTime(),
 		}
 		switch outputFormat {
 		case "json":

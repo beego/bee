@@ -47,6 +47,11 @@ type Repos struct {
 	PushedAt  time.Time `json:"pushed_at"`
 }
 
+type Releases struct {
+	PublishedAt time.Time `json:"published_at"`
+	TagName     string    `json:"tag_name"`
+}
+
 func GetBeeWorkPath() string {
 	curpath, err := os.Getwd()
 	if err != nil {
@@ -565,7 +570,7 @@ func BeeLastVersion() (version string) {
 	return
 }
 
-// get info of repos bee
+// get info of bee repos
 func BeeReposInfo() (repos Repos) {
 	var url = "https://api.github.com/repos/beego/bee"
 	resp, err := http.Get(url)
@@ -582,10 +587,32 @@ func BeeReposInfo() (repos Repos) {
 	return
 }
 
-//TODO UpdateLastTime and NoticeUpdateBee
-func UpdateLastPushedTime() {
-	info := BeeReposInfo()
-	createdAt := info.PushedAt.Format("2006-01-02")
+// get info of bee releases
+func BeeReleasesInfo() (repos []Releases) {
+	var url = "https://api.github.com/repos/beego/bee/releases"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee releases from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(bodyContent, &repos); err != nil {
+		beeLogger.Log.Warnf("Unmarshal releases body error: %s", err)
+		return
+	}
+	return
+}
+
+//TODO merge UpdateLastPublishedTime and NoticeUpdateBee
+func UpdateLastPublishedTime() {
+	info := BeeReleasesInfo()
+	fmt.Printf("%+v", info)
+	if len(info) == 0 {
+		beeLogger.Log.Warn("Has no releases")
+		return
+	}
+	createdAt := info[0].PublishedAt.Format("2006-01-02")
 	beeHome := system.BeegoHome
 	if !IsExist(beeHome) {
 		if err := os.MkdirAll(beeHome, 0755); err != nil {
@@ -593,33 +620,33 @@ func UpdateLastPushedTime() {
 			return
 		}
 	}
-	fp := beeHome + "/.lastUpdatedAt"
+	fp := beeHome + "/.lastPublishedAt"
 	w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
-		beeLogger.Log.Warnf("Open .lastUpdatedAt file err: %s", err)
+		beeLogger.Log.Warnf("Open .lastPublishedAt file err: %s", err)
 		return
 	}
 	defer w.Close()
 	if _, err := w.WriteString(createdAt); err != nil {
-		beeLogger.Log.Warnf("Update lastUpdatedAt file err: %s", err)
+		beeLogger.Log.Warnf("Update .lastPublishedAt file err: %s", err)
 		return
 	}
 }
 
-func GetLastPushedTime() string {
-	fp := system.BeegoHome + "/.lastUpdatedAt"
+func GetLastPublishedTime() string {
+	fp := system.BeegoHome + "/.lastPublishedAt"
 	if !IsExist(fp) {
-		UpdateLastPushedTime()
+		UpdateLastPublishedTime()
 	}
 	w, err := os.OpenFile(fp, os.O_RDONLY, 0644)
 	if err != nil {
-		beeLogger.Log.Warnf("Open .lastUpdatedAt file err: %s", err)
+		beeLogger.Log.Warnf("Open .lastPublishedAt file err: %s", err)
 		return "unknown"
 	}
 	t := make([]byte, 1024)
 	read, err := w.Read(t)
 	if err != nil {
-		beeLogger.Log.Warnf("read .lastUpdatedAt file err: %s", err)
+		beeLogger.Log.Warnf("read .lastPublishedAt file err: %s", err)
 		return "unknown"
 	}
 	return string(t[:read])

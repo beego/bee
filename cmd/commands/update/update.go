@@ -35,7 +35,7 @@ func updateBee(cmd *commands.Command, args []string) int {
 	if err := cmdUp.Run(); err != nil {
 		beeLogger.Log.Warnf("Run cmd err:%s", err)
 	}
-	// update the pushedTime when updateBee every time
-	utils.UpdateLastPushedTime()
+	// update the Time when updateBee every time
+	utils.UpdateLastPublishedTime()
 	return 0
 }
