@@ -32,7 +32,7 @@ func updateBee(cmd *commands.Command, args []string) int {
 	cmdUp.Stdout = os.Stdout
 	cmdUp.Stderr = os.Stderr
 	if err := cmdUp.Run(); err != nil {
-		beeLogger.Log.Warnf("Run cmd err:%s",err)
+		beeLogger.Log.Warnf("Run cmd err:%s", err)
 	}
 	return 0
 }

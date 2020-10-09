@@ -2,6 +2,10 @@ package beegopro
 
 import (
 	"fmt"
+	"io/ioutil"
+	"sync"
+	"time"
+
 	"github.com/beego/bee/internal/pkg/git"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
@@ -9,9 +13,6 @@ import (
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pelletier/go-toml"
 	"github.com/spf13/viper"
-	"io/ioutil"
-	"sync"
-	"time"
 )
 
 const MDateFormat = "20060102_150405"

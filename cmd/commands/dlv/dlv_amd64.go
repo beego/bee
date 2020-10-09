@@ -28,12 +28,12 @@ import (
 	"github.com/beego/bee/cmd/commands/version"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
+	"github.com/fsnotify/fsnotify"
+	"github.com/gadelkareem/delve/pkg/terminal"
 	"github.com/gadelkareem/delve/service"
 	"github.com/gadelkareem/delve/service/debugger"
 	"github.com/gadelkareem/delve/service/rpc2"
 	"github.com/gadelkareem/delve/service/rpccommon"
-	"github.com/gadelkareem/delve/pkg/terminal"
-	"github.com/fsnotify/fsnotify"
 )
 
 var cmdDlv = &commands.Command{

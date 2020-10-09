@@ -3,6 +3,7 @@ package beegopro
 import (
 	"database/sql"
 	"fmt"
+
 	"github.com/beego/bee/internal/pkg/utils"
 	beeLogger "github.com/beego/bee/logger"
 )

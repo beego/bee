@@ -27,10 +27,9 @@ import (
 const confVer = 0
 
 const (
-	Version = "2.0.0"
+	Version       = "2.0.0"
 	GitRemotePath = "github.com/beego/bee"
 )
-
 
 var Conf = struct {
 	Version            int
