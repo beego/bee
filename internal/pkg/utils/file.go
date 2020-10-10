@@ -1,8 +1,9 @@
 package utils
 
 import (
-	beeLogger "github.com/beego/bee/logger"
 	"os"
+
+	beeLogger "github.com/beego/bee/logger"
 )
 
 // Mkdir ...

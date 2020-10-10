@@ -3,6 +3,7 @@ package beegopro
 import (
 	"database/sql"
 	"errors"
+
 	"github.com/beego/bee/logger"
 )
 

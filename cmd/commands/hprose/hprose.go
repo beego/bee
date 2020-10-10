@@ -2,10 +2,11 @@ package hprose
 
 import (
 	"fmt"
-	"github.com/beego/bee/logger/colors"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/beego/bee/logger/colors"
 
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/api"

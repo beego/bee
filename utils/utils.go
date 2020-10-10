@@ -39,7 +39,7 @@ import (
 )
 
 type tagName struct {
-	Name	string	`json:"name"`
+	Name string `json:"name"`
 }
 
 func GetBeeWorkPath() string {
@@ -521,7 +521,7 @@ func NoticeUpdateBee() {
 	beeLogger.Log.Info("Getting bee latest version...")
 	versionLast := BeeLastVersion()
 	versionNow := config.Version
-	if versionLast == ""{
+	if versionLast == "" {
 		beeLogger.Log.Warn("Get latest version err")
 		return
 	}
