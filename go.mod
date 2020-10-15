@@ -13,6 +13,7 @@ require (
 	github.com/gorilla/websocket v1.4.2
 	github.com/lib/pq v1.7.0
 	github.com/pelletier/go-toml v1.2.0
+	github.com/shiena/ansicolor v0.0.0-20200904210342-c7312218db18 // indirect
 	github.com/smartwalle/pongo2render v1.0.1
 	github.com/spf13/viper v1.7.0
 	gopkg.in/yaml.v2 v2.3.0
