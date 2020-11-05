@@ -145,7 +145,7 @@ import (
 	"reflect"
 	"strings"
 	{{timePkg}}
-	"github.com/astaxie/beego/orm"
+	"github.com/astaxie/beego/client/orm"
 )
 
 {{modelStruct}}
