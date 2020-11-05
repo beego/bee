@@ -51,6 +51,8 @@ func IfGenerateDocs(name string, args []string) bool {
 
 var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
 
+You are using bee for beego v2.x. If you are working on beego v1.x, please downgrade version to bee v1.12.0
+
 {{"USAGE" | headline}}
     {{"bee command [arguments]" | bold}}
 
