@@ -35,8 +35,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/astaxie/beego/server/web/swagger"
-	"github.com/astaxie/beego/core/utils"
+	"github.com/astaxie/beego/swagger"
+	"github.com/astaxie/beego/utils"
 	beeLogger "github.com/beego/bee/logger"
 )
 
