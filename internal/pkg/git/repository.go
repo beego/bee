@@ -206,19 +206,3 @@ func concatenateError(err error, stderr string) error {
 	}
 	return fmt.Errorf("%v: %s", err, stderr)
 }
-
-// getGitProjectName 获取项目名称
-func getGitProjectName(url string) (name string, err error) {
-	if !strings.Contains(url, ".git") {
-		return "", errors.New("Project address does not contain .git")
-	}
-	fileSlice := strings.Split(url, "/")
-	projectName := fileSlice[len(fileSlice)-1]
-	if projectName == "" {
-		return "", errors.New("Project name does not exist")
-	}
-
-	nameSlice := strings.Split(projectName, ".git")
-
-	return nameSlice[0], nil
-}

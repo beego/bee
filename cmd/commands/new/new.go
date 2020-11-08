@@ -31,12 +31,12 @@ var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 var CmdNew = &commands.Command{
-	UsageLine: "new [appname] [-module=true] [-beego=v1.12.1]",
+	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.1]",
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
-  now supoort generate a go modules project
-  The command 'new' creates a folder named [appname] [-module=true] [-beego=v1.12.1] and generates the following structure:
+  now default supoort generate a go modules project
+  The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.1] and generates the following structure:
 
             ├── main.go
             ├── go.mod
@@ -255,8 +255,8 @@ var reloadJsClient = `function b(a){var c=new WebSocket(a);c.onclose=function(){
 `
 
 func init() {
-	CmdNew.Flag.Var(&gopath, "gopath", "Support go path")
-	CmdNew.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by module mod")
+	CmdNew.Flag.Var(&gopath, "gopath", "Support go path,default false")
+	CmdNew.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by go mod")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdNew)
 }
 

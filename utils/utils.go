@@ -16,29 +16,38 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 	"unicode"
 
+	"github.com/beego/bee/config"
+	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/logger/colors"
 )
 
+type tagName struct {
+	Name	string	`json:"name"`
+}
+
 func GetBeeWorkPath() string {
-	beePath, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	curpath, err := os.Getwd()
 	if err != nil {
 		panic(err)
 	}
-	return beePath
+	return curpath
 }
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
@@ -313,7 +322,7 @@ func Tmpl(text string, data interface{}) {
 func CheckEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
-		beeLogger.Log.Error("if you want new a go module project,please add param `-module=true` and set env `G111MODULE=on`")
+		beeLogger.Log.Error("if you want new a go module project,please add param `-gopath=false`.")
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
@@ -462,4 +471,91 @@ func IsGOMODULE() bool {
 		return len(stringSubmatch) == 2
 	}
 	return false
+}
+
+func NoticeUpdateBee() {
+	cmd := exec.Command("go", "version")
+	cmd.Output()
+	if cmd.Process == nil || cmd.Process.Pid <= 0 {
+		beeLogger.Log.Warn("There is no go environment")
+		return
+	}
+	beeHome := system.BeegoHome
+	if !IsExist(beeHome) {
+		if err := os.MkdirAll(beeHome, 0755); err != nil {
+			beeLogger.Log.Fatalf("Could not create the directory: %s", err)
+			return
+		}
+	}
+	fp := beeHome + "/.noticeUpdateBee"
+	timeNow := time.Now().Unix()
+	var timeOld int64
+	if !IsExist(fp) {
+		f, err := os.Create(fp)
+		if err != nil {
+			beeLogger.Log.Warnf("Create noticeUpdateBee file err: %s", err)
+			return
+		}
+		defer f.Close()
+	}
+	oldContent, err := ioutil.ReadFile(fp)
+	if err != nil {
+		beeLogger.Log.Warnf("Read noticeUpdateBee file err: %s", err)
+		return
+	}
+	timeOld, _ = strconv.ParseInt(string(oldContent), 10, 64)
+	if timeNow-timeOld < 24*60*60 {
+		return
+	}
+	w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open noticeUpdateBee file err: %s", err)
+		return
+	}
+	defer w.Close()
+	timeNowStr := strconv.FormatInt(timeNow, 10)
+	if _, err := w.WriteString(timeNowStr); err != nil {
+		beeLogger.Log.Warnf("Update noticeUpdateBee file err: %s", err)
+		return
+	}
+	beeLogger.Log.Info("Getting bee latest version...")
+	versionLast := BeeLastVersion()
+	versionNow := config.Version
+	if versionLast == ""{
+		beeLogger.Log.Warn("Get latest version err")
+		return
+	}
+	if versionNow != versionLast {
+		beeLogger.Log.Warnf("Update available %s ==> %s", versionNow, versionLast)
+		beeLogger.Log.Warn("Run `bee update` to update")
+	}
+	beeLogger.Log.Info("Your bee are up to date")
+}
+
+func BeeLastVersion() (version string) {
+	var url = "https://api.github.com/repos/beego/bee/tags"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee tags from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	var tags []tagName
+	if err = json.Unmarshal(bodyContent, &tags); err != nil {
+		beeLogger.Log.Warnf("Unmarshal tags body error: %s", err)
+		return
+	}
+	if len(tags) < 1 {
+		beeLogger.Log.Warn("There is no tags！")
+		return
+	}
+	last := tags[0]
+	re, _ := regexp.Compile(`[0-9.]+`)
+	versionList := re.FindStringSubmatch(last.Name)
+	if len(versionList) > 0 {
+		return versionList[0]
+	}
+	beeLogger.Log.Warn("There is no tags！")
+	return
 }

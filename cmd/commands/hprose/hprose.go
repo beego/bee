@@ -24,7 +24,7 @@ var CmdHproseapp = &commands.Command{
 
   {{"To scaffold out your application, use:"|bold}}
 
-      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-module=true] [-beego=v1.12.1] 
+      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-gopath=false] [-beego=v1.12.1] 
 
   If 'conn' is empty, the command will generate a sample application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -52,15 +52,15 @@ require github.com/astaxie/beego %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 
-var module utils.DocValue
+var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 func init() {
 	CmdHproseapp.Flag.Var(&generate.Tables, "tables", "List of table names separated by a comma.")
 	CmdHproseapp.Flag.Var(&generate.SQLDriver, "driver", "Database driver. Either mysql, postgres or sqlite.")
 	CmdHproseapp.Flag.Var(&generate.SQLConn, "conn", "Connection string used by the driver to connect to a database instance.")
-	CmdHproseapp.Flag.Var(&module, "module", "Support go modules")
-	CmdHproseapp.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by -module=true")
+	CmdHproseapp.Flag.Var(&gopath, "gopath", "Support go path,default false")
+	CmdHproseapp.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by go mod")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdHproseapp)
 }
 
@@ -71,15 +71,16 @@ func createhprose(cmd *commands.Command, args []string) int {
 	}
 
 	curpath, _ := os.Getwd()
-	if len(args) > 1 {
-		cmd.Flag.Parse(args[1:])
-	} else {
-		module = "false"
+	if len(args) >= 2 {
+		err := cmd.Flag.Parse(args[1:])
+		if err != nil {
+			beeLogger.Log.Fatal("Parse args err " + err.Error())
+		}
 	}
 	var apppath string
 	var packpath string
 	var err error
-	if module != `true` {
+	if gopath == `true` {
 		beeLogger.Log.Info("generate api project support GOPATH")
 		version.ShowShortVersionBanner()
 		apppath, packpath, err = utils.CheckEnv(args[0])
@@ -109,7 +110,7 @@ func createhprose(cmd *commands.Command, args []string) int {
 	beeLogger.Log.Info("Creating Hprose application...")
 
 	os.MkdirAll(apppath, 0755)
-	if module == `true` { //generate first for calc model name
+	if gopath != `true` { //generate first for calc model name
 		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(apppath, "go.mod"), "\x1b[0m")
 		utils.WriteToFile(path.Join(apppath, "go.mod"), fmt.Sprintf(goMod, packpath, utils.GetGoVersionSkipMinor(), beegoVersion.String()))
 	}

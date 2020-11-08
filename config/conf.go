@@ -19,11 +19,18 @@ import (
 	"os"
 	"path/filepath"
 
-	beeLogger "github.com/beego/bee/logger"
 	"gopkg.in/yaml.v2"
+
+	beeLogger "github.com/beego/bee/logger"
 )
 
 const confVer = 0
+
+const (
+	Version = "1.12.0"
+	GitRemotePath = "github.com/beego/bee"
+)
+
 
 var Conf = struct {
 	Version            int

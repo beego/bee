@@ -1,13 +1,18 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
+	"go/format"
+	"io/ioutil"
+	"os"
+	"path"
+	"path/filepath"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
-	"path"
-	"path/filepath"
+
+	"github.com/beego/bee/internal/pkg/system"
+	beeLogger "github.com/beego/bee/logger"
 )
 
 // render
@@ -34,7 +39,7 @@ func NewRender(m RenderInfo) *RenderFile {
 	newDescriptor, pathCtx = m.Descriptor.Parse(m.ModelName, m.Option.Path)
 
 	obj := &RenderFile{
-		Context:      make(pongo2.Context, 0),
+		Context:      make(pongo2.Context),
 		Option:       m.Option,
 		ModelName:    m.ModelName,
 		GenerateTime: m.GenerateTime,
@@ -61,7 +66,7 @@ func NewRender(m RenderInfo) *RenderFile {
 
 	modelSchemas := m.Content.ToModelSchemas()
 	camelPrimaryKey := modelSchemas.GetPrimaryKey()
-	importMaps := make(map[string]struct{}, 0)
+	importMaps := make(map[string]struct{})
 	if modelSchemas.IsExistTime() {
 		importMaps["time"] = struct{}{}
 	}
@@ -114,10 +119,36 @@ func (r *RenderFile) Exec(name string) {
 		beeLogger.Log.Fatalf("Could not create the %s render tmpl: %s", name, err)
 		return
 	}
-	err = r.write(r.FlushFile, buf)
-	if err != nil {
-		beeLogger.Log.Fatalf("Could not create file: %s", err)
-		return
+	_, err = os.Stat(r.Descriptor.DstPath)
+	var orgContent []byte
+	if err == nil {
+		if org, err := os.OpenFile(r.Descriptor.DstPath, os.O_RDONLY, 0666); err == nil {
+			orgContent,_ = ioutil.ReadAll(org)
+			org.Close()
+		} else {
+			beeLogger.Log.Infof("file err %s", err)
+		}
 	}
-	beeLogger.Log.Infof("create file '%s' from %s", r.FlushFile, r.PackageName)
+	// Replace or create when content changes
+	output := []byte(buf)
+	ext := filepath.Ext(r.FlushFile)
+	if r.Option.EnableFormat && ext == ".go" {
+		// format code
+		var bts []byte
+		bts, err = format.Source([]byte(buf))
+		if err != nil {
+			beeLogger.Log.Warnf("format buf error %s", err.Error())
+		}
+		output = bts
+	}
+
+	if FileContentChange(orgContent, output, GetSeg(ext)) {
+		err = r.write(r.FlushFile, output)
+		if err != nil {
+			beeLogger.Log.Fatalf("Could not create file: %s", err)
+			return
+		}
+		beeLogger.Log.Infof("create file '%s' from %s", r.FlushFile, r.PackageName)
+	}
 }
+

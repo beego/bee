@@ -49,9 +49,9 @@ func pongo2CamelString(in *pongo2.Value, param *pongo2.Value) (*pongo2.Value, *p
 	return pongo2.AsValue(utils.CamelString(t)), nil
 }
 
-func upperFirst(str string) string {
-	return strings.Replace(str, string(str[0]), strings.ToUpper(string(str[0])), 1)
-}
+//func upperFirst(str string) string {
+//	return strings.Replace(str, string(str[0]), strings.ToUpper(string(str[0])), 1)
+//}
 
 func lowerFirst(str string) string {
 	return strings.Replace(str, string(str[0]), strings.ToLower(string(str[0])), 1)

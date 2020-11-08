@@ -1,26 +1,27 @@
 package beegopro
 
 import (
+	"crypto/md5"
 	"errors"
 	"fmt"
-	"github.com/beego/bee/internal/pkg/utils"
-	beeLogger "github.com/beego/bee/logger"
-	"go/format"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/beego/bee/internal/pkg/utils"
+	beeLogger "github.com/beego/bee/logger"
 )
 
 // write to file
-func (c *RenderFile) write(filename string, buf string) (err error) {
+func (c *RenderFile) write(filename string, buf []byte) (err error) {
 	if utils.IsExist(filename) && !isNeedOverwrite(filename) {
 		return
 	}
 
-	filePath := path.Dir(filename)
+	filePath := filepath.Dir(filename)
 	err = createPath(filePath)
 	if err != nil {
 		err = errors.New("write create path " + err.Error())
@@ -37,7 +38,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 	name := path.Base(filename)
 
 	if utils.IsExist(filename) {
-		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, name, time.Now().Format("2006.01.02.15.04.05"))
+		bakName := fmt.Sprintf("%s/%s.%s.bak", filePathBak, filepath.Base(name), time.Now().Format("2006.01.02.15.04.05"))
 		beeLogger.Log.Infof("bak file '%s'", bakName)
 		if err := os.Rename(filename, bakName); err != nil {
 			err = errors.New("file is bak error, path is " + bakName)
@@ -46,26 +47,18 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 	}
 
 	file, err := os.Create(filename)
-	defer file.Close()
+	defer func() {
+		err = file.Close()
+		if err != nil {
+			beeLogger.Log.Fatalf("file close error, err %s", err)
+		}
+	}()
 	if err != nil {
 		err = errors.New("write create file " + err.Error())
 		return
 	}
 
-	output := []byte(buf)
-
-	if c.Option.EnableFormat && filepath.Ext(filename) == ".go" {
-		// format code
-		var bts []byte
-		bts, err = format.Source([]byte(buf))
-		if err != nil {
-			err = errors.New("format buf error " + err.Error())
-			return
-		}
-		output = bts
-	}
-
-	err = ioutil.WriteFile(filename, output, 0644)
+	err = ioutil.WriteFile(filename, buf, 0644)
 	if err != nil {
 		err = errors.New("write write file " + err.Error())
 		return
@@ -74,11 +67,7 @@ func (c *RenderFile) write(filename string, buf string) (err error) {
 }
 
 func isNeedOverwrite(fileName string) (flag bool) {
-	seg := "//"
-	ext := filepath.Ext(fileName)
-	if ext == ".sql" {
-		seg = "--"
-	}
+	seg := GetSeg(filepath.Ext(fileName))
 
 	f, err := os.Open(fileName)
 	if err != nil {
@@ -182,4 +171,45 @@ func getModelType(orm string) (inputType, goType, mysqlType, tag string) {
 		tag = kv[1]
 	}
 	return
+}
+
+func FileContentChange(org,new []byte, seg string) bool {
+	if len(org) == 0 {
+		return true
+	}
+	orgContent := GetFilterContent(string(org),seg)
+	newContent := GetFilterContent(string(new),seg)
+	orgMd5 := md5.Sum([]byte(orgContent))
+	newMd5:= md5.Sum([]byte(newContent))
+	if orgMd5 != newMd5 {
+		return true
+	}
+	beeLogger.Log.Infof("File has no change in the content")
+	return false
+}
+
+func GetFilterContent(content string, seg string) string {
+	res := ""
+	for _, s := range strings.Split(content, "\n") {
+		s = strings.TrimSpace(strings.TrimPrefix(s, seg))
+		var have bool
+		for _,except := range CompareExcept{
+			if strings.HasPrefix(s, except) {
+				have = true
+			}
+		}
+		if !have {
+			res += s
+		}
+	}
+	return res
+}
+
+func GetSeg(ext string) string {
+	switch ext {
+	case ".sql":
+		return "--"
+	default:
+		return "//"
+	}
 }

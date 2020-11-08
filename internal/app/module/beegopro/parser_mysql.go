@@ -10,7 +10,6 @@ import (
 type MysqlParser struct {
 	userOption UserOption
 	tmplOption TmplOption
-	db         *sql.DB
 }
 
 func (m *MysqlParser) RegisterOption(userOption UserOption, tmplOption TmplOption) {
