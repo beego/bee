@@ -1,9 +1,8 @@
 module github.com/beego/bee
 
-go 1.13
+go 1.14
 
 require (
-	github.com/BurntSushi/toml v0.3.1
 	github.com/astaxie/beego v1.12.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/flosch/pongo2 v0.0.0-20200529170236-5abacdfa4915

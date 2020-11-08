@@ -1,6 +1,6 @@
 language: go
 go:
-  - 1.12.17
+  - 1.14.11
 install:
   - export PATH=$PATH:$HOME/gopath/bin
   - go get -u github.com/opennota/check/cmd/structcheck
