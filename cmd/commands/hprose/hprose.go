@@ -93,7 +93,7 @@ func createhprose(cmd *commands.Command, args []string) int {
 		apppath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packpath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 

@@ -586,7 +586,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 
