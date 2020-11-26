@@ -36,7 +36,7 @@ func init() {
 
 func runFix(cmd *commands.Command, args []string) int {
 	t := target.String()
-	if t == "" || t == "1.6"{
+	if t == "" || t == "1.6" {
 		return fixTo16(cmd, args)
 	} else if strings.HasPrefix(t, "2") {
 		// upgrade to v2
