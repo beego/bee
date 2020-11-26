@@ -9,7 +9,7 @@ Bee is a command-line tool facilitating development of Beego-based application.
 
 ## Requirements
 
-- Go version >= 1.12.
+- Go version >= 2.0.0
 
 ## Installation
 
@@ -65,9 +65,9 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 
-├── Beego     : 1.12.2
+├── Beego     : 2.0.02
 ├── GoVersion : go1.14.1
 ├── GOOS      : darwin
 ├── GOARCH    : amd64
@@ -90,8 +90,8 @@ $ bee version -o json
     "GOPATH": "/home/beeuser/.go",
     "GOROOT": "/usr/local/Cellar/go/1.14.1/libexec",
     "Compiler": "gc",
-    "BeeVersion": "1.12.1",
-    "BeegoVersion": "1.12.2",
+    "BeeVersion": "2.0.0",
+    "BeegoVersion": "2.0.02",
     "Published": "2020-09-13"
 }
 ```
@@ -150,7 +150,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2016/12/26 22:29:29 INFO     ▶ 0001 Packaging application on '/home/beeuser/.go/src/github.com/user/my-web-app'...
 2016/12/26 22:29:29 INFO     ▶ 0002 Building application...
 2016/12/26 22:29:29 INFO     ▶ 0003 Using: GOOS=linux GOARCH=amd64
@@ -206,7 +206,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2020/09/14 22:35:11 INFO     ▶ 0001 generate api project support go modules.
 2020/09/14 22:35:11 INFO     ▶ 0002 Creating API...
 	create	 /Users/beeuser/code/learn/my-api/go.mod
@@ -240,7 +240,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2020/09/14 22:36:39 INFO     ▶ 0001 generate api project support go modules.
 2020/09/14 22:36:39 INFO     ▶ 0002 Creating Hprose application...
 	create	 /Users/beeuser/code/learn/my-rpc-app/go.mod
@@ -267,7 +267,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2020/09/14 22:37:56 SUCCESS  ▶ 0001 Baled resources successfully!
 ```
 
@@ -292,7 +292,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2020/09/14 22:38:44 INFO     ▶ 0001 Using 'Hello' as controller name
 2020/09/14 22:38:44 INFO     ▶ 0002 Using 'controllers' as package name
 	create	 /Users/beeuser/code/learn/my-api/controllers/hello.go
@@ -314,7 +314,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.0
 2020/09/14 22:40:12 INFO     ▶ 0001 Generating Dockerfile...
 2020/09/14 22:40:12 SUCCESS  ▶ 0002 Dockerfile generated.
 ```
@@ -331,7 +331,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.12.1
+\____/  \___| \___| v2.0.01
 2020/09/14 22:40:12 INFO     ▶ 0001 Starting Delve Debugger...
 Type 'help' for list of commands.
 (dlv) break main.main
@@ -341,7 +341,7 @@ Breakpoint 1 set at 0x40100f for main.main() ./main.go:8
 > main.main() ./main.go:8 (hits goroutine(1):1 total:1) (PC: 0x40100f)
      3:	import (
      4:		_ "github.com/user/myapp/routers"
-     5:		"github.com/astaxie/beego"
+     5:		beego "github.com/astaxie/beego/server/web"
      6:	)
      7:	
 =>   8:	func main() {

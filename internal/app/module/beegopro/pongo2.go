@@ -1,10 +1,11 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/utils"
-	"github.com/flosch/pongo2"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/beego/bee/utils"
+	"github.com/flosch/pongo2"
 )
 
 func init() {

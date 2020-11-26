@@ -16,10 +16,11 @@ package apiapp
 
 import (
 	"fmt"
-	"github.com/beego/bee/logger/colors"
 	"os"
 	path "path/filepath"
 	"strings"
+
+	"github.com/beego/bee/logger/colors"
 
 	"github.com/beego/bee/cmd/commands"
 	"github.com/beego/bee/cmd/commands/version"
@@ -75,7 +76,7 @@ var apiMaingo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/astaxie/beego/server/web"
 )
 
 func main() {
@@ -92,8 +93,8 @@ var apiMainconngo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/orm"
+	beego "github.com/astaxie/beego/server/web"
+	"github.com/astaxie/beego/client/orm"
 	{{.DriverPkg}}
 )
 
@@ -128,7 +129,7 @@ package routers
 import (
 	"{{.Appname}}/controllers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/astaxie/beego/server/web"
 )
 
 func init() {
@@ -297,7 +298,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	"github.com/astaxie/beego"
+	beego "github.com/astaxie/beego/server/web"
 )
 
 // Operations about object
@@ -390,7 +391,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	"github.com/astaxie/beego"
+	beego "github.com/astaxie/beego/server/web"
 )
 
 // Operations about Users
@@ -515,7 +516,8 @@ import (
 	"path/filepath"
 	_ "{{.Appname}}/routers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/astaxie/beego/server/web"
+	"github.com/astaxie/beego/core/logs"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -531,7 +533,7 @@ func TestGet(t *testing.T) {
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	beego.Trace("testing", "TestGet", "Code[%d]\n%s", w.Code, w.Body.String())
+	logs.Info("testing", "TestGet", "Code[%d]\n%s", w.Code, w.Body.String())
 
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {

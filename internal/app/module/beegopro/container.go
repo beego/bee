@@ -6,14 +6,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/pelletier/go-toml"
-	"github.com/spf13/viper"
-
 	"github.com/beego/bee/internal/pkg/git"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pelletier/go-toml"
+	"github.com/spf13/viper"
 )
 
 const MDateFormat = "20060102_150405"
@@ -62,35 +61,6 @@ func (c *Container) Run() {
 	c.flushTimestamp()
 }
 
-func (c *Container) InitToml() {
-	if exist := utils.IsExist(c.BeegoProFile); exist {
-		beeLogger.Log.Fatalf("file beegopro.toml already exists")
-	}
-	sourceFile := c.UserOption.GitLocalPath + "/beegopro.toml"
-	if !utils.IsExist(c.UserOption.GitLocalPath) {
-		c.getTemplateFromGit()
-	}
-	input, err := ioutil.ReadFile(sourceFile)
-	if err != nil {
-		beeLogger.Log.Fatalf("read beegopro.toml file err, %s", err.Error())
-		return
-	}
-	err = ioutil.WriteFile(c.BeegoProFile, input, 0644)
-	if err != nil {
-		beeLogger.Log.Fatalf("create beegopro.toml file err, %s", err.Error())
-		return
-	}
-	beeLogger.Log.Success("Successfully created file beegopro.toml")
-}
-
-func (c *Container) getTemplateFromGit() {
-	err := git.CloneORPullRepo(c.UserOption.GitRemotePath, c.UserOption.GitLocalPath)
-	if err != nil {
-		beeLogger.Log.Fatalf("beego pro git clone or pull repo error, err: %s", err)
-		return
-	}
-	c.Timestamp.GitCacheLastRefresh = c.GenerateTimeUnix
-}
 func (c *Container) initUserOption() {
 	if !utils.IsExist(c.BeegoProFile) {
 		beeLogger.Log.Fatalf("beego pro config is not exist, beego json path: %s", c.BeegoProFile)
@@ -135,7 +105,12 @@ func (c *Container) initUserOption() {
 
 func (c *Container) initTemplateOption() {
 	if c.UserOption.EnableGitPull && (c.GenerateTimeUnix-c.Timestamp.GitCacheLastRefresh > c.UserOption.RefreshGitTime) {
-		c.getTemplateFromGit()
+		err := git.CloneORPullRepo(c.UserOption.GitRemotePath, c.UserOption.GitLocalPath)
+		if err != nil {
+			beeLogger.Log.Fatalf("beego pro git clone or pull repo error, err: %s", err)
+			return
+		}
+		c.Timestamp.GitCacheLastRefresh = c.GenerateTimeUnix
 	}
 
 	tree, err := toml.LoadFile(c.UserOption.GitLocalPath + "/" + c.UserOption.ProType + "/bee.toml")

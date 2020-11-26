@@ -1,9 +1,10 @@
 package beegopro
 
 import (
+	"io/ioutil"
+
 	"github.com/beego/bee/internal/pkg/utils"
 	beeLogger "github.com/beego/bee/logger"
-	"io/ioutil"
 )
 
 var CompareExcept = []string{"@BeeGenerateTime"}

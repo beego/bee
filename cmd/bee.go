@@ -21,6 +21,7 @@ import (
 	_ "github.com/beego/bee/cmd/commands/bale"
 	_ "github.com/beego/bee/cmd/commands/beefix"
 	_ "github.com/beego/bee/cmd/commands/beegopro"
+	_ "github.com/beego/bee/cmd/commands/dev"
 	_ "github.com/beego/bee/cmd/commands/dlv"
 	_ "github.com/beego/bee/cmd/commands/dockerize"
 	_ "github.com/beego/bee/cmd/commands/generate"
@@ -49,6 +50,8 @@ func IfGenerateDocs(name string, args []string) bool {
 }
 
 var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
+
+You are using bee for beego v2.x. If you are working on beego v1.x, please downgrade version to bee v1.12.0
 
 {{"USAGE" | headline}}
     {{"bee command [arguments]" | bold}}

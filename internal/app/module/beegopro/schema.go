@@ -2,15 +2,16 @@ package beegopro
 
 import (
 	"fmt"
+	"path/filepath"
+	"strings"
+	"sync"
+
 	"github.com/beego/bee/internal/pkg/command"
 	"github.com/beego/bee/internal/pkg/system"
 	beeLogger "github.com/beego/bee/logger"
 	"github.com/beego/bee/utils"
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
-	"path/filepath"
-	"strings"
-	"sync"
 )
 
 // store all data
