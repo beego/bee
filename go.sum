@@ -27,6 +27,8 @@ github.com/armon/go-metrics v0.0.0-20180917152333-f0300d1749da/go.mod h1:Q73ZrmV
 github.com/armon/go-radix v0.0.0-20180808171621-7fddfc383310/go.mod h1:ufUuZ+zHj4x4TnLV4JWEpy2hxWSpsRywHrMgIH9cCH8=
 github.com/astaxie/beego v1.12.2-0.20201105155152-20a0de6bd075 h1:TR1ruJJ5gOHkZh4oc2S9EHEC1Uqrso/BSewu8dQFifM=
 github.com/astaxie/beego v1.12.2-0.20201105155152-20a0de6bd075/go.mod h1:Z2in5/6WygF7+WRPaCIOIdckL2TRTiOkOL3mT8+w8Tg=
+github.com/astaxie/beego v1.12.4-0.20201114080429-05d8e293f7f3 h1:etrsSJGR/nmMRNjD2JyOYZEzDpVrkwZioyQs7y54u+o=
+github.com/astaxie/beego v1.12.4-0.20201114080429-05d8e293f7f3/go.mod h1:Z2in5/6WygF7+WRPaCIOIdckL2TRTiOkOL3mT8+w8Tg=
 github.com/beego/goyaml2 v0.0.0-20130207012346-5545475820dd/go.mod h1:1b+Y/CofkYwXMUU0OhQqGvsY2Bvgr4j6jfT699wyZKQ=
 github.com/beego/x2j v0.0.0-20131220205130-a0352aadc542/go.mod h1:kSeGC/p1AbBiEp5kat81+DSQrZenVBZXklMLaELspWU=
 github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973/go.mod h1:Dwedo/Wpr24TaqPxmxbtue+5NUziq4I4S80YR8gNf3Q=

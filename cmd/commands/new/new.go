@@ -31,12 +31,12 @@ var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 var CmdNew = &commands.Command{
-	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.1]",
+	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.3]",
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
   now default supoort generate a go modules project
-  The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.1] and generates the following structure:
+  The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.3] and generates the following structure:
 
             ├── main.go
             ├── go.mod
@@ -287,7 +287,7 @@ func CreateApp(cmd *commands.Command, args []string) int {
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 

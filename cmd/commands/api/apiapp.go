@@ -38,7 +38,7 @@ var CmdApiapp = &commands.Command{
   now default supoort generate a go modules project.
 
   {{"Example:"|bold}}
-      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.1]
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.3]
 
   If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -586,7 +586,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 
