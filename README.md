@@ -67,7 +67,7 @@ ______
 | |_/ /|  __/|  __/
 \____/  \___| \___| v2.0.0
 
-├── Beego     : 2.0.02
+├── Beego     : 2.0.0
 ├── GoVersion : go1.14.1
 ├── GOOS      : darwin
 ├── GOARCH    : amd64
@@ -91,7 +91,7 @@ $ bee version -o json
     "GOROOT": "/usr/local/Cellar/go/1.14.1/libexec",
     "Compiler": "gc",
     "BeeVersion": "2.0.0",
-    "BeegoVersion": "2.0.02",
+    "BeegoVersion": "2.0.0",
     "Published": "2020-09-13"
 }
 ```
@@ -331,7 +331,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v2.0.01
+\____/  \___| \___| v2.0.0
 2020/09/14 22:40:12 INFO     ▶ 0001 Starting Delve Debugger...
 Type 'help' for list of commands.
 (dlv) break main.main
