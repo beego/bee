@@ -925,7 +925,7 @@ func extractColSize(colType string) string {
 }
 
 func extractIntSignness(colType string) string {
-	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint)\([0-9]+\)(.*)`)
+	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint).*`)
 	signRegex := regex.FindStringSubmatch(colType)
 	return strings.Trim(signRegex[2], " ")
 }
