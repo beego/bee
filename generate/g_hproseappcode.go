@@ -47,7 +47,7 @@ import (
 	"{{.Appname}}/models"
 	"github.com/hprose/hprose-golang/rpc"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/server/web"
 )
 
 func logInvokeHandler(
@@ -90,8 +90,8 @@ import (
 	"{{.Appname}}/models"
 	"github.com/hprose/hprose-golang/rpc"
 
-	beego "github.com/astaxie/beego/server/web"
-	"github.com/astaxie/beego/client/orm"
+	beego "github.com/beego/beego/server/web"
+	"github.com/beego/beego/client/orm"
 	{{.DriverPkg}}
 )
 
@@ -419,7 +419,7 @@ import (
 	"reflect"
 	"strings"
 	{{timePkg}}
-	"github.com/astaxie/beego/client/orm"
+	"github.com/beego/beego/client/orm"
 )
 
 {{modelStruct}}

@@ -76,7 +76,7 @@ var apiMaingo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/server/web"
 )
 
 func main() {
@@ -93,8 +93,8 @@ var apiMainconngo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
-	"github.com/astaxie/beego/client/orm"
+	beego "github.com/beego/beego/server/web"
+	"github.com/beego/beego/client/orm"
 	{{.DriverPkg}}
 )
 
@@ -113,7 +113,7 @@ module %s
 
 go %s
 
-require github.com/astaxie/beego %s
+require github.com/beego/beego %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 
@@ -129,7 +129,7 @@ package routers
 import (
 	"{{.Appname}}/controllers"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/server/web"
 )
 
 func init() {
@@ -298,7 +298,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/server/web"
 )
 
 // Operations about object
@@ -391,7 +391,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/server/web"
 )
 
 // Operations about Users
@@ -516,8 +516,8 @@ import (
 	"path/filepath"
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
-	"github.com/astaxie/beego/core/logs"
+	beego "github.com/beego/beego/server/web"
+	"github.com/beego/beego/core/logs"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
