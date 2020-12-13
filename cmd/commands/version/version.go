@@ -161,7 +161,7 @@ func GetBeegoVersion() string {
 		}
 
 	}
-	return "Beego is not installed. Please do consider installing it first: https://github.com/astaxie/beego. " +
+	return "Beego is not installed. Please do consider installing it first: https://github.com/beego/beego. " +
 		"If you are using go mod, and you don't install the beego under $GOPATH/src/github.com/astaxie, just ignore this."
 }
 

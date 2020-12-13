@@ -49,7 +49,7 @@ module %s
 
 go %s
 
-require github.com/astaxie/beego %s
+require github.com/beego/beego %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 
