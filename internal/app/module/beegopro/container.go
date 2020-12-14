@@ -30,7 +30,7 @@ var DefaultBeegoPro = &Container{
 		ApiPrefix:     "/api",
 		EnableModule:  nil,
 		Models:        make(map[string]TextModel),
-		GitRemotePath: "https://github.com/beego/beego-pro.git",
+		GitRemotePath: "https://github.com/beego/beego/v2-pro.git",
 		Branch:        "master",
 		GitLocalPath:  system.BeegoHome + "/beego-pro",
 		EnableFormat:  true,
