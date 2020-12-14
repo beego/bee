@@ -24,12 +24,12 @@ import (
 func fix1To2() int {
 	beeLogger.Log.Info("Upgrading the application...")
 
-	cmdStr := `find ./ -name '*.go' -type f -exec sed -i '' -e 's/github.com\/astaxie\/beego/github.com\/astaxie\/beego\/adapter/g' {} \;`
+	cmdStr := `find ./ -name '*.go' -type f -exec sed -i '' -e 's/github.com\/astaxie\/beego/github.com\/beego\/beego\/v2\/adapter/g' {} \;`
 	err := runShell(cmdStr)
 	if err != nil {
 		return 1
 	}
-	cmdStr = `find ./ -name '*.go' -type f -exec sed -i '' -e 's/"github.com\/astaxie\/beego\/adapter"/beego "github.com\/astaxie\/beego\/adapter"/g' {} \;`
+	cmdStr = `find ./ -name '*.go' -type f -exec sed -i '' -e 's/"github.com\/beego\/beego\/v2\/adapter"/beego "github.com\/beego\/beego\/v2\/adapter"/g' {} \;`
 	err = runShell(cmdStr)
 	if err != nil {
 		return 1
