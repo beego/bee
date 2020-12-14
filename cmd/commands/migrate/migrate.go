@@ -366,8 +366,8 @@ const (
 import(
 	"os"
 
-	"github.com/beego/beego/client/orm"
-	"github.com/beego/beego/client/orm/migration"
+	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/client/orm/migration"
 
 	_ "{{DriverRepo}}"
 )

@@ -1023,7 +1023,7 @@ import (
 	"reflect"
 	"strings"
 	{{timePkg}}
-	"github.com/beego/beego/client/orm"
+	"github.com/beego/beego/v2/client/orm"
 )
 
 {{modelStruct}}
@@ -1172,7 +1172,7 @@ import (
 	"strconv"
 	"strings"
 
-	beego "github.com/beego/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // {{ctrlName}}Controller operations for {{ctrlName}}
@@ -1347,7 +1347,7 @@ package routers
 import (
 	"{{pkgPath}}/controllers"
 
-	beego "github.com/beego/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {

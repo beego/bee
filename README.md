@@ -355,7 +355,7 @@ Breakpoint 1 set at 0x40100f for main.main() ./main.go:8
 > main.main() ./main.go:8 (hits goroutine(1):1 total:1) (PC: 0x40100f)
      3:	import (
      4:		_ "github.com/user/myapp/routers"
-     5:		beego "github.com/beego/beego/server/web"
+     5:		beego "github.com/beego/beego/v2/server/web"
      6:	)
      7:	
 =>   8:	func main() {

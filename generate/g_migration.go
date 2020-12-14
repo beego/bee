@@ -238,7 +238,7 @@ func GenerateMigration(mname, upsql, downsql, curpath string) {
 const (
 	MigrationHeader = `package main
 						import (
-							"github.com/beego/beego/client/orm/migration"
+							"github.com/beego/beego/v2/client/orm/migration"
 						)
 
 						// DO NOT MODIFY
