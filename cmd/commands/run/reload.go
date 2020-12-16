@@ -18,7 +18,7 @@ import (
 	"net/http"
 	"time"
 
-	beeLogger "github.com/beego/bee/logger"
+	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/gorilla/websocket"
 )
 

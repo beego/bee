@@ -32,10 +32,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
 )
 
 type tagName struct {

@@ -4,7 +4,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/utils"
 	"github.com/flosch/pongo2"
 )
 

@@ -6,10 +6,10 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/beego/bee/internal/pkg/command"
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/internal/pkg/command"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
 )

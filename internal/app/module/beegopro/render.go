@@ -11,8 +11,8 @@ import (
 	"github.com/flosch/pongo2"
 	"github.com/smartwalle/pongo2render"
 
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 // render

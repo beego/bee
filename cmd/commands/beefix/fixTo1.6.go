@@ -1,4 +1,4 @@
-// Copyright 2020 
+// Copyright 2020
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -24,9 +24,9 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/cmd/commands"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
 )
 
 // fixTo16 upgrade beego to 1.6
@@ -228,4 +228,3 @@ func fixFile(file string) error {
 	}
 	return ioutil.WriteFile(file, []byte(fixed), 0666)
 }
-

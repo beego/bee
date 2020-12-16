@@ -15,8 +15,8 @@
 package dev
 
 import (
-	"github.com/beego/bee/cmd/commands"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/v2/cmd/commands"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 var CmdDev = &commands.Command{
