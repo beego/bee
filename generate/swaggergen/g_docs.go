@@ -35,9 +35,9 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/beego/beego/v2/server/web/swagger"
+	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/beego/v2/core/utils"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/beego/v2/server/web/swagger"
 )
 
 const (

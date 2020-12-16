@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"errors"
 
-	"github.com/beego/bee/logger"
+	"github.com/beego/bee/v2/logger"
 )
 
 type TableSchema struct {
