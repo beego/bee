@@ -1,8 +1,9 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/utils"
 	"strings"
+
+	"github.com/beego/bee/v2/utils"
 )
 
 // parse get the model info

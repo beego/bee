@@ -2,11 +2,12 @@ package beegopro
 
 import (
 	"database/sql"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
 	"io/ioutil"
 	"path/filepath"
 	"strings"
+
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var SQL utils.DocValue

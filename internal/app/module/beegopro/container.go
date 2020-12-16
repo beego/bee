@@ -2,16 +2,17 @@ package beegopro
 
 import (
 	"fmt"
-	"github.com/beego/bee/internal/pkg/git"
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
-	"github.com/davecgh/go-spew/spew"
-	"github.com/pelletier/go-toml"
-	"github.com/spf13/viper"
 	"io/ioutil"
 	"sync"
 	"time"
+
+	"github.com/beego/bee/v2/internal/pkg/git"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
+	"github.com/davecgh/go-spew/spew"
+	"github.com/pelletier/go-toml"
+	"github.com/spf13/viper"
 )
 
 const MDateFormat = "20060102_150405"
@@ -21,32 +22,33 @@ var DefaultBeegoPro = &Container{
 	TimestampFile: system.CurrentDir + "/.beegopro.timestamp",
 	GoModFile:     system.CurrentDir + "/go.mod",
 	UserOption: UserOption{
-		Debug:          false,
-		ContextDebug:   false,
-		Dsn:            "",
-		Driver:         "mysql",
-		ProType:        "default",
-		ApiPrefix:      "/api",
-		EnableModule:   nil,
-		Models:         make(map[string]TextModel, 0),
-		GitRemotePath:  "https://github.com/beego/beego-pro.git",
-		Branch:         "master",
-		GitLocalPath:   system.BeegoHome + "/beego-pro",
-		EnableFormat:   true,
-		SourceGen:      "text",
-		EnableGitPull:  true,
-		RefreshGitTime: 24 * 3600,
+		Debug:         false,
+		ContextDebug:  false,
+		Dsn:           "",
+		Driver:        "mysql",
+		ProType:       "default",
+		ApiPrefix:     "/api",
+		EnableModule:  nil,
+		Models:        make(map[string]TextModel),
+		GitRemotePath: "https://github.com/beego/beego-pro.git",
+		Branch:        "master",
+		GitLocalPath:  system.BeegoHome + "/beego-pro",
+		EnableFormat:  true,
+		SourceGen:     "text",
+		EnableGitPull: true,
 		Path: map[string]string{
 			"beego": ".",
 		},
-		EnableGomod: true,
+		EnableGomod:    true,
+		RefreshGitTime: 24 * 3600,
+		Extend:         nil,
 	},
 	GenerateTime:     time.Now().Format(MDateFormat),
 	GenerateTimeUnix: time.Now().Unix(),
 	TmplOption:       TmplOption{},
 	CurPath:          system.CurrentDir,
-	EnableModules:    make(map[string]interface{}, 0), // get the user configuration, get the enable module result
-	FunctionOnce:     make(map[string]sync.Once, 0),   // get the tmpl configuration, get the function once result
+	EnableModules:    make(map[string]interface{}), // get the user configuration, get the enable module result
+	FunctionOnce:     make(map[string]sync.Once),   // get the tmpl configuration, get the function once result
 }
 
 func (c *Container) Run() {
@@ -128,7 +130,7 @@ func (c *Container) initTemplateOption() {
 	}
 
 	for _, value := range c.TmplOption.Descriptor {
-		if value.Once == true {
+		if value.Once {
 			c.FunctionOnce[value.SrcName] = sync.Once{}
 		}
 	}

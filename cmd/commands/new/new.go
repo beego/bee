@@ -20,23 +20,23 @@ import (
 	path "path/filepath"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 )
 
 var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 var CmdNew = &commands.Command{
-	UsageLine: "new [appname] [-module=true] [-beego=v1.12.1]",
+	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.3]",
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
-  now supoort generate a go modules project
-  The command 'new' creates a folder named [appname] [-module=true] [-beego=v1.12.1] and generates the following structure:
+  now default supoort generate a go modules project
+  The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.3] and generates the following structure:
 
             ├── main.go
             ├── go.mod
@@ -70,7 +70,7 @@ var maingo = `package main
 
 import (
 	_ "{{.Appname}}/routers"
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func main() {
@@ -82,7 +82,7 @@ var router = `package routers
 
 import (
 	"{{.Appname}}/controllers"
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {
@@ -93,7 +93,7 @@ var goMod = `module %s
 
 go %s
 
-require github.com/astaxie/beego %s
+require github.com/beego/beego/v2 %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 var test = `package test
@@ -106,7 +106,7 @@ import (
 	"path/filepath"
 	_ "{{.Appname}}/routers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -140,7 +140,7 @@ func TestBeego(t *testing.T) {
 var controllers = `package controllers
 
 import (
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 type MainController struct {
@@ -255,8 +255,8 @@ var reloadJsClient = `function b(a){var c=new WebSocket(a);c.onclose=function(){
 `
 
 func init() {
-	CmdNew.Flag.Var(&gopath, "gopath", "Support go path")
-	CmdNew.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by module mod")
+	CmdNew.Flag.Var(&gopath, "gopath", "Support go path,default false")
+	CmdNew.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by go mod")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdNew)
 }
 
@@ -287,7 +287,7 @@ func CreateApp(cmd *commands.Command, args []string) int {
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 

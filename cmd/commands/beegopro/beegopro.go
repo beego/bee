@@ -14,10 +14,11 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/internal/app/module/beegopro"
-	"github.com/beego/bee/logger"
 	"strings"
+
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/internal/app/module/beegopro"
+	"github.com/beego/bee/v2/logger"
 )
 
 var CmdBeegoPro = &commands.Command{

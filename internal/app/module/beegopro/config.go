@@ -1,10 +1,13 @@
 package beegopro
 
 import (
-	"github.com/beego/bee/internal/pkg/utils"
-	beeLogger "github.com/beego/bee/logger"
 	"io/ioutil"
+
+	"github.com/beego/bee/v2/internal/pkg/utils"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
+
+var CompareExcept = []string{"@BeeGenerateTime"}
 
 func (c *Container) GenConfig() {
 	if utils.IsExist(c.BeegoProFile) {

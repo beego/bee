@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"go/ast"
+	"go/build"
 	"go/parser"
 	"go/token"
 	"os"
@@ -34,10 +35,9 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
-	"github.com/astaxie/beego/swagger"
-	"github.com/astaxie/beego/utils"
-	beeLogger "github.com/beego/bee/logger"
-	bu "github.com/beego/bee/utils"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/beego/v2/core/utils"
+	"github.com/beego/beego/v2/server/web/swagger"
 )
 
 const (
@@ -102,8 +102,8 @@ func init() {
 	astPkgs = make([]*ast.Package, 0)
 }
 
-// ParsePackagesFromDir parses packages from a given directory
-func ParsePackagesFromDir(dirpath string) {
+// parsePackagesFromDir parses packages from a given directory
+func parsePackagesFromDir(dirpath string) {
 	c := make(chan error)
 
 	go func() {
@@ -157,8 +157,14 @@ func parsePackageFromDir(path string) error {
 
 // GenerateDocs generates documentations for a given path.
 func GenerateDocs(curpath string) {
-	fset := token.NewFileSet()
+	pkgspath := curpath
+	workspace := os.Getenv("BeeWorkspace")
+	if workspace != "" {
+		pkgspath = workspace
+	}
+	parsePackagesFromDir(pkgspath)
 
+	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filepath.Join(curpath, "routers", "router.go"), nil, parser.ParseComments)
 	if err != nil {
 		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
@@ -263,7 +269,7 @@ func GenerateDocs(curpath string) {
 		if im.Name != nil {
 			localName = im.Name.Name
 		}
-		analyseControllerPkg(path.Join(curpath, "vendor"), localName, im.Path.Value)
+		analyseControllerPkg(localName, im.Path.Value)
 	}
 	for _, d := range f.Decls {
 		switch specDecl := d.(type) {
@@ -418,12 +424,12 @@ func analyseNSInclude(baseurl string, ce *ast.CallExpr) string {
 	return cname
 }
 
-func analyseControllerPkg(vendorPath, localName, pkgpath string) {
+func analyseControllerPkg(localName, pkgpath string) {
 	pkgpath = strings.Trim(pkgpath, "\"")
 	if isSystemPackage(pkgpath) {
 		return
 	}
-	if pkgpath == "github.com/astaxie/beego" {
+	if pkgpath == "github.com/beego/beego/v2/server/web" {
 		return
 	}
 	if localName != "" {
@@ -433,36 +439,18 @@ func analyseControllerPkg(vendorPath, localName, pkgpath string) {
 		importlist[pps[len(pps)-1]] = pkgpath
 	}
 
-	pkgRealpath := ""
-
-	if bu.IsGOMODULE() {
-		pkgRealpath = filepath.Join(bu.GetBeeWorkPath(), "..", pkgpath)
-	} else {
-		gopaths := bu.GetGOPATHs()
-		if len(gopaths) == 0 {
-			beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-		}
-		wg, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgpath))
-		if utils.FileExists(wg) {
-			pkgRealpath = wg
-		} else {
-			wgopath := gopaths
-			for _, wg := range wgopath {
-				wg, _ = filepath.EvalSymlinks(filepath.Join(wg, "src", pkgpath))
-				if utils.FileExists(wg) {
-					pkgRealpath = wg
-					break
-				}
-			}
-		}
+	pkg, err := build.Default.Import(pkgpath, ".", build.FindOnly)
+	if err != nil {
+		beeLogger.Log.Fatalf("Package %s cannot be imported: %v", pkgpath, err)
 	}
+	pkgRealpath := pkg.Dir
 	if pkgRealpath != "" {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
 		}
 		pkgCache[pkgpath] = struct{}{}
 	} else {
-		beeLogger.Log.Fatalf("Package '%s' does not exist in the GOPATH or vendor path", pkgpath)
+		beeLogger.Log.Fatalf("Package '%s' does not have source directory", pkgpath)
 	}
 
 	fileSet := token.NewFileSet()

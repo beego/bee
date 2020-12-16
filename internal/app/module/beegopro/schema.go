@@ -2,15 +2,16 @@ package beegopro
 
 import (
 	"fmt"
-	"github.com/beego/bee/internal/pkg/command"
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
-	"github.com/flosch/pongo2"
-	"github.com/smartwalle/pongo2render"
 	"path/filepath"
 	"strings"
 	"sync"
+
+	"github.com/beego/bee/v2/internal/pkg/command"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
+	"github.com/flosch/pongo2"
+	"github.com/smartwalle/pongo2render"
 )
 
 // store all data
@@ -75,7 +76,7 @@ func (descriptor Descriptor) Parse(modelName string, paths map[string]string) (n
 
 	newDescriptor = descriptor
 	render := pongo2render.NewRender("")
-	ctx = make(pongo2.Context, 0)
+	ctx = make(pongo2.Context)
 	for key, value := range paths {
 		absFile, err = filepath.Abs(value)
 		if err != nil {
@@ -110,10 +111,7 @@ func (descriptor Descriptor) Parse(modelName string, paths map[string]string) (n
 }
 
 func (descriptor Descriptor) IsExistScript() bool {
-	if descriptor.Script != "" {
-		return true
-	}
-	return false
+	return descriptor.Script != ""
 }
 
 func (d Descriptor) ExecScript(path string) (err error) {
