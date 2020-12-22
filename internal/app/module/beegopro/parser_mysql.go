@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/beego/bee/internal/pkg/utils"
-	beeLogger "github.com/beego/bee/logger"
+	"github.com/beego/bee/v2/internal/pkg/utils"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 type MysqlParser struct {

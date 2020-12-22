@@ -20,13 +20,13 @@ import (
 	path "path/filepath"
 	"strings"
 
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/logger/colors"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/generate"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/generate"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdApiapp = &commands.Command{
@@ -38,7 +38,7 @@ var CmdApiapp = &commands.Command{
   now default supoort generate a go modules project.
 
   {{"Example:"|bold}}
-      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.1]
+      $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.3]
 
   If 'conn' argument is empty, the command will generate an example API application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -76,7 +76,7 @@ var apiMaingo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func main() {
@@ -93,8 +93,8 @@ var apiMainconngo = `package main
 import (
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
-	"github.com/astaxie/beego/client/orm"
+	beego "github.com/beego/beego/v2/server/web"
+	"github.com/beego/beego/v2/client/orm"
 	{{.DriverPkg}}
 )
 
@@ -113,7 +113,7 @@ module %s
 
 go %s
 
-require github.com/astaxie/beego %s
+require github.com/beego/beego/v2 %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 
@@ -129,7 +129,7 @@ package routers
 import (
 	"{{.Appname}}/controllers"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {
@@ -298,7 +298,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // Operations about object
@@ -391,7 +391,7 @@ import (
 	"{{.Appname}}/models"
 	"encoding/json"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // Operations about Users
@@ -516,8 +516,8 @@ import (
 	"path/filepath"
 	_ "{{.Appname}}/routers"
 
-	beego "github.com/astaxie/beego/server/web"
-	"github.com/astaxie/beego/core/logs"
+	beego "github.com/beego/beego/v2/server/web"
+	"github.com/beego/beego/v2/core/logs"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -586,7 +586,7 @@ func createAPI(cmd *commands.Command, args []string) int {
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 

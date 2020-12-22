@@ -25,9 +25,9 @@ import (
 	"regexp"
 	"strings"
 
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -925,9 +925,9 @@ func extractColSize(colType string) string {
 }
 
 func extractIntSignness(colType string) string {
-	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint)\([0-9]+\)(.*)`)
+	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint).*`)
 	signRegex := regex.FindStringSubmatch(colType)
-	return strings.Trim(signRegex[2], " ")
+	return strings.Trim(signRegex[1], " ")
 }
 
 func extractDecimal(colType string) (digits string, decimals string) {
@@ -1023,7 +1023,7 @@ import (
 	"reflect"
 	"strings"
 	{{timePkg}}
-	"github.com/astaxie/beego/client/orm"
+	"github.com/beego/beego/v2/client/orm"
 )
 
 {{modelStruct}}
@@ -1172,7 +1172,7 @@ import (
 	"strconv"
 	"strings"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // {{ctrlName}}Controller operations for {{ctrlName}}
@@ -1347,7 +1347,7 @@ package routers
 import (
 	"{{pkgPath}}/controllers"
 
-	beego "github.com/astaxie/beego/server/web"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {

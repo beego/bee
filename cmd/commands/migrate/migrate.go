@@ -23,12 +23,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/utils"
 
-	beeLogger "github.com/beego/bee/logger"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 var CmdMigrate = &commands.Command{
@@ -366,8 +366,8 @@ const (
 import(
 	"os"
 
-	"github.com/astaxie/beego/client/orm"
-	"github.com/astaxie/beego/client/orm/migration"
+	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/client/orm/migration"
 
 	_ "{{DriverRepo}}"
 )

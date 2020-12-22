@@ -1,9 +1,9 @@
-module github.com/beego/bee
+module github.com/beego/bee/v2
 
 go 1.13
 
 require (
-	github.com/astaxie/beego v1.12.2-0.20201105155152-20a0de6bd075
+	github.com/beego/beego/v2 v2.0.1
 	github.com/davecgh/go-spew v1.1.1
 	github.com/flosch/pongo2 v0.0.0-20200529170236-5abacdfa4915
 	github.com/fsnotify/fsnotify v1.4.9
@@ -17,4 +17,4 @@ require (
 	gopkg.in/yaml.v2 v2.3.0
 )
 
-//replace github.com/astaxie/beego => ../beego
+//replace github.com/beego/beego/v2 => ../beego

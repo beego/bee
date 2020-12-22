@@ -6,14 +6,14 @@ import (
 	"path"
 	"strings"
 
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/logger/colors"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/api"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/generate"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/api"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/generate"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdHproseapp = &commands.Command{
@@ -25,7 +25,7 @@ var CmdHproseapp = &commands.Command{
 
   {{"To scaffold out your application, use:"|bold}}
 
-      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-gopath=false] [-beego=v1.12.1] 
+      $ bee hprose [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"] [-gopath=false] [-beego=v1.12.3] 
 
   If 'conn' is empty, the command will generate a sample application. Otherwise the command
   will connect to your database and generate models based on the existing tables.
@@ -49,7 +49,7 @@ module %s
 
 go %s
 
-require github.com/astaxie/beego %s
+require github.com/beego/beego/v2 %s
 require github.com/smartystreets/goconvey v1.6.4
 `
 
@@ -93,7 +93,7 @@ func createhprose(cmd *commands.Command, args []string) int {
 		apppath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packpath = args[0]
 		if beegoVersion.String() == `` {
-			beegoVersion.Set(`v1.12.1`)
+			beegoVersion.Set(utils.BEEGO_VERSION)
 		}
 	}
 

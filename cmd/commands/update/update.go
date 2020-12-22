@@ -5,17 +5,17 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/config"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/config"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdUpdate = &commands.Command{
 	UsageLine: "update",
 	Short:     "Update Bee",
 	Long: `
-Automatic run command "go get -u github.com/beego/bee" for selfupdate
+Automatic run command "go get -u github.com/beego/bee/v2" for selfupdate
 `,
 	Run: updateBee,
 }

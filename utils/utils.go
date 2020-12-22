@@ -32,10 +32,10 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/internal/pkg/system"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
 )
 
 type tagName struct {
@@ -98,7 +98,7 @@ func IsInGOPATH(thePath string) bool {
 // IsBeegoProject checks whether the current path is a Beego application or not
 func IsBeegoProject(thePath string) bool {
 	mainFiles := []string{}
-	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
+	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/beego/beego/v2".*?\).*func main()`)
 	c := make(chan error)
 	// Walk the application path tree to look for main files.
 	// Main files must satisfy the 'hasBeegoRegex' regular expression.

@@ -18,20 +18,32 @@ import (
 	"os"
 	"os/exec"
 
-	beeLogger "github.com/beego/bee/logger"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 func fix1To2() int {
 	beeLogger.Log.Info("Upgrading the application...")
 
-	cmdStr := `find ./ -name '*.go' -type f -exec sed -i '' -e 's/github.com\/astaxie\/beego/github.com\/astaxie\/beego\/adapter/g' {} \;`
+	cmdStr := `go get -u github.com/beego/beego/v2@develop`
 	err := runShell(cmdStr)
 	if err != nil {
+		beeLogger.Log.Error(err.Error())
+		beeLogger.Log.Error(`fetch v2.0.1 failed. Please try to run: export GO111MODULE=on
+and if your network is not stable, please try to use proxy, for example: export GOPROXY=https://goproxy.cn;'
+`)
 		return 1
 	}
-	cmdStr = `find ./ -name '*.go' -type f -exec sed -i '' -e 's/"github.com\/astaxie\/beego\/adapter"/beego "github.com\/astaxie\/beego\/adapter"/g' {} \;`
+
+	cmdStr = `find ./ -name '*.go' -type f -exec sed -i '' -e 's/github.com\/astaxie\/beego/github.com\/beego\/beego\/v2\/adapter/g' {} \;`
 	err = runShell(cmdStr)
 	if err != nil {
+		beeLogger.Log.Error(err.Error())
+		return 1
+	}
+	cmdStr = `find ./ -name '*.go' -type f -exec sed -i '' -e 's/"github.com\/beego\/beego\/v2\/adapter"/beego "github.com\/beego\/beego\/v2\/adapter"/g' {} \;`
+	err = runShell(cmdStr)
+	if err != nil {
+		beeLogger.Log.Error(err.Error())
 		return 1
 	}
 	return 0

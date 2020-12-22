@@ -16,11 +16,11 @@ import (
 
 	"gopkg.in/yaml.v2"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/config"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/config"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 )
 
 const verboseVersionBanner string = `%s%s______
@@ -162,7 +162,7 @@ func GetBeegoVersion() string {
 		}
 
 	}
-	return "Beego is not installed. Please do consider installing it first: https://github.com/astaxie/beego. " +
+	return "Beego is not installed. Please do consider installing it first: https://github.com/beego/beego/v2. " +
 		"If you are using go mod, and you don't install the beego under $GOPATH/src/github.com/astaxie, just ignore this."
 }
 
