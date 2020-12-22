@@ -9,7 +9,7 @@ Bee is a command-line tool facilitating development of Beego-based application.
 
 ## Requirements
 
-- Go version >= 2.0.0
+- Go version >= 1.13
 
 ## Installation
 
