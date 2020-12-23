@@ -208,3 +208,21 @@ func (c *Container) flushTimestamp() {
 		beeLogger.Log.Fatalf("flush timestamp tmpl parse error, err: %s", err)
 	}
 }
+
+func (c *Container) InitToml() {
+	if exist := utils.IsExist(c.BeegoProFile); exist {
+		beeLogger.Log.Fatalf("file beegopro.toml already exists")
+	}
+	sourceFile := c.UserOption.GitLocalPath + "/beegopro.toml"
+	input, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		beeLogger.Log.Fatalf("read beegopro.toml file err, %s", err.Error())
+		return
+	}
+	err = ioutil.WriteFile(c.BeegoProFile, input, 0644)
+	if err != nil {
+		beeLogger.Log.Fatalf("create beegopro.toml file err, %s", err.Error())
+		return
+	}
+	beeLogger.Log.Success("Successfully created file beegopro.toml")
+}
