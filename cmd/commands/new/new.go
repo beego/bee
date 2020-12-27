@@ -279,14 +279,14 @@ func CreateApp(cmd *commands.Command, args []string) int {
 	var packPath string
 	var err error
 	if gopath == `true` {
-		beeLogger.Log.Info("generate new project support GOPATH")
+		beeLogger.Log.Info("Generate new project support GOPATH")
 		version.ShowShortVersionBanner()
 		appPath, packPath, err = utils.CheckEnv(args[0])
 		if err != nil {
 			beeLogger.Log.Fatalf("%s", err)
 		}
 	} else {
-		beeLogger.Log.Info("generate new project support go modules.")
+		beeLogger.Log.Info("Generate new project support go modules.")
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {
