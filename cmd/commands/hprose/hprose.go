@@ -82,14 +82,14 @@ func createhprose(cmd *commands.Command, args []string) int {
 	var packpath string
 	var err error
 	if gopath == `true` {
-		beeLogger.Log.Info("generate api project support GOPATH")
+		beeLogger.Log.Info("Generate api project support GOPATH")
 		version.ShowShortVersionBanner()
 		apppath, packpath, err = utils.CheckEnv(args[0])
 		if err != nil {
 			beeLogger.Log.Fatalf("%s", err)
 		}
 	} else {
-		beeLogger.Log.Info("generate api project support go modules.")
+		beeLogger.Log.Info("Generate api project support go modules.")
 		apppath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packpath = args[0]
 		if beegoVersion.String() == `` {
