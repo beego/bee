@@ -3,6 +3,7 @@ package beegopro
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -242,10 +243,12 @@ func (c *Container) GetLocalPath() {
 	if c.UserOption.GitRemotePath == "" {
 		c.UserOption.GitRemotePath = "https://github.com/beego/beego-pro.git"
 	}
-	url := c.UserOption.GitRemotePath
-	url = strings.TrimPrefix(url, "http://")
-	url = strings.TrimPrefix(url, "https://")
-	url = strings.TrimRight(url, ".git")
-	index := strings.Index(url, "/")
-	c.UserOption.GitLocalPath = system.BeegoHome + url[index:]
+	parse, err := url.Parse(c.UserOption.GitRemotePath)
+	if err != nil {
+		beeLogger.Log.Fatalf("git GitRemotePath err, %s", err.Error())
+		return
+	}
+	s := parse.Path
+	s = strings.TrimRight(s, ".git")
+	c.UserOption.GitLocalPath = system.BeegoHome + s
 }
