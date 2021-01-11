@@ -32,6 +32,7 @@ func init() {
 	CmdBeegoPro.Flag.Var(&beegopro.SQL, "sql", "sql file path")
 	CmdBeegoPro.Flag.Var(&beegopro.SQLMode, "sqlmode", "sql mode")
 	CmdBeegoPro.Flag.Var(&beegopro.SQLModePath, "sqlpath", "sql mode path")
+	CmdBeegoPro.Flag.Var(&beegopro.GitRemotePath, "url", "git remote path")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdBeegoPro)
 }
 
