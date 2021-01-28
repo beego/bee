@@ -24,15 +24,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
-	"github.com/derekparker/delve/service"
-	"github.com/derekparker/delve/service/rpc2"
-	"github.com/derekparker/delve/service/rpccommon"
-	"github.com/derekparker/delve/terminal"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 	"github.com/fsnotify/fsnotify"
+	"github.com/go-delve/delve/pkg/terminal"
+	"github.com/go-delve/delve/service"
+	"github.com/go-delve/delve/service/debugger"
+	"github.com/go-delve/delve/service/rpc2"
+	"github.com/go-delve/delve/service/rpccommon"
 )
 
 var cmdDlv = &commands.Command{
@@ -43,7 +44,7 @@ var cmdDlv = &commands.Command{
 
   To debug your application using Delve, use: {{"$ bee dlv" | bold}}
 
-  For more information on Delve: https://github.com/derekparker/delve
+  For more information on Delve: https://github.com/go-delve/delve
 `,
 	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
 	Run:    runDlv,
@@ -148,11 +149,14 @@ func startDelveDebugger(addr string, ch chan int) int {
 	server := rpccommon.NewServer(&service.Config{
 		Listener:    listener,
 		AcceptMulti: true,
-		AttachPid:   0,
 		APIVersion:  2,
-		WorkingDir:  ".",
 		ProcessArgs: []string{abs},
-	}, false)
+		Debugger: debugger.Config{
+			AttachPid:  0,
+			WorkingDir: ".",
+			Backend:    "default",
+		},
+	})
 	if err := server.Run(); err != nil {
 		beeLogger.Log.Fatalf("Could not start debugger server: %v", err)
 	}
@@ -163,7 +167,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 	go func() {
 		for {
 			if val := <-ch; val == 0 {
-				if _, err := client.Restart(); err != nil {
+				if _, err := client.Restart(true); err != nil {
 					utils.Notify("Error while restarting the client: "+err.Error(), "bee")
 				} else {
 					if verbose {
@@ -182,7 +186,7 @@ func startDelveDebugger(addr string, ch chan int) int {
 	}
 
 	// Stop and kill the debugger server once user quits the REPL
-	if err := server.Stop(true); err != nil {
+	if err := server.Stop(); err != nil {
 		beeLogger.Log.Fatalf("Could not stop Delve server: %v", err)
 	}
 	return status

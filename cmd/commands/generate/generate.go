@@ -17,13 +17,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/generate"
-	"github.com/beego/bee/generate/swaggergen"
-	"github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/generate"
+	"github.com/beego/bee/v2/generate/swaggergen"
+	"github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdGenerate = &commands.Command{
@@ -80,15 +80,6 @@ func GenerateCode(cmd *commands.Command, args []string) int {
 	if len(args) < 1 {
 		beeLogger.Log.Fatal("Command is missing")
 	}
-
-	gps := utils.GetGOPATHs()
-	if len(gps) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
-
-	gopath := gps[0]
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 
 	gcmd := args[0]
 	switch gcmd {

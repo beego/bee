@@ -16,22 +16,25 @@
 package cmd
 
 import (
-	"github.com/beego/bee/cmd/commands"
-	_ "github.com/beego/bee/cmd/commands/api"
-	_ "github.com/beego/bee/cmd/commands/bale"
-	_ "github.com/beego/bee/cmd/commands/beefix"
-	_ "github.com/beego/bee/cmd/commands/dlv"
-	_ "github.com/beego/bee/cmd/commands/dockerize"
-	_ "github.com/beego/bee/cmd/commands/generate"
-	_ "github.com/beego/bee/cmd/commands/hprose"
-	_ "github.com/beego/bee/cmd/commands/migrate"
-	_ "github.com/beego/bee/cmd/commands/new"
-	_ "github.com/beego/bee/cmd/commands/pack"
-	_ "github.com/beego/bee/cmd/commands/rs"
-	_ "github.com/beego/bee/cmd/commands/run"
-	_ "github.com/beego/bee/cmd/commands/server"
-	_ "github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	_ "github.com/beego/bee/v2/cmd/commands/api"
+	_ "github.com/beego/bee/v2/cmd/commands/bale"
+	_ "github.com/beego/bee/v2/cmd/commands/beefix"
+	_ "github.com/beego/bee/v2/cmd/commands/beegopro"
+	_ "github.com/beego/bee/v2/cmd/commands/dev"
+	_ "github.com/beego/bee/v2/cmd/commands/dlv"
+	_ "github.com/beego/bee/v2/cmd/commands/dockerize"
+	_ "github.com/beego/bee/v2/cmd/commands/generate"
+	_ "github.com/beego/bee/v2/cmd/commands/hprose"
+	_ "github.com/beego/bee/v2/cmd/commands/migrate"
+	_ "github.com/beego/bee/v2/cmd/commands/new"
+	_ "github.com/beego/bee/v2/cmd/commands/pack"
+	_ "github.com/beego/bee/v2/cmd/commands/rs"
+	_ "github.com/beego/bee/v2/cmd/commands/run"
+	_ "github.com/beego/bee/v2/cmd/commands/server"
+	_ "github.com/beego/bee/v2/cmd/commands/update"
+	_ "github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/utils"
 )
 
 func IfGenerateDocs(name string, args []string) bool {
@@ -47,6 +50,8 @@ func IfGenerateDocs(name string, args []string) bool {
 }
 
 var usageTemplate = `Bee is a Fast and Flexible tool for managing your Beego Web Application.
+
+You are using bee for beego v2.x. If you are working on beego v1.x, please downgrade version to bee v1.12.0
 
 {{"USAGE" | headline}}
     {{"bee command [arguments]" | bold}}
@@ -85,6 +90,7 @@ func Usage() {
 func Help(args []string) {
 	if len(args) == 0 {
 		Usage()
+		return
 	}
 	if len(args) != 1 {
 		utils.PrintErrorAndExit("Too many arguments", ErrorTemplate)

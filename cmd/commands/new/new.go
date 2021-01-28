@@ -20,22 +20,26 @@ import (
 	path "path/filepath"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 )
 
+var gopath utils.DocValue
+var beegoVersion utils.DocValue
+
 var CmdNew = &commands.Command{
-	UsageLine: "new [appname]",
+	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.3]",
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
-
-  The command 'new' creates a folder named [appname] and generates the following structure:
+  now default supoort generate a go modules project
+  The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.3] and generates the following structure:
 
             ├── main.go
+            ├── go.mod
             ├── {{"conf"|foldername}}
             │     └── app.conf
             ├── {{"controllers"|foldername}}
@@ -53,7 +57,7 @@ Creates a Beego application for the given app name in the current directory.
                   └── index.tpl
 
 `,
-	PreRun: func(cmd *commands.Command, args []string) { version.ShowShortVersionBanner() },
+	PreRun: nil,
 	Run:    CreateApp,
 }
 
@@ -66,7 +70,7 @@ var maingo = `package main
 
 import (
 	_ "{{.Appname}}/routers"
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func main() {
@@ -78,14 +82,20 @@ var router = `package routers
 
 import (
 	"{{.Appname}}/controllers"
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {
     beego.Router("/", &controllers.MainController{})
 }
 `
+var goMod = `module %s
 
+go %s
+
+require github.com/beego/beego/v2 %s
+require github.com/smartystreets/goconvey v1.6.4
+`
 var test = `package test
 
 import (
@@ -94,9 +104,12 @@ import (
 	"testing"
 	"runtime"
 	"path/filepath"
+
+    "github.com/beego/beego/v2/core/logs"
+
 	_ "{{.Appname}}/routers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -113,7 +126,7 @@ func TestBeego(t *testing.T) {
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	beego.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
+	logs.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
 
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
@@ -130,7 +143,7 @@ func TestBeego(t *testing.T) {
 var controllers = `package controllers
 
 import (
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 type MainController struct {
@@ -245,18 +258,40 @@ var reloadJsClient = `function b(a){var c=new WebSocket(a);c.onclose=function(){
 `
 
 func init() {
+	CmdNew.Flag.Var(&gopath, "gopath", "Support go path,default false")
+	CmdNew.Flag.Var(&beegoVersion, "beego", "set beego version,only take effect by go mod")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdNew)
 }
 
 func CreateApp(cmd *commands.Command, args []string) int {
 	output := cmd.Out()
-	if len(args) != 1 {
+	if len(args) == 0 {
 		beeLogger.Log.Fatal("Argument [appname] is missing")
 	}
 
-	appPath, packPath, err := utils.CheckEnv(args[0])
-	if err != nil {
-		beeLogger.Log.Fatalf("%s", err)
+	if len(args) >= 2 {
+		err := cmd.Flag.Parse(args[1:])
+		if err != nil {
+			beeLogger.Log.Fatal("Parse args err " + err.Error())
+		}
+	}
+	var appPath string
+	var packPath string
+	var err error
+	if gopath == `true` {
+		beeLogger.Log.Info("Generate new project support GOPATH")
+		version.ShowShortVersionBanner()
+		appPath, packPath, err = utils.CheckEnv(args[0])
+		if err != nil {
+			beeLogger.Log.Fatalf("%s", err)
+		}
+	} else {
+		beeLogger.Log.Info("Generate new project support go modules.")
+		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
+		packPath = args[0]
+		if beegoVersion.String() == `` {
+			beegoVersion.Set(utils.BEEGO_VERSION)
+		}
 	}
 
 	if utils.IsExist(appPath) {
@@ -269,7 +304,16 @@ func CreateApp(cmd *commands.Command, args []string) int {
 
 	beeLogger.Log.Info("Creating application...")
 
+	// If it is the current directory, select the current folder name to package path
+	if packPath == "." {
+		packPath = path.Base(appPath)
+	}
+
 	os.MkdirAll(appPath, 0755)
+	if gopath != `true` {
+		fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "go.mod"), "\x1b[0m")
+		utils.WriteToFile(path.Join(appPath, "go.mod"), fmt.Sprintf(goMod, packPath, utils.GetGoVersionSkipMinor(), beegoVersion.String()))
+	}
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", appPath+string(path.Separator), "\x1b[0m")
 	os.Mkdir(path.Join(appPath, "conf"), 0755)
 	fmt.Fprintf(output, "\t%s%screate%s\t %s%s\n", "\x1b[32m", "\x1b[1m", "\x1b[21m", path.Join(appPath, "conf")+string(path.Separator), "\x1b[0m")
