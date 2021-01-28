@@ -16,22 +16,49 @@ package utils
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"path"
 	"path/filepath"
 	"regexp"
 	"runtime"
+	"strconv"
 	"strings"
 	"text/template"
 	"time"
 	"unicode"
 
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/internal/pkg/system"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
 )
+
+type tagName struct {
+	Name string `json:"name"`
+}
+
+type Repos struct {
+	UpdatedAt time.Time `json:"updated_at"`
+	PushedAt  time.Time `json:"pushed_at"`
+}
+
+type Releases struct {
+	PublishedAt time.Time `json:"published_at"`
+	TagName     string    `json:"tag_name"`
+}
+
+func GetBeeWorkPath() string {
+	curpath, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	return curpath
+}
 
 // Go is a basic promise implementation: it wraps calls a function in a goroutine
 // and returns a channel which will later return the function's return value.
@@ -71,7 +98,7 @@ func IsInGOPATH(thePath string) bool {
 // IsBeegoProject checks whether the current path is a Beego application or not
 func IsBeegoProject(thePath string) bool {
 	mainFiles := []string{}
-	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/astaxie/beego".*?\).*func main()`)
+	hasBeegoRegex := regexp.MustCompile(`(?s)package main.*?import.*?\(.*?github.com/beego/beego/v2".*?\).*func main()`)
 	c := make(chan error)
 	// Walk the application path tree to look for main files.
 	// Main files must satisfy the 'hasBeegoRegex' regular expression.
@@ -305,6 +332,7 @@ func Tmpl(text string, data interface{}) {
 func CheckEnv(appname string) (apppath, packpath string, err error) {
 	gps := GetGOPATHs()
 	if len(gps) == 0 {
+		beeLogger.Log.Error("if you want new a go module project,please add param `-gopath=false`.")
 		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
 	}
 	currpath, _ := os.Getwd()
@@ -437,4 +465,188 @@ func defaultGOPATH() string {
 		return filepath.Join(home, "go")
 	}
 	return ""
+}
+
+func GetGoVersionSkipMinor() string {
+	strArray := strings.Split(runtime.Version()[2:], `.`)
+	return strArray[0] + `.` + strArray[1]
+}
+
+func IsGOMODULE() bool {
+	if combinedOutput, e := exec.Command(`go`, `env`).CombinedOutput(); e != nil {
+		beeLogger.Log.Errorf("i cann't find go.")
+	} else {
+		regex := regexp.MustCompile(`GOMOD="?(.+go.mod)"?`)
+		stringSubmatch := regex.FindStringSubmatch(string(combinedOutput))
+		return len(stringSubmatch) == 2
+	}
+	return false
+}
+
+func NoticeUpdateBee() {
+	cmd := exec.Command("go", "version")
+	cmd.Output()
+	if cmd.Process == nil || cmd.Process.Pid <= 0 {
+		beeLogger.Log.Warn("There is no go environment")
+		return
+	}
+	beeHome := system.BeegoHome
+	if !IsExist(beeHome) {
+		if err := os.MkdirAll(beeHome, 0755); err != nil {
+			beeLogger.Log.Fatalf("Could not create the directory: %s", err)
+			return
+		}
+	}
+	fp := beeHome + "/.noticeUpdateBee"
+	timeNow := time.Now().Unix()
+	var timeOld int64
+	if !IsExist(fp) {
+		f, err := os.Create(fp)
+		if err != nil {
+			beeLogger.Log.Warnf("Create noticeUpdateBee file err: %s", err)
+			return
+		}
+		defer f.Close()
+	}
+	oldContent, err := ioutil.ReadFile(fp)
+	if err != nil {
+		beeLogger.Log.Warnf("Read noticeUpdateBee file err: %s", err)
+		return
+	}
+	timeOld, _ = strconv.ParseInt(string(oldContent), 10, 64)
+	if timeNow-timeOld < 24*60*60 {
+		return
+	}
+	w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open noticeUpdateBee file err: %s", err)
+		return
+	}
+	defer w.Close()
+	timeNowStr := strconv.FormatInt(timeNow, 10)
+	if _, err := w.WriteString(timeNowStr); err != nil {
+		beeLogger.Log.Warnf("Update noticeUpdateBee file err: %s", err)
+		return
+	}
+	beeLogger.Log.Info("Getting bee latest version...")
+	versionLast := BeeLastVersion()
+	versionNow := config.Version
+	if versionLast == "" {
+		beeLogger.Log.Warn("Get latest version err")
+		return
+	}
+	if versionNow != versionLast {
+		beeLogger.Log.Warnf("Update available %s ==> %s", versionNow, versionLast)
+		beeLogger.Log.Warn("Run `bee update` to update")
+	}
+	beeLogger.Log.Info("Your bee are up to date")
+}
+
+func BeeLastVersion() (version string) {
+	var url = "https://api.github.com/repos/beego/bee/tags"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee tags from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	var tags []tagName
+	if err = json.Unmarshal(bodyContent, &tags); err != nil {
+		beeLogger.Log.Warnf("Unmarshal tags body error: %s", err)
+		return
+	}
+	if len(tags) < 1 {
+		beeLogger.Log.Warn("There is no tags！")
+		return
+	}
+	last := tags[0]
+	re, _ := regexp.Compile(`[0-9.]+`)
+	versionList := re.FindStringSubmatch(last.Name)
+	if len(versionList) > 0 {
+		return versionList[0]
+	}
+	beeLogger.Log.Warn("There is no tags！")
+	return
+}
+
+// get info of bee repos
+func BeeReposInfo() (repos Repos) {
+	var url = "https://api.github.com/repos/beego/bee"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee repos from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(bodyContent, &repos); err != nil {
+		beeLogger.Log.Warnf("Unmarshal repos body error: %s", err)
+		return
+	}
+	return
+}
+
+// get info of bee releases
+func BeeReleasesInfo() (repos []Releases) {
+	var url = "https://api.github.com/repos/beego/bee/releases"
+	resp, err := http.Get(url)
+	if err != nil {
+		beeLogger.Log.Warnf("Get bee releases from github error: %s", err)
+		return
+	}
+	defer resp.Body.Close()
+	bodyContent, _ := ioutil.ReadAll(resp.Body)
+	if err = json.Unmarshal(bodyContent, &repos); err != nil {
+		beeLogger.Log.Warnf("Unmarshal releases body error: %s", err)
+		return
+	}
+	return
+}
+
+//TODO merge UpdateLastPublishedTime and NoticeUpdateBee
+func UpdateLastPublishedTime() {
+	info := BeeReleasesInfo()
+	if len(info) == 0 {
+		beeLogger.Log.Warn("Has no releases")
+		return
+	}
+	createdAt := info[0].PublishedAt.Format("2006-01-02")
+	beeHome := system.BeegoHome
+	if !IsExist(beeHome) {
+		if err := os.MkdirAll(beeHome, 0755); err != nil {
+			beeLogger.Log.Fatalf("Could not create the directory: %s", err)
+			return
+		}
+	}
+	fp := beeHome + "/.lastPublishedAt"
+	w, err := os.OpenFile(fp, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open .lastPublishedAt file err: %s", err)
+		return
+	}
+	defer w.Close()
+	if _, err := w.WriteString(createdAt); err != nil {
+		beeLogger.Log.Warnf("Update .lastPublishedAt file err: %s", err)
+		return
+	}
+}
+
+func GetLastPublishedTime() string {
+	fp := system.BeegoHome + "/.lastPublishedAt"
+	if !IsExist(fp) {
+		UpdateLastPublishedTime()
+	}
+	w, err := os.OpenFile(fp, os.O_RDONLY, 0644)
+	if err != nil {
+		beeLogger.Log.Warnf("Open .lastPublishedAt file err: %s", err)
+		return "unknown"
+	}
+	t := make([]byte, 1024)
+	read, err := w.Read(t)
+	if err != nil {
+		beeLogger.Log.Warnf("read .lastPublishedAt file err: %s", err)
+		return "unknown"
+	}
+	return string(t[:read])
 }

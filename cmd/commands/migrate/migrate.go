@@ -23,12 +23,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/config"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/config"
+	"github.com/beego/bee/v2/utils"
 
-	beeLogger "github.com/beego/bee/logger"
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 var CmdMigrate = &commands.Command{
@@ -70,15 +70,6 @@ func init() {
 // runMigration is the entry point for starting a migration
 func RunMigration(cmd *commands.Command, args []string) int {
 	currpath, _ := os.Getwd()
-
-	gps := utils.GetGOPATHs()
-	if len(gps) == 0 {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
-	}
-
-	gopath := gps[0]
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 
 	// Getting command line arguments
 	if len(args) != 0 {
@@ -207,8 +198,8 @@ func checkForSchemaUpdateTable(db *sql.DB, driver string) {
 					beeLogger.Log.Fatalf("Column migration.name type mismatch: TYPE: %s, NULL: %s", typeStr, nullStr)
 				}
 			} else if fieldStr == "created_at" {
-				if typeStr != "timestamp" || defaultStr != "CURRENT_TIMESTAMP" {
-					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP")
+				if typeStr != "timestamp" || (!strings.EqualFold(defaultStr, "CURRENT_TIMESTAMP") && !strings.EqualFold(defaultStr, "CURRENT_TIMESTAMP()")) {
+					beeLogger.Log.Hint("Expecting TYPE: timestamp, DEFAULT: CURRENT_TIMESTAMP || CURRENT_TIMESTAMP()")
 					beeLogger.Log.Fatalf("Column migration.timestamp type mismatch: TYPE: %s, DEFAULT: %s", typeStr, defaultStr)
 				}
 			}
@@ -375,8 +366,8 @@ const (
 import(
 	"os"
 
-	"github.com/astaxie/beego/orm"
-	"github.com/astaxie/beego/migration"
+	"github.com/beego/beego/v2/client/orm"
+	"github.com/beego/beego/v2/client/orm/migration"
 
 	_ "{{DriverRepo}}"
 )

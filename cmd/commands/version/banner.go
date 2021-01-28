@@ -9,7 +9,8 @@ import (
 
 	"time"
 
-	beeLogger "github.com/beego/bee/logger"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 // RuntimeInfo holds information about the current runtime.
@@ -23,6 +24,7 @@ type RuntimeInfo struct {
 	Compiler     string
 	BeeVersion   string
 	BeegoVersion string
+	Published    string
 }
 
 // InitBanner loads the banner and prints it to output
@@ -60,6 +62,7 @@ func show(out io.Writer, content string) {
 		runtime.Compiler,
 		version,
 		GetBeegoVersion(),
+		utils.GetLastPublishedTime(),
 	})
 	if err != nil {
 		beeLogger.Log.Error(err.Error())

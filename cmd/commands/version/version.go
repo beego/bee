@@ -14,11 +14,13 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
 	"gopkg.in/yaml.v2"
+
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/config"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 )
 
 const verboseVersionBanner string = `%s%s______
@@ -36,7 +38,7 @@ const verboseVersionBanner string = `%s%s______
 ├── GOPATH    : {{ .GOPATH }}
 ├── GOROOT    : {{ .GOROOT }}
 ├── Compiler  : {{ .Compiler }}
-└── Date      : {{ Now "Monday, 2 Jan 2006" }}%s
+└── Published : {{ .Published }}%s
 `
 
 const shortVersionBanner = `______
@@ -57,7 +59,7 @@ Prints the current Bee, Beego and Go version alongside the platform information.
 }
 var outputFormat string
 
-const version = "1.10.0"
+const version = config.Version
 
 func init() {
 	fs := flag.NewFlagSet("version", flag.ContinueOnError)
@@ -82,6 +84,7 @@ func versionCmd(cmd *commands.Command, args []string) int {
 			runtime.Compiler,
 			version,
 			GetBeegoVersion(),
+			utils.GetLastPublishedTime(),
 		}
 		switch outputFormat {
 		case "json":
@@ -124,11 +127,11 @@ func GetBeegoVersion() string {
 	}
 	wgopath := utils.GetGOPATHs()
 	if len(wgopath) == 0 {
-		beeLogger.Log.Error("You need to set GOPATH environment variable")
+		beeLogger.Log.Error("GOPATH environment is empty,may be you use `go module`")
 		return ""
 	}
 	for _, wg := range wgopath {
-		wg, _ = path.EvalSymlinks(path.Join(wg, "src", "github.com", "astaxie", "beego"))
+		wg, _ = path.EvalSymlinks(path.Join(wg, "src", "github.com", "beego", "beego"))
 		filename := path.Join(wg, "beego.go")
 		_, err := os.Stat(filename)
 		if err != nil {
@@ -159,7 +162,8 @@ func GetBeegoVersion() string {
 		}
 
 	}
-	return "Beego is not installed. Please do consider installing it first: https://github.com/astaxie/beego"
+	return "Beego is not installed. Please do consider installing it first: https://github.com/beego/beego/v2. " +
+		"If you are using go mod, and you don't install the beego under $GOPATH/src/github.com/beego, just ignore this."
 }
 
 func GetGoVersion() string {

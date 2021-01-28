@@ -15,17 +15,19 @@
 package generate
 
 import (
+	"bufio"
 	"database/sql"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
 
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/logger/colors"
-	"github.com/beego/bee/utils"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/logger/colors"
+	"github.com/beego/bee/v2/utils"
 	_ "github.com/go-sql-driver/mysql"
 	_ "github.com/lib/pq"
 )
@@ -923,9 +925,9 @@ func extractColSize(colType string) string {
 }
 
 func extractIntSignness(colType string) string {
-	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint)\([0-9]+\)(.*)`)
+	regex := regexp.MustCompile(`(int|smallint|mediumint|bigint).*`)
 	signRegex := regex.FindStringSubmatch(colType)
-	return strings.Trim(signRegex[2], " ")
+	return strings.Trim(signRegex[1], " ")
 }
 
 func extractDecimal(colType string) (digits string, decimals string) {
@@ -948,10 +950,39 @@ func getFileName(tbName string) (filename string) {
 func getPackagePath(curpath string) (packpath string) {
 	gopath := os.Getenv("GOPATH")
 	if gopath == "" {
-		beeLogger.Log.Fatal("GOPATH environment variable is not set or empty")
+		info := "GOPATH environment variable is not set or empty"
+		gomodpath := filepath.Join(curpath, `go.mod`)
+		re, err := regexp.Compile(`^module\s+(.+)$`)
+		if err != nil {
+			beeLogger.Log.Error(info)
+			beeLogger.Log.Fatalf("try `go.mod` generate regexp error:%s", err)
+			return ""
+		}
+		fd, err := os.Open(gomodpath)
+		if err != nil {
+			beeLogger.Log.Error(info)
+			beeLogger.Log.Fatalf("try `go.mod`  Error while reading 'go.mod',%s", gomodpath)
+		}
+		reader := bufio.NewReader(fd)
+		for {
+			byteLine, _, er := reader.ReadLine()
+			if er != nil && er != io.EOF {
+				return ""
+			}
+			if er == io.EOF {
+				break
+			}
+			line := string(byteLine)
+			s := re.FindStringSubmatch(line)
+			if len(s) >= 2 {
+				return s[1]
+			}
+		}
+		beeLogger.Log.Error(info)
+		beeLogger.Log.Fatalf("try `go.mod` Error while parse 'go.mod',%s", gomodpath)
+	} else {
+		beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 	}
-
-	beeLogger.Log.Debugf("GOPATH: %s", utils.FILE(), utils.LINE(), gopath)
 
 	appsrcpath := ""
 	haspath := false
@@ -992,7 +1023,7 @@ import (
 	"reflect"
 	"strings"
 	{{timePkg}}
-	"github.com/astaxie/beego/orm"
+	"github.com/beego/beego/v2/client/orm"
 )
 
 {{modelStruct}}
@@ -1141,7 +1172,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 // {{ctrlName}}Controller operations for {{ctrlName}}
@@ -1316,7 +1347,7 @@ package routers
 import (
 	"{{pkgPath}}/controllers"
 
-	"github.com/astaxie/beego"
+	beego "github.com/beego/beego/v2/server/web"
 )
 
 func init() {

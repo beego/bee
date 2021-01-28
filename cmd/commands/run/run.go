@@ -20,11 +20,11 @@ import (
 	"runtime"
 	"strings"
 
-	"github.com/beego/bee/cmd/commands"
-	"github.com/beego/bee/cmd/commands/version"
-	"github.com/beego/bee/config"
-	beeLogger "github.com/beego/bee/logger"
-	"github.com/beego/bee/utils"
+	"github.com/beego/bee/v2/cmd/commands"
+	"github.com/beego/bee/v2/cmd/commands/version"
+	"github.com/beego/bee/v2/config"
+	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdRun = &commands.Command{
@@ -46,6 +46,8 @@ var (
 	excludedPaths utils.StrFlags
 	// Pass through to -tags arg of "go build"
 	buildTags string
+	// Pass through to -ldflags arg of "go build"
+	buildLDFlags string
 	// Application path
 	currpath string
 	// Application name
@@ -72,6 +74,7 @@ func init() {
 	CmdRun.Flag.Var(&excludedPaths, "e", "List of paths to exclude.")
 	CmdRun.Flag.BoolVar(&vendorWatch, "vendor", false, "Enable watch vendor folder.")
 	CmdRun.Flag.StringVar(&buildTags, "tags", "", "Set the build tags. See: https://golang.org/pkg/go/build/")
+	CmdRun.Flag.StringVar(&buildLDFlags, "ldflags", "", "Set the build ldflags. See: https://golang.org/pkg/go/build/")
 	CmdRun.Flag.StringVar(&runmode, "runmode", "", "Set the Beego run mode.")
 	CmdRun.Flag.StringVar(&runargs, "runargs", "", "Extra args to run application")
 	CmdRun.Flag.Var(&extraPackages, "ex", "List of extra package to watch.")
