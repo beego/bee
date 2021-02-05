@@ -35,6 +35,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	bu "github.com/beego/bee/v2/utils"
+
 	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/beego/v2/core/utils"
 	"github.com/beego/beego/v2/server/web/swagger"
@@ -54,13 +56,14 @@ const (
 	astTypeMap    = "map"
 )
 
-var pkgCache map[string]string //pkg:controller:function:comments comments: key:value
+var pkgCache map[string]struct{} //pkg:controller:function:comments comments: key:value
 var controllerComments map[string]string
 var importlist map[string]string
 var controllerList map[string]map[string]*swagger.Item //controllername Paths items
 var modelsList map[string]map[string]swagger.Schema
 var rootapi swagger.Swagger
 var astPkgs []*ast.Package
+var pkgLoadedCache map[string]struct{}
 
 // refer to builtin.go
 var basicTypes = map[string]string{
@@ -94,12 +97,13 @@ var stdlibObject = map[string]string{
 }
 
 func init() {
-	pkgCache = make(map[string]string)
+	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
 	importlist = make(map[string]string)
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
 	astPkgs = make([]*ast.Package, 0)
+	pkgLoadedCache = make(map[string]struct{})
 }
 
 // parsePackagesFromDir parses packages from a given directory
@@ -150,6 +154,16 @@ func parsePackageFromDir(path string) error {
 
 	for _, v := range folderPkgs {
 		astPkgs = append(astPkgs, v)
+	}
+
+	if len(folderPkgs) != 0 {
+		workPath := bu.GetBeeWorkPath()
+		parentPath := filepath.Dir(workPath)
+		rel, err := filepath.Rel(parentPath, path)
+		if err != nil {
+			return err
+		}
+		pkgLoadedCache[rel] = struct{}{}
 	}
 
 	return nil
@@ -448,7 +462,7 @@ func analyseControllerPkg(localName, pkgpath string) {
 		if _, ok := pkgCache[pkgpath]; ok {
 			return
 		}
-		pkgCache[pkgpath] = localName
+		pkgCache[pkgpath] = struct{}{}
 	} else {
 		beeLogger.Log.Fatalf("Package '%s' does not have source directory", pkgpath)
 	}
@@ -934,7 +948,7 @@ L:
 							continue
 						}
 
-						parseObject(fl.Imports, d, k, &m, &realTypes, packageName)
+						parseObject(fl.Imports, d, k, &m, &realTypes, astPkgs, packageName)
 
 						// When we've found the correct object, we can stop searching
 						break L
@@ -959,7 +973,7 @@ L:
 	return str, m, realTypes
 }
 
-func parseObject(ims []*ast.ImportSpec, d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, packageName string) {
+func parseObject(imports []*ast.ImportSpec, d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
 		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v", d)
@@ -984,7 +998,7 @@ func parseObject(ims []*ast.ImportSpec, d *ast.Object, k string, m *swagger.Sche
 	case *ast.Ident:
 		parseIdent(t, k, m, astPkgs)
 	case *ast.StructType:
-		parseStruct(ims, t, k, m, realTypes, packageName)
+		parseStruct(imports, t, k, m, realTypes, astPkgs, packageName)
 	}
 }
 
@@ -1069,7 +1083,7 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 
 }
 
-func parseStruct(ims []*ast.ImportSpec, st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, packageName string) {
+func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	m.Title = k
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
@@ -1085,10 +1099,12 @@ func parseStruct(ims []*ast.ImportSpec, st *ast.StructType, k string, m *swagger
 					realType = packageName + "." + realType
 				}
 			}
+
+			if !isBasicType(realType) && sType == astTypeObject {
+				checkAndLoadPackage(imports, realType, packageName)
+			}
+
 			*realTypes = append(*realTypes, realType)
-
-			analyseImportPkg(ims, realType)
-
 			mp := swagger.Propertie{}
 			isObject := false
 			if isSlice {
@@ -1208,7 +1224,7 @@ func parseStruct(ims []*ast.ImportSpec, st *ast.StructType, k string, m *swagger
 						for _, fl := range pkg.Files {
 							for nameOfObj, obj := range fl.Scope.Objects {
 								if pkg.Name+"."+obj.Name == realType {
-									parseObject(obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
+									parseObject(imports, obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
 								}
 							}
 						}
@@ -1345,61 +1361,68 @@ func str2RealType(s string, typ string) interface{} {
 	return ret
 }
 
-func analyseImportPkg(ims []*ast.ImportSpec, realType string) error {
-	strs := strings.Split(realType, ".")
-	pkgName := strs[0]
+func checkAndLoadPackage(imports []*ast.ImportSpec, realType, curPkgName string) {
+	arr := strings.Split(realType, ".")
+	if len(arr) != 2 {
+		return
+	}
+	objectPkgName := arr[0]
+	if objectPkgName == curPkgName {
+		return
+	}
+	pkgPath := ""
+	for _, im := range imports {
+		importPath := ""
+		if im.Path != nil {
+			importPath = strings.Trim(im.Path.Value, `"`)
+		}
 
-	for _, im := range ims {
-		pkgPath := strings.Trim(im.Path.Value, "\"")
-
-		if isSystemPackage(pkgPath) {
+		if importPath == "" {
 			continue
 		}
 
-		if val, ok := pkgCache[pkgPath]; ok {
-			if val == pkgName {
-				return nil
-			}
-
-			continue
+		if im.Name != nil && im.Name.Name == objectPkgName {
+			pkgPath = importPath
+			break
 		}
 
-		pkgRealPath := ""
-		cwd, _ := os.Getwd()
-		vendorPath := path.Join(cwd, "vendor")
-
-		realPath, _ := filepath.EvalSymlinks(filepath.Join(vendorPath, pkgPath))
-		if bu.IsExist(realPath) {
-			pkgRealPath = realPath
-		} else {
-			ok, _, currentpath := bu.SearchGOPATHs(pkgPath)
-			if ok {
-				pkgRealPath, _ = filepath.EvalSymlinks(currentpath)
-			}
-		}
-
-		if pkgRealPath == "" {
-			beeLogger.Log.Warnf("Cannot find pkgpath: %s ", pkgPath)
-			continue
-		}
-
-		fileSet := token.NewFileSet()
-		folderPkgs, err := parser.ParseDir(fileSet, pkgRealPath, func(info os.FileInfo) bool {
-			name := info.Name()
-			return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
-		}, parser.ParseComments)
-		if err != nil {
-			beeLogger.Log.Errorf("ParseDir Error, pkgpath:%s  error:%s", pkgPath, err)
-			return err
-		}
-
-		for _, pkg := range folderPkgs {
-			if pkgName == pkg.Name || pkgName == im.Name.Name {
-				astPkgs = append(astPkgs, pkg)
-				pkgCache[pkgPath] = pkgName
-			}
+		_, pkgName := filepath.Split(importPath)
+		if pkgName == objectPkgName {
+			pkgPath = importPath
+			break
 		}
 	}
 
-	return nil
+	if pkgPath == "" {
+		beeLogger.Log.Warnf("%s missing import package", realType)
+		return
+	}
+
+	if isSystemPackage(pkgPath) {
+		return
+	}
+	if _, ok := pkgLoadedCache[pkgPath]; ok {
+		return
+	}
+
+	pkg, err := build.Default.Import(pkgPath, ".", build.FindOnly)
+	if err != nil {
+		beeLogger.Log.Warnf("Package %s cannot be imported, err:%v", pkgPath, err)
+	}
+	pkgRealpath := pkg.Dir
+
+	fileSet := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	}, parser.ParseComments)
+	if err != nil {
+		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgRealpath, err)
+	}
+
+	for _, pkg := range pkgs {
+		astPkgs = append(astPkgs, pkg)
+	}
+
+	pkgLoadedCache[pkgPath] = struct{}{}
 }
