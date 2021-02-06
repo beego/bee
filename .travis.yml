@@ -12,6 +12,7 @@ script:
   - cd $(dirname `dirname $(pwd)`)/beego/bee
   - export GO111MODULE="on"
   - go mod download
+  - go test -coverprofile=coverage.txt -covermode=atomic ./...
   - find . ! \( -path './vendor' -prune \) -type f -name '*.go' -print0 | xargs -0 gofmt -l -s
   - go list ./... | grep -v /vendor/  | grep -v /pkg/mod/
   - go vet  $(go list ./... | grep -v /vendor/  | grep -v /pkg/mod/ )
