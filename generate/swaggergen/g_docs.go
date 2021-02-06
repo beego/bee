@@ -1408,6 +1408,7 @@ func checkAndLoadPackage(imports []*ast.ImportSpec, realType, curPkgName string)
 	pkg, err := build.Default.Import(pkgPath, ".", build.FindOnly)
 	if err != nil {
 		beeLogger.Log.Warnf("Package %s cannot be imported, err:%v", pkgPath, err)
+		return
 	}
 	pkgRealpath := pkg.Dir
 
@@ -1417,7 +1418,7 @@ func checkAndLoadPackage(imports []*ast.ImportSpec, realType, curPkgName string)
 		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
 	}, parser.ParseComments)
 	if err != nil {
-		beeLogger.Log.Fatalf("Error while parsing dir at '%s': %s", pkgRealpath, err)
+		beeLogger.Log.Warnf("Error while parsing dir at '%s': %s", pkgRealpath, err)
 	}
 
 	for _, pkg := range pkgs {
