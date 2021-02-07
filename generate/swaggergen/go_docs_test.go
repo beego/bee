@@ -26,57 +26,103 @@ import (
 //package model
 //
 //import (
-//	"github.com/shopspring/decimal"
+//"sync"
+//
+//"example.com/pkgnotexist"
+//"github.com/shopspring/decimal"
 //)
 //
-//type Object struct{
-//	Total  decimal.Decimal
+//type Object struct {
+//	Field1 decimal.Decimal
+//	Field2 pkgnotexist.TestType
+//	Field3 sync.Map
 //}
 func TestCheckAndLoadPackageOnGoMod(t *testing.T) {
-	var (
-		pkgName       = "decimal"
-		pkgImportPath = "github.com/shopspring/decimal"
-	)
-
 	defer os.Setenv("GO111MODULE", os.Getenv("GO111MODULE"))
 	os.Setenv("GO111MODULE", "on")
 
-	imports := []*ast.ImportSpec{
+	testCases := []struct {
+		pkgName       string
+		pkgImportPath string
+		imports       []*ast.ImportSpec
+		realType      string
+		curPkgName    string
+		expected      bool
+	}{
 		{
-			Path: &ast.BasicLit{
-				Value: pkgImportPath,
+			pkgName:       "decimal",
+			pkgImportPath: "github.com/shopspring/decimal",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "github.com/shopspring/decimal",
+					},
+				},
 			},
+			realType:   "decimal.Decimal",
+			curPkgName: "model",
+			expected:   true,
+		},
+		{
+			pkgName:       "pkgnotexist",
+			pkgImportPath: "example.com/pkgnotexist",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "example.com/pkgnotexist",
+					},
+				},
+			},
+			realType:   "pkgnotexist.TestType",
+			curPkgName: "model",
+			expected:   false,
+		},
+		{
+			pkgName:       "sync",
+			pkgImportPath: "sync",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "sync",
+					},
+				},
+			},
+			realType:   "sync.Map",
+			curPkgName: "model",
+			expected:   false,
 		},
 	}
-	checkAndLoadPackage(imports, "decimal.Decimal", "model")
-	if len(astPkgs) == 0 {
-		t.Fatalf("failed to load module: %s", pkgImportPath)
-	}
-	notLoadFlag := true
-	for _, v := range astPkgs {
-		if v.Name == pkgName {
-			notLoadFlag = false
+
+	for _, test := range testCases {
+		checkAndLoadPackage(test.imports, test.realType, test.curPkgName)
+		result := false
+		for _, v := range astPkgs {
+			if v.Name == test.pkgName {
+				result = true
+			}
 		}
-	}
-	if notLoadFlag {
-		t.Fatalf("failed to load module: %s", pkgImportPath)
+		if test.expected != result {
+			t.Fatalf("load module error, expected: %v, result: %v", test.expected, result)
+		}
 	}
 }
 
 //package model
 //
 //import (
+//"sync"
+//
 //"example.com/comm"
+//"example.com/pkgnotexist"
 //)
 //
 //type Object struct {
-//	Total comm.Common
+//	Field1 comm.Common
+//	Field2 pkgnotexist.TestType
+//	Field3 sync.Map
 //}
 func TestCheckAndLoadPackageOnGoPath(t *testing.T) {
 	var (
-		pkgName       = "comm"
-		pkgImportPath = "example.com/comm"
-
 		testCommPkg = `
 package comm
 
@@ -108,24 +154,68 @@ type Common struct {
 	os.Setenv("GOPATH", gopath)
 	build.Default.GOPATH = gopath
 
-	imports := []*ast.ImportSpec{
+	testCases := []struct {
+		pkgName       string
+		pkgImportPath string
+		imports       []*ast.ImportSpec
+		realType      string
+		curPkgName    string
+		expected      bool
+	}{
 		{
-			Path: &ast.BasicLit{
-				Value: pkgImportPath,
+			pkgName:       "comm",
+			pkgImportPath: "example.com/comm",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "example.com/comm",
+					},
+				},
 			},
+			realType:   "comm.Common",
+			curPkgName: "model",
+			expected:   true,
+		},
+		{
+			pkgName:       "pkgnotexist",
+			pkgImportPath: "example.com/pkgnotexist",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "example.com/pkgnotexist",
+					},
+				},
+			},
+			realType:   "pkgnotexist.TestType",
+			curPkgName: "model",
+			expected:   false,
+		},
+		{
+			pkgName:       "sync",
+			pkgImportPath: "sync",
+			imports: []*ast.ImportSpec{
+				{
+					Path: &ast.BasicLit{
+						Value: "sync",
+					},
+				},
+			},
+			realType:   "sync.Map",
+			curPkgName: "model",
+			expected:   false,
 		},
 	}
-	checkAndLoadPackage(imports, "comm.Common", "model")
-	if len(astPkgs) == 0 {
-		t.Fatalf("failed to load module: %s", pkgImportPath)
-	}
-	notLoadFlag := true
-	for _, v := range astPkgs {
-		if v.Name == pkgName {
-			notLoadFlag = false
+
+	for _, test := range testCases {
+		checkAndLoadPackage(test.imports, test.realType, test.curPkgName)
+		result := false
+		for _, v := range astPkgs {
+			if v.Name == test.pkgName {
+				result = true
+			}
 		}
-	}
-	if notLoadFlag {
-		t.Fatalf("failed to load module: %s", pkgImportPath)
+		if test.expected != result {
+			t.Fatalf("load module error, expected: %v, result: %v", test.expected, result)
+		}
 	}
 }
