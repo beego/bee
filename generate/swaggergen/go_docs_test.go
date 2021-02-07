@@ -99,6 +99,7 @@ func TestCheckAndLoadPackageOnGoMod(t *testing.T) {
 		for _, v := range astPkgs {
 			if v.Name == test.pkgName {
 				result = true
+				break
 			}
 		}
 		if test.expected != result {
@@ -212,6 +213,7 @@ type Common struct {
 		for _, v := range astPkgs {
 			if v.Name == test.pkgName {
 				result = true
+				break
 			}
 		}
 		if test.expected != result {
