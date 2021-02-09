@@ -1162,7 +1162,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 							name = ts[0]
 						}
 					}
-					if required := stag.Get("required"); required != "" {
+					if required := stag.Get("required"); strings.EqualFold(required, "true") {
 						m.Required = append(m.Required, name)
 					}
 					if desc := stag.Get("description"); desc != "" {
