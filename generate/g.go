@@ -22,3 +22,9 @@ var Level utils.DocValue
 var Tables utils.DocValue
 var Fields utils.DocValue
 var DDL utils.DocValue
+
+
+// bee generate routers
+var ControllerDirectory utils.DocValue
+var RoutersFile utils.DocValue
+var RouterPkg utils.DocValue
