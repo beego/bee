@@ -6,15 +6,12 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"gopkg.in/yaml.v2"
 	"io"
 	"os"
-	"os/exec"
 	path "path/filepath"
 	"regexp"
 	"runtime"
-	"strings"
-
-	"gopkg.in/yaml.v2"
 
 	"github.com/beego/bee/v2/cmd/commands"
 	"github.com/beego/bee/v2/config"
@@ -166,13 +163,5 @@ func GetBeegoVersion() string {
 }
 
 func GetGoVersion() string {
-	var (
-		cmdOut []byte
-		err    error
-	)
-
-	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
-		beeLogger.Log.Fatalf("There was an error running 'go version' command: %s", err)
-	}
-	return strings.Split(string(cmdOut), " ")[2]
+	return runtime.Version()
 }
