@@ -1187,6 +1187,8 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 					}
 					if desc := stag.Get("description"); desc != "" {
 						mp.Description = desc
+					} else {
+						mp.Description = strings.ReplaceAll(field.Comment.Text(), "\n", "")
 					}
 
 					if example := stag.Get("example"); example != "" && !isObject && !isSlice {
