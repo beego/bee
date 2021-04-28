@@ -1232,6 +1232,7 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 					for name, p := range nm.Properties {
 						m.Properties[name] = p
 					}
+					m.Required = append(m.Required, nm.Required...)
 					continue
 				}
 			}
