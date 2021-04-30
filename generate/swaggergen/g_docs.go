@@ -1224,6 +1224,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					for name, p := range nm.Properties {
 						m.Properties[name] = p
 					}
+					m.Required = append(m.Required, nm.Required...)
 					continue
 				}
 			}
