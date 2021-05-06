@@ -23,7 +23,6 @@ type RuntimeInfo struct {
 	GOROOT       string
 	Compiler     string
 	BeeVersion   string
-	BeegoVersion string
 	Published    string
 }
 
@@ -61,7 +60,6 @@ func show(out io.Writer, content string) {
 		runtime.GOROOT(),
 		runtime.Compiler,
 		version,
-		GetBeegoVersion(),
 		utils.GetLastPublishedTime(),
 	})
 	if err != nil {
