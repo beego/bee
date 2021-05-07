@@ -265,10 +265,12 @@ func parseComment(lines []*ast.Comment) (pcs []*parsedComment, err error) {
 	filters := []parsedFilter{}
 	imports := []parsedImport{}
 
+	const doubleSlash = "/"
 	for _, c := range lines {
-		t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
-		if strings.HasPrefix(t, "@Param") {
-			pv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Param")))
+		t := strings.TrimSpace(strings.TrimLeft(c.Text, doubleSlash))
+		const paramPrefix = "@Param"
+		if strings.HasPrefix(t, paramPrefix) {
+			pv := getparams(strings.TrimSpace(strings.TrimPrefix(t, paramPrefix)))
 			if len(pv) < 4 {
 				logs.Error("Invalid @Param format. Needs at least 4 parameters")
 			}
@@ -293,7 +295,7 @@ func parseComment(lines []*ast.Comment) (pcs []*parsedComment, err error) {
 	}
 
 	for _, c := range lines {
-		t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+		t := strings.TrimSpace(strings.TrimLeft(c.Text, doubleSlash))
 		if strings.HasPrefix(t, "@Import") {
 			iv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Import")))
 			if len(iv) == 0 || len(iv) > 2 {
@@ -314,7 +316,7 @@ func parseComment(lines []*ast.Comment) (pcs []*parsedComment, err error) {
 
 filterLoop:
 	for _, c := range lines {
-		t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+		t := strings.TrimSpace(strings.TrimLeft(c.Text, doubleSlash))
 		if strings.HasPrefix(t, "@Filter") {
 			fv := getparams(strings.TrimSpace(strings.TrimLeft(t, "@Filter")))
 			if len(fv) < 3 {
@@ -356,9 +358,9 @@ filterLoop:
 		pc.filters = filters
 		pc.imports = imports
 
-		t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+		t := strings.TrimSpace(strings.TrimLeft(c.Text, doubleSlash))
 		if strings.HasPrefix(t, "@router") {
-			t := strings.TrimSpace(strings.TrimLeft(c.Text, "//"))
+			t := strings.TrimSpace(strings.TrimLeft(c.Text, doubleSlash))
 			matches := routeRegex.FindStringSubmatch(t)
 			if len(matches) == 3 {
 				pc.routerPath = matches[1]
@@ -372,7 +374,7 @@ filterLoop:
 				}
 				pcs = append(pcs, pc)
 			} else {
-				return nil, errors.New("Router information is missing")
+				return nil, errors.New("router information is missing")
 			}
 		}
 	}

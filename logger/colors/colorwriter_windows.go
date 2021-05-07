@@ -378,7 +378,6 @@ func (cw *colorWriter) Write(p []byte) (int, error) {
 			switch ch {
 			case firstCsiChar:
 				cw.paramStartBuf.WriteByte(ch)
-				break
 			case secondeCsiChar:
 				cw.paramStartBuf.WriteByte(ch)
 				cw.state = secondCsiCode
