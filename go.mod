@@ -14,8 +14,11 @@ require (
 	github.com/pelletier/go-toml v1.8.1
 	github.com/smartwalle/pongo2render v1.0.1
 	github.com/spf13/viper v1.7.0
-	golang.org/x/tools v0.0.0-20201211185031-d93e913c1a58
+	golang.org/x/mod v0.4.2 // indirect
+	golang.org/x/sys v0.0.0-20210507014357-30e306a8bba5 // indirect
+	golang.org/x/tools v0.1.0
 	gopkg.in/yaml.v2 v2.3.0
+	honnef.co/go/tools v0.1.4 // indirect
 )
 
 //replace github.com/beego/beego/v2 => ../beego
