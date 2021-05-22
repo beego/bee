@@ -24,7 +24,7 @@ var builtInTypeMap = map[string]interface{}{
 
 type StructField struct {
 	Name       string
-	Type       string
+	Type       ast.Expr
 	NestedType *StructNode
 	Comment    string
 	Doc        string
@@ -32,7 +32,7 @@ type StructField struct {
 }
 
 func (sf *StructField) IsBuiltInType() bool {
-	_, found := builtInTypeMap[sf.Type]
+	_, found := builtInTypeMap[fmt.Sprint(sf.Type)]
 	return found
 }
 
@@ -41,12 +41,19 @@ func (sf *StructField) Key() string {
 }
 
 func (sf *StructField) Value() interface{} {
-	val, found := builtInTypeMap[sf.Type]
-	if found {
-		return val
+	switch sf.Type.(type) {
+	case *ast.Ident:
+		val, found := builtInTypeMap[fmt.Sprint(sf.Type)]
+		if found {
+			return val
+		}
+		return sf.NestedType.ToKV()
+	case *ast.ArrayType:
+	case *ast.MapType:
+	case *ast.SelectorExpr: // third party
 	}
 
-	return sf.NestedType.ToKV()
+	return ""
 }
 
 type StructNode struct {
@@ -116,7 +123,7 @@ func (cg *ConfigGenerator) ToJSON() ([]byte, error) {
 
 func ParseField(field *ast.Field) *StructField {
 	fieldName := field.Names[0].Name
-	fieldType := fmt.Sprint(field.Type)
+	fieldType := field.Type
 
 	fieldTag := ""
 	if field.Tag != nil {
@@ -165,7 +172,13 @@ func ParseField(field *ast.Field) *StructField {
 	case *ast.SelectorExpr: // third party
 	}
 
-	return nil
+	return &StructField{
+		Name:    fieldName,
+		Type:    fieldType,
+		Tag:     fieldTag,
+		Comment: fieldComment,
+		Doc:     fieldDoc,
+	}
 }
 
 func ParseStruct(structName string, s *ast.StructType) *StructNode {
