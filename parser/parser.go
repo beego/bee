@@ -87,7 +87,7 @@ func NewStructParser(filePath string, src interface{}, rootStruct string, format
 		return nil, err
 	}
 
-	cg := &StructParser{
+	sp := &StructParser{
 		FieldFormatter: formatter,
 		Info:           info,
 	}
@@ -109,27 +109,27 @@ func NewStructParser(filePath string, src interface{}, rootStruct string, format
 			return true
 		}
 
-		cg.MainStruct = cg.ParseStruct(structName, s)
+		sp.MainStruct = sp.ParseStruct(structName, s)
 		return false
 	})
 
-	if cg.MainStruct == nil {
+	if sp.MainStruct == nil {
 		return nil, errors.New("non-exist root struct")
 	}
 
-	return cg, nil
+	return sp, nil
 }
 
-func (cg *StructParser) ToJSON() ([]byte, error) {
-	value := cg.MainStruct.ToKV()
+func (sp *StructParser) ToJSON() ([]byte, error) {
+	value := sp.MainStruct.ToKV()
 	return json.MarshalIndent(value, "", "  ")
 }
 
 // ParseField parses struct field in nested way
-func (cg *StructParser) ParseField(field *ast.Field) *StructField {
+func (sp *StructParser) ParseField(field *ast.Field) *StructField {
 	// ast.Print(nil, field)
 	fieldName := field.Names[0].Name
-	fieldType := cg.Info.TypeOf(field.Type)
+	fieldType := sp.Info.TypeOf(field.Type)
 
 	fieldTag := ""
 	if field.Tag != nil {
@@ -146,7 +146,7 @@ func (cg *StructParser) ParseField(field *ast.Field) *StructField {
 
 	var nestedStruct *StructNode
 	if s, isInlineStruct := field.Type.(*ast.StructType); isInlineStruct {
-		nestedStruct = cg.ParseStruct("", s)
+		nestedStruct = sp.ParseStruct("", s)
 	}
 
 	if _, isNamedStructorBasic := field.Type.(*ast.Ident); isNamedStructorBasic && field.Type.(*ast.Ident).Obj != nil {
@@ -159,7 +159,7 @@ func (cg *StructParser) ParseField(field *ast.Field) *StructField {
 		if !ok {
 			return nil
 		}
-		nestedStruct = cg.ParseStruct(ts.Name.Name, s)
+		nestedStruct = sp.ParseStruct(ts.Name.Name, s)
 	}
 	// fieldType.(*types.Basic) // basic type
 	// *ast.ArrayType:
@@ -173,15 +173,15 @@ func (cg *StructParser) ParseField(field *ast.Field) *StructField {
 		Comment:    fieldComment,
 		Doc:        fieldDoc,
 		NestedType: nestedStruct,
-		FormatFunc: cg.FieldFormatter.Format,
+		FormatFunc: sp.FieldFormatter.Format,
 	}
 }
 
 // ParseStruct parses struct in nested way
-func (cg *StructParser) ParseStruct(structName string, s *ast.StructType) *StructNode {
+func (sp *StructParser) ParseStruct(structName string, s *ast.StructType) *StructNode {
 	fields := []*StructField{}
 	for _, field := range s.Fields.List {
-		parsedField := cg.ParseField(field)
+		parsedField := sp.ParseField(field)
 		if parsedField != nil {
 			fields = append(fields, parsedField)
 		}

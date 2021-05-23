@@ -38,12 +38,12 @@ type StructA struct {
 `
 	formatter := &sampleFormatter{}
 
-	cg, err := NewStructParser("src.go", src, "StructA", formatter)
+	sp, err := NewStructParser("src.go", src, "StructA", formatter)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	b, err := cg.ToJSON()
+	b, err := sp.ToJSON()
 	if err != nil {
 		log.Fatal(err)
 	}
