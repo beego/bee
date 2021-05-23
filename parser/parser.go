@@ -3,64 +3,45 @@ package beeParser
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"go/ast"
+	"go/importer"
 	"go/parser"
 	"go/token"
+	"go/types"
 )
 
-// type to default value
-var builtInTypeMap = map[string]interface{}{
-	"string": "",
-	"int":    0,
-	"int64":  0,
-	"int32":  0,
-	"uint":   0,
-	"uint32": 0,
-	"uint64": 0,
-	"bool":   false,
-	// @todo add more type
-}
-
+// StructField defines struct field
 type StructField struct {
 	Name       string
-	Type       ast.Expr
+	Type       types.Type
 	NestedType *StructNode
 	Comment    string
 	Doc        string
 	Tag        string
 }
 
-func (sf *StructField) IsBuiltInType() bool {
-	_, found := builtInTypeMap[fmt.Sprint(sf.Type)]
-	return found
-}
-
+// Key returns the key of the field
 func (sf *StructField) Key() string {
 	return sf.Name
 }
 
+// Value returns the value of the field
+// if the field contains nested struct, it will return a nested result
 func (sf *StructField) Value() interface{} {
-	switch sf.Type.(type) {
-	case *ast.Ident:
-		val, found := builtInTypeMap[fmt.Sprint(sf.Type)]
-		if found {
-			return val
-		}
+	if sf.NestedType != nil {
 		return sf.NestedType.ToKV()
-	case *ast.ArrayType:
-	case *ast.MapType:
-	case *ast.SelectorExpr: // third party
 	}
 
 	return ""
 }
 
+// StructNode defines struct node
 type StructNode struct {
 	Name   string
 	Fields []*StructField
 }
 
+// ToKV transfers struct to key value pair
 func (sn *StructNode) ToKV() map[string]interface{} {
 	value := map[string]interface{}{}
 	for _, field := range sn.Fields {
@@ -69,19 +50,39 @@ func (sn *StructNode) ToKV() map[string]interface{} {
 	return value
 }
 
-type ConfigGenerator struct {
-	StructMap  map[string]*StructNode // @todo key = {package}+{struct name}
-	RootStruct string                 //match with the key of StructMap
+// StructParser parses structs in given file or string
+type StructParser struct {
+	MainStruct *StructNode
+	Info       types.Info
 }
 
-func NewConfigGenerator(filePath string, src interface{}, rootStruct string) (*ConfigGenerator, error) {
+// NewStructParser is the constructor of StructParser
+// filePath and src follow the same rule with go/parser.ParseFile
+// If src != nil, ParseFile parses the source from src and the filename is only used when recording position information. The type of the argument for the src parameter must be string, []byte, or io.Reader. If src == nil, ParseFile parses the file specified by filename.
+// rootStruct is the root struct we want to use
+func NewStructParser(filePath string, src interface{}, rootStruct string) (*StructParser, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, src, parser.ParseComments)
 	if err != nil {
 		return nil, err
 	}
 
-	structMap := map[string]*StructNode{}
+	info := types.Info{
+		Types: make(map[ast.Expr]types.TypeAndValue),
+		Defs:  make(map[*ast.Ident]types.Object),
+		Uses:  make(map[*ast.Ident]types.Object),
+	}
+	conf := types.Config{
+		Importer: importer.ForCompiler(fset, "source", nil),
+	}
+	_, err = conf.Check("src", fset, []*ast.File{f}, &info)
+	if err != nil {
+		return nil, err
+	}
+
+	cg := &StructParser{
+		Info: info,
+	}
 
 	ast.Inspect(f, func(n ast.Node) bool {
 		// ast.Print(nil, n)
@@ -100,30 +101,27 @@ func NewConfigGenerator(filePath string, src interface{}, rootStruct string) (*C
 			return true
 		}
 
-		structMap[structName] = ParseStruct(structName, s)
-
+		cg.MainStruct = cg.ParseStruct(structName, s)
 		return false
 	})
 
-	if _, found := structMap[rootStruct]; !found {
+	if cg.MainStruct == nil {
 		return nil, errors.New("non-exist root struct")
 	}
 
-	return &ConfigGenerator{
-		StructMap:  structMap,
-		RootStruct: rootStruct,
-	}, nil
+	return cg, nil
 }
 
-func (cg *ConfigGenerator) ToJSON() ([]byte, error) {
-	rootStruct := cg.StructMap[cg.RootStruct]
-	value := rootStruct.ToKV()
+func (cg *StructParser) ToJSON() ([]byte, error) {
+	value := cg.MainStruct.ToKV()
 	return json.MarshalIndent(value, "", "  ")
 }
 
-func ParseField(field *ast.Field) *StructField {
+// ParseField parses struct field in nested way
+func (cg *StructParser) ParseField(field *ast.Field) *StructField {
+	// ast.Print(nil, field)
 	fieldName := field.Names[0].Name
-	fieldType := field.Type
+	fieldType := cg.Info.TypeOf(field.Type)
 
 	fieldTag := ""
 	if field.Tag != nil {
@@ -138,18 +136,12 @@ func ParseField(field *ast.Field) *StructField {
 		fieldDoc = field.Doc.Text()
 	}
 
-	switch field.Type.(type) {
-	case *ast.Ident: // built-in or nested
-		isNested := (field.Type.(*ast.Ident).Obj != nil)
-		if !isNested {
-			return &StructField{
-				Name:    fieldName,
-				Type:    fieldType,
-				Tag:     fieldTag,
-				Comment: fieldComment,
-				Doc:     fieldDoc,
-			}
-		}
+	var nestedStruct *StructNode
+	if s, isInlineStruct := field.Type.(*ast.StructType); isInlineStruct {
+		nestedStruct = cg.ParseStruct("", s)
+	}
+
+	if _, isNamedStructorBasic := field.Type.(*ast.Ident); isNamedStructorBasic && field.Type.(*ast.Ident).Obj != nil {
 		ts, ok := field.Type.(*ast.Ident).Obj.Decl.(*ast.TypeSpec)
 		if !ok || ts.Type == nil {
 			return nil
@@ -159,32 +151,28 @@ func ParseField(field *ast.Field) *StructField {
 		if !ok {
 			return nil
 		}
-		return &StructField{
-			Name:       fieldName,
-			Type:       fieldType,
-			Tag:        fieldTag,
-			Comment:    fieldComment,
-			Doc:        fieldDoc,
-			NestedType: ParseStruct(ts.Name.Name, s),
-		}
-	case *ast.ArrayType:
-	case *ast.MapType:
-	case *ast.SelectorExpr: // third party
+		nestedStruct = cg.ParseStruct(ts.Name.Name, s)
 	}
+	// fieldType.(*types.Basic) // basic type
+	// *ast.ArrayType:
+	// *ast.MapType:
+	// *ast.SelectorExpr: // third party
 
 	return &StructField{
-		Name:    fieldName,
-		Type:    fieldType,
-		Tag:     fieldTag,
-		Comment: fieldComment,
-		Doc:     fieldDoc,
+		Name:       fieldName,
+		Type:       fieldType,
+		Tag:        fieldTag,
+		Comment:    fieldComment,
+		Doc:        fieldDoc,
+		NestedType: nestedStruct,
 	}
 }
 
-func ParseStruct(structName string, s *ast.StructType) *StructNode {
+// ParseStruct parses struct in nested way
+func (cg *StructParser) ParseStruct(structName string, s *ast.StructType) *StructNode {
 	fields := []*StructField{}
 	for _, field := range s.Fields.List {
-		parsedField := ParseField(field)
+		parsedField := cg.ParseField(field)
 		if parsedField != nil {
 			fields = append(fields, parsedField)
 		}
