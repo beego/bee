@@ -53,7 +53,7 @@ func (a *Annotation) Annotate(comment string) []map[string]interface{} {
 		kvs := strings.Split(line, " ")
 		key := kvs[0]
 		values := strings.Split(strings.TrimSpace(line[len(kvs[0]):]), "\n")
-		annotation := make(map[string]interface{}, 0)
+		annotation := make(map[string]interface{})
 		annotation[key] = handleWhitespaceValues(values)
 		results = append(results, annotation)
 	}
