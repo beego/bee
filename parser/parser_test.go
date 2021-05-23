@@ -5,6 +5,13 @@ import (
 	"log"
 )
 
+type sampleFormatter struct {
+}
+
+func (f *sampleFormatter) Format(field *StructField) string {
+	return ""
+}
+
 func ExampleStructParser() {
 	const src = `
 package p
@@ -28,9 +35,10 @@ type StructA struct {
 	Field6 func(int)
 	Field7 StructB
 }
-
 `
-	cg, err := NewStructParser("src.go", src, "StructA")
+	formatter := &sampleFormatter{}
+
+	cg, err := NewStructParser("src.go", src, "StructA", formatter)
 	if err != nil {
 		log.Fatal(err)
 	}

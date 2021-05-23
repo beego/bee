@@ -10,6 +10,11 @@ import (
 	"go/types"
 )
 
+// FieldFormatter transfers the field value to expected format
+type FieldFormatter interface {
+	Format(field *StructField) string
+}
+
 // StructField defines struct field
 type StructField struct {
 	Name       string
@@ -18,6 +23,7 @@ type StructField struct {
 	Comment    string
 	Doc        string
 	Tag        string
+	FormatFunc func(field *StructField) string
 }
 
 // Key returns the key of the field
@@ -32,7 +38,7 @@ func (sf *StructField) Value() interface{} {
 		return sf.NestedType.ToKV()
 	}
 
-	return ""
+	return sf.FormatFunc(sf)
 }
 
 // StructNode defines struct node
@@ -52,15 +58,16 @@ func (sn *StructNode) ToKV() map[string]interface{} {
 
 // StructParser parses structs in given file or string
 type StructParser struct {
-	MainStruct *StructNode
-	Info       types.Info
+	MainStruct     *StructNode
+	Info           types.Info
+	FieldFormatter FieldFormatter
 }
 
 // NewStructParser is the constructor of StructParser
 // filePath and src follow the same rule with go/parser.ParseFile
 // If src != nil, ParseFile parses the source from src and the filename is only used when recording position information. The type of the argument for the src parameter must be string, []byte, or io.Reader. If src == nil, ParseFile parses the file specified by filename.
 // rootStruct is the root struct we want to use
-func NewStructParser(filePath string, src interface{}, rootStruct string) (*StructParser, error) {
+func NewStructParser(filePath string, src interface{}, rootStruct string, formatter FieldFormatter) (*StructParser, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, src, parser.ParseComments)
 	if err != nil {
@@ -81,7 +88,8 @@ func NewStructParser(filePath string, src interface{}, rootStruct string) (*Stru
 	}
 
 	cg := &StructParser{
-		Info: info,
+		FieldFormatter: formatter,
+		Info:           info,
 	}
 
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -165,6 +173,7 @@ func (cg *StructParser) ParseField(field *ast.Field) *StructField {
 		Comment:    fieldComment,
 		Doc:        fieldDoc,
 		NestedType: nestedStruct,
+		FormatFunc: cg.FieldFormatter.Format,
 	}
 }
 
