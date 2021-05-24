@@ -3,10 +3,14 @@ package beeParser
 import (
 	"fmt"
 	"log"
-	"testing"
-
-	"github.com/stretchr/testify/assert"
 )
+
+type sampleFormatter struct {
+}
+
+func (f *sampleFormatter) Format(field *StructField) string {
+	return ""
+}
 
 func ExampleStructParser() {
 	const src = `
@@ -32,9 +36,9 @@ type StructA struct {
 	Field7 StructB
 }
 `
-	annotator := &Annotator{}
+	formatter := &sampleFormatter{}
 
-	sp, err := NewStructParser("src.go", src, "StructA", annotator)
+	sp, err := NewStructParser("src.go", src, "StructA", formatter)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -61,42 +65,4 @@ type StructA struct {
 	//     "Field1": ""
 	//   }
 	// }
-}
-
-func TestParseStructByFieldAnnotation(t *testing.T) {
-	const src = `
-package p
-
-type StructA struct {
-	//@Name Field1
-	//@DefaultValues bee test
-	//				 beego test
-	Field1 string
-}
-`
-
-	expect := `[
-  {
-    "Name": [
-      "Field1"
-    ]
-  },
-  {
-    "DefaultValues": [
-      "bee test",
-      "beego test"
-    ]
-  }
-]`
-
-	annotator := &Annotator{}
-
-	sp, err := NewStructParser("src.go", src, "StructA", annotator)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	actual := sp.FieldFormatter.Format(sp.MainStruct.Fields[0])
-
-	assert.Equal(t, expect, actual)
 }
