@@ -50,7 +50,7 @@ func TestAnnotate(t *testing.T) {
 }
 
 func TestAnnotateToJson(t *testing.T) {
-	expect := `[
+	expect1 := `[
   {
     "Name": [
       "Field1"
@@ -69,9 +69,11 @@ func TestAnnotateToJson(t *testing.T) {
   }
 ]`
 
-	actual, _ := BeeAnnotator.AnnotateToJson(Annotation1)
+	actual1, _ := BeeAnnotator.AnnotateToJson(Annotation1)
+	actual2, _ := BeeAnnotator.AnnotateToJson("")
 
-	assert.Equal(t, expect, actual)
+	assert.Equal(t, expect1, actual1)
+	assert.Equal(t, "", actual2)
 }
 
 func TestHandleWhitespaceValues(t *testing.T) {

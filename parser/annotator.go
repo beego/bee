@@ -57,7 +57,13 @@ func (a *Annotator) Annotate(comment string) []map[string]interface{} {
 
 //parse annotation to json
 func (a *Annotator) AnnotateToJson(comment string) (string, error) {
+	if comment == "" {
+		return "", nil
+	}
 	annotate := a.Annotate(comment)
+	if len(annotate) == 0 {
+		return "", nil
+	}
 	result, err := json.MarshalIndent(annotate, "", "  ")
 	return string(result), err
 }
