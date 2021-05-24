@@ -5,13 +5,8 @@ import (
 	"strings"
 )
 
-type Annotator interface {
-	Annotate(string) []map[string]interface{}
-	AnnotateToJson(string) (string, error)
-}
-
-type Annotation struct {
-}
+// field formatter by annotation
+type Annotator struct{}
 
 func isWhitespace(ch byte) bool { return ch == ' ' || ch == '\t' || ch == '\r' }
 
@@ -44,7 +39,7 @@ func handleWhitespaceValues(values []string) []string {
 
 //parse annotation to generate array with key and values
 //start with "@" as a key-value pair,key and values are separated by a space,wrap to distinguish values.
-func (a *Annotation) Annotate(comment string) []map[string]interface{} {
+func (a *Annotator) Annotate(comment string) []map[string]interface{} {
 	results := make([]map[string]interface{}, 0)
 	//split annotation with '@'
 	lines := strings.Split(comment, "@")
@@ -61,8 +56,19 @@ func (a *Annotation) Annotate(comment string) []map[string]interface{} {
 }
 
 //parse annotation to json
-func (a *Annotation) AnnotateToJson(comment string) (string, error) {
+func (a *Annotator) AnnotateToJson(comment string) (string, error) {
+	if comment == "" {
+		return "", nil
+	}
 	annotate := a.Annotate(comment)
+	if len(annotate) == 0 {
+		return "", nil
+	}
 	result, err := json.MarshalIndent(annotate, "", "  ")
 	return string(result), err
+}
+
+func (a *Annotator) Format(field *StructField) string {
+	f, _ := a.AnnotateToJson(field.Doc)
+	return f
 }
