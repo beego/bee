@@ -7,7 +7,7 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var BeeAnnotator Annotator
+var BeeAnnotator *Annotator
 
 const (
 	Annotation1 = `
@@ -25,7 +25,7 @@ https://github.com/beego
 )
 
 func TestMain(m *testing.M) {
-	BeeAnnotator = &Annotation{}
+	BeeAnnotator = &Annotator{}
 	retCode := m.Run() //run test
 	os.Exit(retCode)
 }
