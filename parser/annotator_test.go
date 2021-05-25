@@ -31,15 +31,15 @@ func TestMain(m *testing.M) {
 }
 
 func TestAnnotate(t *testing.T) {
-	expect1 := []map[string]interface{}{
-		{"Name": []string{"Field1"}},
-		{"Type": []string{"string"}},
-		{"Path": []string{"https://github.com/beego/bee", "https://github.com/beego"}},
+	expect1 := map[string]interface{}{
+		"Name": []string{"Field1"},
+		"Type": []string{"string"},
+		"Path": []string{"https://github.com/beego/bee", "https://github.com/beego"},
 	}
 
-	expect2 := []map[string]interface{}{
-		{"Number": []string{"2"}},
-		{"Projects": []string{"https://github.com/beego/bee", "", "https://github.com/beego"}},
+	expect2 := map[string]interface{}{
+		"Number":   []string{"2"},
+		"Projects": []string{"https://github.com/beego/bee", "", "https://github.com/beego"},
 	}
 
 	actual := BeeAnnotator.Annotate(Annotation1)
@@ -47,31 +47,6 @@ func TestAnnotate(t *testing.T) {
 
 	assert.Equal(t, expect1, actual)
 	assert.Equal(t, expect2, actual2)
-}
-
-func TestAnnotateToJson(t *testing.T) {
-	expect := `[
-  {
-    "Name": [
-      "Field1"
-    ]
-  },
-  {
-    "Type": [
-      "string"
-    ]
-  },
-  {
-    "Path": [
-      "https://github.com/beego/bee",
-      "https://github.com/beego"
-    ]
-  }
-]`
-
-	actual, _ := BeeAnnotator.AnnotateToJson(Annotation1)
-
-	assert.Equal(t, expect, actual)
 }
 
 func TestHandleWhitespaceValues(t *testing.T) {
@@ -98,11 +73,5 @@ func TestHandleWhitespaceValues(t *testing.T) {
 func BenchmarkAnnotate(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		BeeAnnotator.Annotate(Annotation1)
-	}
-}
-
-func BenchmarkAnnotateToJson(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		BeeAnnotator.AnnotateToJson(Annotation1)
 	}
 }
