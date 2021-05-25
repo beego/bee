@@ -1,13 +1,11 @@
 package beeParser
 
 import (
-	"encoding/json"
 	"strings"
 )
 
 type Annotator interface {
-	Annotate(string) []map[string]interface{}
-	AnnotateToJson(string) (string, error)
+	Annotate(string) map[string]interface{}
 }
 
 type Annotation struct {
@@ -44,25 +42,16 @@ func handleWhitespaceValues(values []string) []string {
 
 //parse annotation to generate array with key and values
 //start with "@" as a key-value pair,key and values are separated by a space,wrap to distinguish values.
-func (a *Annotation) Annotate(comment string) []map[string]interface{} {
-	results := make([]map[string]interface{}, 0)
+func (a *Annotation) Annotate(annotation string) map[string]interface{} {
+	results := make(map[string]interface{})
 	//split annotation with '@'
-	lines := strings.Split(comment, "@")
+	lines := strings.Split(annotation, "@")
 	//skip first line whitespace
 	for _, line := range lines[1:] {
 		kvs := strings.Split(line, " ")
 		key := kvs[0]
 		values := strings.Split(strings.TrimSpace(line[len(kvs[0]):]), "\n")
-		annotation := make(map[string]interface{})
-		annotation[key] = handleWhitespaceValues(values)
-		results = append(results, annotation)
+		results[key] = handleWhitespaceValues(values)
 	}
 	return results
-}
-
-//parse annotation to json
-func (a *Annotation) AnnotateToJson(comment string) (string, error) {
-	annotate := a.Annotate(comment)
-	result, err := json.MarshalIndent(annotate, "", "  ")
-	return string(result), err
 }
