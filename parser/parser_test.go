@@ -1,18 +1,44 @@
 package beeParser
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 )
 
 type sampleFormatter struct {
+	Annotation Annotation
 }
 
-func (f *sampleFormatter) Format(field *StructField) string {
-	return ""
+func (f *sampleFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
+	// @todo update annotationResult by parsing with annotation struct
+	annotationResult := field.Comment + field.Doc
+	return json.Marshal(&struct {
+		Key        string
+		Annotation string
+		NestedType *StructNode `json:"NestedType,omitempty"`
+	}{
+		Key:        field.Name,
+		Annotation: annotationResult,
+		NestedType: field.NestedType,
+	})
 }
 
-func ExampleStructParser() {
+func (f *sampleFormatter) StructFormatFunc(node *StructNode) ([]byte, error) {
+	return json.Marshal(&struct {
+		Key    string
+		Fields []*StructField `json:"Fields,omitempty"`
+	}{
+		Key:    node.Name,
+		Fields: node.Fields,
+	})
+}
+
+func (f *sampleFormatter) Marshal(node *StructNode) ([]byte, error) {
+	return json.Marshal(node)
+}
+
+func ExampleJSONMarshal() {
 	const src = `
 package p
 
@@ -24,7 +50,11 @@ type StructB struct {
 	Field1 string
 }
 type StructA struct {
-	Field1 string
+	// doc
+	Field1 string //comment
+	// @Name Field1
+	// @Path https://github.com/beego/bee
+	// 		  https://github.com/beego
 	Field2 struct{
 		a string
 		b string
@@ -43,7 +73,7 @@ type StructA struct {
 		log.Fatal(err)
 	}
 
-	b, err := sp.ToJSON()
+	b, err := sp.Marshal()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -51,18 +81,4 @@ type StructA struct {
 	fmt.Println(string(b))
 
 	// Output:
-	// {
-	//   "Field1": "",
-	//   "Field2": {
-	//     "a": "",
-	//     "b": ""
-	//   },
-	//   "Field3": "",
-	//   "Field4": "",
-	//   "Field5": "",
-	//   "Field6": "",
-	//   "Field7": {
-	//     "Field1": ""
-	//   }
-	// }
 }
