@@ -38,7 +38,7 @@ func (f *sampleFormatter) Marshal(node *StructNode) ([]byte, error) {
 	return json.Marshal(node)
 }
 
-func ExampleJSONMarshal() {
+func ExamplesampleFormatter() {
 	const src = `
 package p
 
