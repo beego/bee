@@ -1,7 +1,6 @@
 package beeParser
 
 import (
-	"encoding/json"
 	"errors"
 	"go/ast"
 	"go/importer"
@@ -11,8 +10,10 @@ import (
 )
 
 // FieldFormatter transfers the field value to expected format
-type FieldFormatter interface {
-	Format(field *StructField) string
+type Formatter interface {
+	FieldFormatFunc(field *StructField) ([]byte, error)
+	StructFormatFunc(node *StructNode) ([]byte, error)
+	Marshal(root *StructNode) ([]byte, error)
 }
 
 // StructField defines struct field
@@ -23,51 +24,43 @@ type StructField struct {
 	Comment    string
 	Doc        string
 	Tag        string
-	FormatFunc func(field *StructField) string
+	FormatFunc func(field *StructField) ([]byte, error)
 }
 
-// Key returns the key of the field
-func (sf *StructField) Key() string {
-	return sf.Name
-}
-
-// Value returns the value of the field
-// if the field contains nested struct, it will return a nested result
-func (sf *StructField) Value() interface{} {
-	if sf.NestedType != nil {
-		return sf.NestedType.ToKV()
+func (sf *StructField) MarshalText() ([]byte, error) {
+	if sf.FormatFunc == nil {
+		return nil, errors.New("format func is missing")
 	}
-
 	return sf.FormatFunc(sf)
 }
 
 // StructNode defines struct node
 type StructNode struct {
-	Name   string
-	Fields []*StructField
+	Name       string
+	Fields     []*StructField
+	FormatFunc func(node *StructNode) ([]byte, error)
 }
 
-// ToKV transfers struct to key value pair
-func (sn *StructNode) ToKV() map[string]interface{} {
-	value := map[string]interface{}{}
-	for _, field := range sn.Fields {
-		value[field.Key()] = field.Value()
+func (sn *StructNode) MarshalText() ([]byte, error) {
+	if sn.FormatFunc == nil {
+		return nil, errors.New("format func is missing")
 	}
-	return value
+
+	return sn.FormatFunc(sn)
 }
 
 // StructParser parses structs in given file or string
 type StructParser struct {
-	MainStruct     *StructNode
-	Info           types.Info
-	FieldFormatter FieldFormatter
+	MainStruct *StructNode
+	Info       types.Info
+	Formatter  Formatter
 }
 
 // NewStructParser is the constructor of StructParser
 // filePath and src follow the same rule with go/parser.ParseFile
 // If src != nil, ParseFile parses the source from src and the filename is only used when recording position information. The type of the argument for the src parameter must be string, []byte, or io.Reader. If src == nil, ParseFile parses the file specified by filename.
 // rootStruct is the root struct we want to use
-func NewStructParser(filePath string, src interface{}, rootStruct string, formatter FieldFormatter) (*StructParser, error) {
+func NewStructParser(filePath string, src interface{}, rootStruct string, formatter Formatter) (*StructParser, error) {
 	fset := token.NewFileSet()
 	f, err := parser.ParseFile(fset, filePath, src, parser.ParseComments)
 	if err != nil {
@@ -88,8 +81,8 @@ func NewStructParser(filePath string, src interface{}, rootStruct string, format
 	}
 
 	sp := &StructParser{
-		FieldFormatter: formatter,
-		Info:           info,
+		Formatter: formatter,
+		Info:      info,
 	}
 
 	ast.Inspect(f, func(n ast.Node) bool {
@@ -118,11 +111,6 @@ func NewStructParser(filePath string, src interface{}, rootStruct string, format
 	}
 
 	return sp, nil
-}
-
-func (sp *StructParser) ToJSON() ([]byte, error) {
-	value := sp.MainStruct.ToKV()
-	return json.MarshalIndent(value, "", "  ")
 }
 
 // ParseField parses struct field in nested way
@@ -173,7 +161,7 @@ func (sp *StructParser) ParseField(field *ast.Field) *StructField {
 		Comment:    fieldComment,
 		Doc:        fieldDoc,
 		NestedType: nestedStruct,
-		FormatFunc: sp.FieldFormatter.Format,
+		FormatFunc: sp.Formatter.FieldFormatFunc,
 	}
 }
 
@@ -188,7 +176,12 @@ func (sp *StructParser) ParseStruct(structName string, s *ast.StructType) *Struc
 	}
 
 	return &StructNode{
-		Name:   structName,
-		Fields: fields,
+		Name:       structName,
+		Fields:     fields,
+		FormatFunc: sp.Formatter.StructFormatFunc,
 	}
+}
+
+func (sp *StructParser) Marshal() ([]byte, error) {
+	return sp.Formatter.Marshal(sp.MainStruct)
 }
