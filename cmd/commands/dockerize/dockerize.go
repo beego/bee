@@ -102,9 +102,7 @@ func dockerizeApp(cmd *commands.Command, args []string) int {
 	// In case of multiple ports to expose inside the container,
 	// replace all the commas with whitespaces.
 	// See the verb EXPOSE in the Docker documentation.
-	if strings.Contains(expose, ",") {
-		expose = strings.Replace(expose, ",", " ", -1)
-	}
+	expose = strings.Replace(expose, ",", " ", -1)
 
 	_, entrypoint := path.Split(appdir)
 	dockerfile := Dockerfile{
