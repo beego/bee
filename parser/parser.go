@@ -34,6 +34,13 @@ func (sf *StructField) MarshalText() ([]byte, error) {
 	return sf.FormatFunc(sf)
 }
 
+func (sf *StructField) MarshalJSON() ([]byte, error) {
+	if sf.FormatFunc == nil {
+		return nil, errors.New("format func is missing")
+	}
+	return sf.FormatFunc(sf)
+}
+
 // StructNode defines struct node
 type StructNode struct {
 	Name       string
@@ -42,6 +49,14 @@ type StructNode struct {
 }
 
 func (sn *StructNode) MarshalText() ([]byte, error) {
+	if sn.FormatFunc == nil {
+		return nil, errors.New("format func is missing")
+	}
+
+	return sn.FormatFunc(sn)
+}
+
+func (sn *StructNode) MarshalJSON() ([]byte, error) {
 	if sn.FormatFunc == nil {
 		return nil, errors.New("format func is missing")
 	}

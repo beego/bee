@@ -32,14 +32,14 @@ func TestMain(m *testing.M) {
 
 func TestAnnotate(t *testing.T) {
 	expect1 := map[string]interface{}{
-		"Name": []string{"Field1"},
-		"Type": []string{"string"},
-		"Path": []string{"https://github.com/beego/bee", "https://github.com/beego"},
+		"Name": "Field1",
+		"Type": "string",
+		"Path": []interface{}{"https://github.com/beego/bee", "https://github.com/beego"},
 	}
 
 	expect2 := map[string]interface{}{
-		"Number":   []string{"2"},
-		"Projects": []string{"https://github.com/beego/bee", "", "https://github.com/beego"},
+		"Number":   2,
+		"Projects": []interface{}{"https://github.com/beego/bee", "", "https://github.com/beego"},
 	}
 
 	actual := BeeAnnotator.Annotate(Annotation1)
@@ -55,13 +55,17 @@ func TestHandleWhitespaceValues(t *testing.T) {
 		"",
 		"  	bee 	",
 		"  	bee beego 	",
+		"  	1	",
+		" false	",
 	}
 
-	expect := []string{
+	expect := []interface{}{
 		"beego",
 		"",
 		"bee",
 		"bee beego",
+		1,
+		false,
 	}
 
 	actual := handleWhitespaceValues(src)
