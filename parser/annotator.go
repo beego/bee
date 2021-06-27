@@ -1,6 +1,8 @@
 package beeParser
 
 import (
+	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -9,6 +11,8 @@ type Annotator interface {
 }
 
 type Annotation struct {
+	Key, Description string
+	Default          interface{}
 }
 
 func isWhitespace(ch byte) bool { return ch == ' ' || ch == '\t' || ch == '\r' }
@@ -30,14 +34,25 @@ func handleTailWhitespace(s string) string {
 }
 
 //handle value to remove head and tail space.
-func handleWhitespaceValues(values []string) []string {
-	res := make([]string, 0)
+func handleWhitespaceValues(values []string) []interface{} {
+	res := make([]interface{}, 0)
 	for _, v := range values {
 		v = handleHeadWhitespace(v)
 		v = handleTailWhitespace(v)
-		res = append(res, v)
+		res = append(res, transferType(v))
 	}
 	return res
+}
+
+//try to transfer string to original type
+func transferType(str string) interface{} {
+	if res, err := strconv.Atoi(str); err == nil {
+		return res
+	}
+	if res, err := strconv.ParseBool(str); err == nil {
+		return res
+	}
+	return str
 }
 
 //parse annotation to generate array with key and values
@@ -51,7 +66,29 @@ func (a *Annotation) Annotate(annotation string) map[string]interface{} {
 		kvs := strings.Split(line, " ")
 		key := kvs[0]
 		values := strings.Split(strings.TrimSpace(line[len(kvs[0]):]), "\n")
-		results[key] = handleWhitespaceValues(values)
+		if len(values) == 1 {
+			results[key] = handleWhitespaceValues(values)[0]
+		} else {
+			results[key] = handleWhitespaceValues(values)
+		}
 	}
 	return results
+}
+
+//create new annotation
+//parse "Key","Default","Description" by annotation
+//the type of "Key" and "Description" is string, "Default" is interface{}
+func NewAnnotation(annotation string) *Annotation {
+	a := &Annotation{}
+	kvs := a.Annotate(annotation)
+	if v, ok := kvs["Key"]; ok {
+		a.Key = fmt.Sprintf("%v", v)
+	}
+	if v, ok := kvs["Description"]; ok {
+		a.Description = fmt.Sprintf("%v", v)
+	}
+	if v, ok := kvs["Default"]; ok {
+		a.Default = v
+	}
+	return a
 }
