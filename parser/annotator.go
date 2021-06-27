@@ -75,6 +75,9 @@ func (a *Annotation) Annotate(annotation string) map[string]interface{} {
 	return results
 }
 
+//create new annotation
+//parse "Key","Default","Description" by annotation
+//the type of "Key" and "Description" is string, "Default" is interface{}
 func NewAnnotation(annotation string) *Annotation {
 	a := &Annotation{}
 	kvs := a.Annotate(annotation)

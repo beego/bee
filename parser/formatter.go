@@ -2,9 +2,8 @@ package beeParser
 
 import (
 	"encoding/json"
-	"encoding/xml"
 
-	"gopkg.in/yaml.v2"
+	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 )
 
 type JsonFormatter struct {
@@ -12,6 +11,9 @@ type JsonFormatter struct {
 
 func (f *JsonFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
 	annotation := NewAnnotation(field.Doc + field.Comment)
+	if annotation.Key == "" {
+		annotation.Key = field.Name
+	}
 	res := map[string]interface{}{}
 	if field.NestedType != nil {
 		res[annotation.Key] = field.NestedType
@@ -32,66 +34,42 @@ func (f *JsonFormatter) Marshal(node *StructNode) ([]byte, error) {
 type YamlFormatter struct {
 }
 
+var result encoder.Doc
+
+type Result map[string]interface{}
+
+func (c Result) Doc() *encoder.Doc {
+	return &result
+}
 func (f *YamlFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
 	annotation := NewAnnotation(field.Doc + field.Comment)
-	res := map[string]interface{}{}
+	if annotation.Key == "" {
+		annotation.Key = field.Name
+	}
+	res := Result{}
+	// add head comment for this field
+	res.Doc().Comments[encoder.HeadComment] = annotation.Description
 	if field.NestedType != nil {
-		res[annotation.Key] = field.NestedType
+		b, _ := field.NestedType.FormatFunc(field.NestedType)
+		res[annotation.Key] = string(b)
 	} else {
 		res[annotation.Key] = annotation.Default
 	}
-	return yaml.Marshal(res)
+	encoder := encoder.NewEncoder(&res, []encoder.Option{
+		encoder.WithComments(encoder.CommentsAll),
+	}...)
+	return encoder.Encode()
 }
 
 func (f *YamlFormatter) StructFormatFunc(node *StructNode) ([]byte, error) {
-	return yaml.Marshal(node.Fields)
-}
-
-func (f *YamlFormatter) Marshal(node *StructNode) ([]byte, error) {
-	return yaml.Marshal(node)
-}
-
-type XmlFormatter struct {
-}
-
-func (f *XmlFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
-	annotation := NewAnnotation(field.Doc + field.Comment)
-	if field.NestedType != nil {
-		type xmlStruct struct {
-			XMLName     xml.Name
-			Default     interface{} `xml:",innerxml"`
-			Description string      `xml:",comment"`
-		}
-		b, _ := field.NestedType.FormatFunc(field.NestedType)
-		return xml.Marshal(&xmlStruct{
-			XMLName:     xml.Name{Local: annotation.Key},
-			Description: annotation.Description,
-			Default:     b,
-		})
-	} else {
-		type xmlStruct struct {
-			XMLName     xml.Name
-			Default     interface{} `xml:",chardata"`
-			Description string      `xml:",comment"`
-		}
-		return xml.Marshal(&xmlStruct{
-			XMLName:     xml.Name{Local: annotation.Key},
-			Description: annotation.Description,
-			Default:     annotation.Default,
-		})
-	}
-}
-
-func (f *XmlFormatter) StructFormatFunc(node *StructNode) ([]byte, error) {
 	res := make([]byte, 0)
 	for _, f := range node.Fields {
 		b, _ := f.FormatFunc(f)
 		res = append(res, b...)
-		res = append(res, '\n')
 	}
 	return res, nil
 }
 
-func (f *XmlFormatter) Marshal(node *StructNode) ([]byte, error) {
+func (f *YamlFormatter) Marshal(node *StructNode) ([]byte, error) {
 	return node.FormatFunc(node)
 }
