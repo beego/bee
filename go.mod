@@ -19,6 +19,7 @@ require (
 	github.com/stretchr/testify v1.7.0
 	github.com/talos-systems/talos/pkg/machinery v0.0.0-20210625144407-2060ceaa0b16
 	golang.org/x/mod v0.4.2 // indirect
+	golang.org/x/text v0.3.6
 	golang.org/x/tools v0.1.3
 	gopkg.in/yaml.v2 v2.4.0
 	honnef.co/go/tools v0.1.4 // indirect
