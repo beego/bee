@@ -96,6 +96,10 @@ var stdlibObject = map[string]string{
 	"&{json RawMessage}": "json.RawMessage",
 }
 
+var customObject = map[string]string{
+	"&{base ObjectID}": "string",
+}
+
 func init() {
 	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
@@ -196,7 +200,7 @@ func GenerateDocs(curpath string) {
 				} else if strings.HasPrefix(s, "@Title") {
 					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
+					rootapi.Infos.Description += fmt.Sprintf("%s\n", strings.TrimSpace(s[len("@Description"):]))
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
 					rootapi.Infos.TermsOfService = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
@@ -566,7 +570,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			} else if strings.HasPrefix(t, "@Title") {
 				opts.OperationID = controllerName + "." + strings.TrimSpace(t[len("@Title"):])
 			} else if strings.HasPrefix(t, "@Description") {
-				opts.Description = strings.TrimSpace(t[len("@Description"):])
+				opts.Description += fmt.Sprintf("%s\n<br>", strings.TrimSpace(t[len("@Description"):]))
 			} else if strings.HasPrefix(t, "@Summary") {
 				opts.Summary = strings.TrimSpace(t[len("@Summary"):])
 			} else if strings.HasPrefix(t, "@Success") {
@@ -1163,6 +1167,10 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 					}
 				}
 
+				if ignore := stag.Get("ignore"); ignore != "" {
+					continue
+				}
+
 				tag := stag.Get("json")
 				if tag != "" {
 					tagValues = strings.Split(tag, ",")
@@ -1174,6 +1182,14 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 					// set property name to the left most json tag value only if is not omitempty
 					if len(tagValues) > 0 && tagValues[0] != "omitempty" {
 						name = tagValues[0]
+					}
+
+					// set property type to the second tag value only if it is not omitempty and isBasicType
+					if len(tagValues) > 1 && tagValues[1] != "omitempty" && isBasicType(tagValues[1]) {
+						typeFormat := strings.Split(basicTypes[tagValues[1]], ":")
+						mp.Type = typeFormat[0]
+						mp.Format = typeFormat[1]
+						mp.Ref = ""
 					}
 
 					if thrifttag := stag.Get("thrift"); thrifttag != "" {
@@ -1195,15 +1211,15 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 
 					m.Properties[name] = mp
 				}
-				if ignore := stag.Get("ignore"); ignore != "" {
-					continue
-				}
 			} else {
 				// only parse case of when embedded field is TypeName
 				// cases of *TypeName and Interface are not handled, maybe useless for swagger spec
 				tag := ""
 				if field.Tag != nil {
 					stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+					if ignore := stag.Get("ignore"); ignore != "" {
+						continue
+					}
 					tag = stag.Get("json")
 				}
 
@@ -1244,6 +1260,9 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
 			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
 		}
+		if object, isCustomObject := customObject[fmt.Sprint(arr.Elt)]; isCustomObject {
+			return true, fmt.Sprintf("[]%v", object), basicTypes[object]
+		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), astTypeObject
 		}
@@ -1268,6 +1287,8 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return false, astTypeMap, basicTypes[val]
 		}
 		return false, val, astTypeObject
+	case *ast.InterfaceType:
+		return false, "interface", astTypeObject
 	}
 	basicType := fmt.Sprint(f.Type)
 	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
