@@ -25,6 +25,7 @@ type StructA struct {
 		// @Default https://github.com/beego/bee
 		// 			https://github.com/beego
 		// @Description comment of a of field2
+		//  ssssss
 		a string
 		// @Key b
 		// @Default https://github.com/beego/bee https://github.com/beego
@@ -38,6 +39,11 @@ type StructA struct {
 	// @Key NestField
 	// @Description comment of NestField
 	NestField StructB
+	Field5 float32
+	Field6 bool
+	Field7 string
+	Field8 interface{}
+	Field9 *StructB
 }
 `
 
@@ -105,16 +111,22 @@ func ExampleYamlFormatter() {
 	// # comment of field1
 	// Field1: test
 	// # comment of b of field2
-	// Field2: |
+	// Field2:
 	//     # comment of a of field2
+	//     # ssssss
 	//     a:
 	//         - https://github.com/beego/bee
 	//         - https://github.com/beego
 	//     # comment of b of field2
 	//     b: https://github.com/beego/bee https://github.com/beego
 	// # comment of field3
-	// Field3: null
+	// Field3: 0
 	// Field4: false
-	// NestField: |
+	// NestField:
 	//     FieldB1: null
+	// Field5: 0
+	// Field6: false
+	// Field7: ""
+	// Field8: null
+	// Field9: null
 }

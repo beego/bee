@@ -2,6 +2,8 @@ package beeParser
 
 import (
 	"encoding/json"
+	"io/ioutil"
+	"strings"
 
 	"github.com/talos-systems/talos/pkg/machinery/config/encoder"
 )
@@ -10,10 +12,7 @@ type JsonFormatter struct {
 }
 
 func (f *JsonFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
-	annotation := NewAnnotation(field.Doc + field.Comment)
-	if annotation.Key == "" {
-		annotation.Key = field.Name
-	}
+	annotation := NewAnnotation(field.Doc+field.Comment, field.Name, field.Type)
 	res := map[string]interface{}{}
 	if field.NestedType != nil {
 		res[annotation.Key] = field.NestedType
@@ -41,24 +40,34 @@ type Result map[string]interface{}
 func (c Result) Doc() *encoder.Doc {
 	return &result
 }
+
 func (f *YamlFormatter) FieldFormatFunc(field *StructField) ([]byte, error) {
-	annotation := NewAnnotation(field.Doc + field.Comment)
-	if annotation.Key == "" {
-		annotation.Key = field.Name
-	}
+	annotation := NewAnnotation(field.Doc+field.Comment, field.Name, field.Type)
 	res := Result{}
 	// add head comment for this field
 	res.Doc().Comments[encoder.HeadComment] = annotation.Description
 	if field.NestedType != nil {
-		b, _ := field.NestedType.FormatFunc(field.NestedType)
+		// nestedType format result as this field value
+		b, err := field.NestedType.FormatFunc(field.NestedType)
+		if err != nil {
+			return nil, err
+		}
 		res[annotation.Key] = string(b)
 	} else {
 		res[annotation.Key] = annotation.Default
 	}
+
 	encoder := encoder.NewEncoder(&res, []encoder.Option{
 		encoder.WithComments(encoder.CommentsAll),
 	}...)
-	return encoder.Encode()
+	encodeByte, err := encoder.Encode()
+	if err != nil {
+		return nil, err
+	}
+	// when field.NestedType != nil, the key and nested value strings are encoded with "|"
+	// remove "|" by string replace
+	encodeByte = []byte(strings.Replace(string(encodeByte), annotation.Key+": |", annotation.Key+":", 1))
+	return encodeByte, nil
 }
 
 func (f *YamlFormatter) StructFormatFunc(node *StructNode) ([]byte, error) {
@@ -71,5 +80,10 @@ func (f *YamlFormatter) StructFormatFunc(node *StructNode) ([]byte, error) {
 }
 
 func (f *YamlFormatter) Marshal(node *StructNode) ([]byte, error) {
-	return node.FormatFunc(node)
+	res, err := node.FormatFunc(node)
+	if err != nil {
+		return nil, err
+	}
+	ioutil.WriteFile(node.Name+".yaml", res, 0667)
+	return res, nil
 }
