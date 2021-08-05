@@ -24,7 +24,7 @@ import (
 func fix1To2() int {
 	beeLogger.Log.Info("Upgrading the application...")
 
-	cmdStr := `go get -u github.com/beego/beego/v2`
+	cmdStr := `go get -u github.com/beego/beego/v2@master`
 	err := runShell(cmdStr)
 	if err != nil {
 		beeLogger.Log.Error(err.Error())
