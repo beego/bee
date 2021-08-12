@@ -99,7 +99,11 @@ import (
 )
 
 func main() {
-	orm.RegisterDataBase("default", "{{.DriverName}}", beego.AppConfig.String("sqlconn"))
+	sqlConn,err := beego.AppConfig.String("sqlconn")
+	if err != nil {
+		beeLogger.Log.Fatal("%s", err)
+	}
+	orm.RegisterDataBase("default", "{{.DriverName}}", sqlConn)
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
