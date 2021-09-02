@@ -54,7 +54,7 @@ func NewModeColorWriter(w io.Writer, mode outputMode) io.Writer {
 }
 
 func Bold(message string) string {
-	return fmt.Sprintf("\x1b[1m%s\x1b[21m", message)
+	return fmt.Sprintf("\x1b[1m%s\x1b[0m", message)
 }
 
 // Black returns a black string
