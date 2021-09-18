@@ -35,7 +35,7 @@ var CmdNew = &commands.Command{
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
-  now default supoort generate a go modules project
+  now defaults to generating as a go modules project
   The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.3] and generates the following structure:
 
             ├── main.go
