@@ -11,8 +11,8 @@ import (
 )
 
 var (
-	swaggerVersion = "3"
-	swaggerlink    = "https://github.com/beego/swagger/archive/v" + swaggerVersion + ".zip"
+	swaggerVersion = "4.6.1"
+	swaggerlink    = "https://codeload.github.com/beego/swagger/zip/refs/tags/v" + swaggerVersion
 )
 
 func downloadFromURL(url, fileName string) {
