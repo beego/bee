@@ -65,9 +65,9 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v2.0.0
+\____/  \___| \___| v2.0.3
 
-├── Beego     : 2.0.0
+├── Beego     : 2.0.3
 ├── GoVersion : go1.14.1
 ├── GOOS      : darwin
 ├── GOARCH    : amd64
@@ -90,8 +90,8 @@ $ bee version -o json
     "GOPATH": "/home/beeuser/.go",
     "GOROOT": "/usr/local/Cellar/go/1.14.1/libexec",
     "Compiler": "gc",
-    "BeeVersion": "2.0.0",
-    "BeegoVersion": "2.0.0",
+    "BeeVersion": "2.0.3",
+    "BeegoVersion": "2.0.3",
     "Published": "2020-09-13"
 }
 ```

@@ -15,6 +15,7 @@
 package swaggergen
 
 import (
+	_ "github.com/shopspring/decimal"
 	"go/ast"
 	"go/build"
 	"io/ioutil"
@@ -23,20 +24,20 @@ import (
 	"testing"
 )
 
-//package model
+// package model
 //
-//import (
-//"sync"
+// import (
+// "sync"
 //
-//"example.com/pkgnotexist"
-//"github.com/shopspring/decimal"
-//)
+// "example.com/pkgnotexist"
+// "github.com/shopspring/decimal"
+// )
 //
-//type Object struct {
+// type Object struct {
 //	Field1 decimal.Decimal
 //	Field2 pkgnotexist.TestType
 //	Field3 sync.Map
-//}
+// }
 func TestCheckAndLoadPackageOnGoMod(t *testing.T) {
 	defer os.Setenv("GO111MODULE", os.Getenv("GO111MODULE"))
 	os.Setenv("GO111MODULE", "on")
@@ -108,20 +109,20 @@ func TestCheckAndLoadPackageOnGoMod(t *testing.T) {
 	}
 }
 
-//package model
+// package model
 //
-//import (
-//"sync"
+// import (
+// "sync"
 //
-//"example.com/comm"
-//"example.com/pkgnotexist"
-//)
+// "example.com/comm"
+// "example.com/pkgnotexist"
+// )
 //
-//type Object struct {
+// type Object struct {
 //	Field1 comm.Common
 //	Field2 pkgnotexist.TestType
 //	Field3 sync.Map
-//}
+// }
 func TestCheckAndLoadPackageOnGoPath(t *testing.T) {
 	var (
 		testCommPkg = `
