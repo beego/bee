@@ -1205,6 +1205,10 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 						mp.Description = desc
 					}
 
+					if mp.Description == "" && field.Comment != nil {
+						mp.Description = strings.TrimSpace(field.Comment.Text())
+					}
+
 					if example := stag.Get("example"); example != "" && !isObject && !isSlice {
 						mp.Example = str2RealType(example, realType)
 					}
