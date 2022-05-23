@@ -90,6 +90,7 @@ func Usage() {
 func Help(args []string) {
 	if len(args) == 0 {
 		Usage()
+		return
 	}
 	if len(args) != 1 {
 		utils.PrintErrorAndExit("Too many arguments", ErrorTemplate)

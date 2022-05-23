@@ -53,6 +53,10 @@ var CmdGenerate = &commands.Command{
 
      $ bee generate docs
 
+    ▶ {{"To generate swagger doc file:"|bold}}
+
+     $ bee generate routers [-ctrlDir=/path/to/controller/directory] [-routersFile=/path/to/routers/file.go] [-routersPkg=myPackage]
+
   ▶ {{"To generate a test case:"|bold}}
 
      $ bee generate test [routerfile]
@@ -72,6 +76,15 @@ func init() {
 	CmdGenerate.Flag.Var(&generate.Level, "level", "Either 1, 2 or 3. i.e. 1=models; 2=models and controllers; 3=models, controllers and routers.")
 	CmdGenerate.Flag.Var(&generate.Fields, "fields", "List of table Fields.")
 	CmdGenerate.Flag.Var(&generate.DDL, "ddl", "Generate DDL Migration")
+
+	// bee generate routers
+	CmdGenerate.Flag.Var(&generate.ControllerDirectory, "ctrlDir",
+		"Controller directory. Bee scans this directory and its sub directory to generate routers")
+	CmdGenerate.Flag.Var(&generate.RoutersFile, "routersFile",
+		"Routers file. If not found, Bee create a new one. Bee will truncates this file and output routers info into this file")
+	CmdGenerate.Flag.Var(&generate.RouterPkg, "routersPkg",
+		`router's package. Default is routers, it means that "package routers" in the generated file`)
+
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdGenerate)
 }
 
@@ -97,11 +110,23 @@ func GenerateCode(cmd *commands.Command, args []string) int {
 		model(cmd, args, currpath)
 	case "view":
 		view(args, currpath)
+	case "routers":
+		genRouters(cmd, args)
 	default:
 		beeLogger.Log.Fatal("Command is missing")
 	}
 	beeLogger.Log.Successf("%s successfully generated!", strings.Title(gcmd))
 	return 0
+}
+
+func genRouters(cmd *commands.Command, args []string) {
+	err := cmd.Flag.Parse(args[1:])
+	beeLogger.Log.Infof("input parameter: %v", args)
+	if err != nil {
+		beeLogger.Log.Errorf("could not parse input parameter: %+v", err)
+		return
+	}
+	generate.GenRouters()
 }
 
 func scaffold(cmd *commands.Command, args []string, currpath string) {

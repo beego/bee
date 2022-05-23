@@ -35,7 +35,7 @@ var CmdNew = &commands.Command{
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
-  now default supoort generate a go modules project
+  now defaults to generating as a go modules project
   The command 'new' creates a folder named [appname] [-gopath=false] [-beego=v1.12.3] and generates the following structure:
 
             ├── main.go
@@ -104,6 +104,9 @@ import (
 	"testing"
 	"runtime"
 	"path/filepath"
+
+    "github.com/beego/beego/v2/core/logs"
+
 	_ "{{.Appname}}/routers"
 
 	beego "github.com/beego/beego/v2/server/web"
@@ -123,7 +126,7 @@ func TestBeego(t *testing.T) {
 	w := httptest.NewRecorder()
 	beego.BeeApp.Handlers.ServeHTTP(w, r)
 
-	beego.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
+	logs.Trace("testing", "TestBeego", "Code[%d]\n%s", w.Code, w.Body.String())
 
 	Convey("Subject: Test Station Endpoint\n", t, func() {
 	        Convey("Status Code Should Be 200", func() {
@@ -276,14 +279,14 @@ func CreateApp(cmd *commands.Command, args []string) int {
 	var packPath string
 	var err error
 	if gopath == `true` {
-		beeLogger.Log.Info("generate new project support GOPATH")
+		beeLogger.Log.Info("Generate new project support GOPATH")
 		version.ShowShortVersionBanner()
 		appPath, packPath, err = utils.CheckEnv(args[0])
 		if err != nil {
 			beeLogger.Log.Fatalf("%s", err)
 		}
 	} else {
-		beeLogger.Log.Info("generate new project support go modules.")
+		beeLogger.Log.Info("Generate new project support go modules.")
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {

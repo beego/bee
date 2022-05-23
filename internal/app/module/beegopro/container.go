@@ -3,6 +3,8 @@ package beegopro
 import (
 	"fmt"
 	"io/ioutil"
+	"net/url"
+	"strings"
 	"sync"
 	"time"
 
@@ -14,6 +16,8 @@ import (
 	"github.com/pelletier/go-toml"
 	"github.com/spf13/viper"
 )
+
+var GitRemotePath utils.DocValue
 
 const MDateFormat = "20060102_150405"
 
@@ -30,9 +34,10 @@ var DefaultBeegoPro = &Container{
 		ApiPrefix:     "/api",
 		EnableModule:  nil,
 		Models:        make(map[string]TextModel),
-		GitRemotePath: "https://github.com/beego/beego-pro.git",
-		Branch:        "master",
-		GitLocalPath:  system.BeegoHome + "/beego-pro",
+		GitRemotePath: "",
+		//GitRemotePath: "https://github.com/beego/beego-pro.git",
+		Branch: "master",
+		//GitLocalPath:  system.BeegoHome + "/beego-pro",
 		EnableFormat:  true,
 		SourceGen:     "text",
 		EnableGitPull: true,
@@ -72,7 +77,6 @@ func (c *Container) initUserOption() {
 		beeLogger.Log.Fatalf("read beego pro config content, err: %s", err.Error())
 		return
 	}
-
 	err = viper.Unmarshal(&c.UserOption)
 	if err != nil {
 		beeLogger.Log.Fatalf("beego pro config unmarshal error, err: %s", err.Error())
@@ -100,10 +104,10 @@ func (c *Container) initUserOption() {
 	if c.UserOption.Debug {
 		fmt.Println("c.modules", c.EnableModules)
 	}
-
 }
 
 func (c *Container) initTemplateOption() {
+	c.GetLocalPath()
 	if c.UserOption.EnableGitPull && (c.GenerateTimeUnix-c.Timestamp.GitCacheLastRefresh > c.UserOption.RefreshGitTime) {
 		err := git.CloneORPullRepo(c.UserOption.GitRemotePath, c.UserOption.GitLocalPath)
 		if err != nil {
@@ -207,4 +211,44 @@ func (c *Container) flushTimestamp() {
 	if err != nil {
 		beeLogger.Log.Fatalf("flush timestamp tmpl parse error, err: %s", err)
 	}
+}
+
+func (c *Container) InitToml() {
+	if exist := utils.IsExist(c.BeegoProFile); exist {
+		beeLogger.Log.Fatalf("file beegopro.toml already exists")
+	}
+	sourceFile := c.UserOption.GitLocalPath + "/beegopro.toml"
+	input, err := ioutil.ReadFile(sourceFile)
+	if err != nil {
+		beeLogger.Log.Fatalf("read beegopro.toml file err, %s", err.Error())
+		return
+	}
+	err = ioutil.WriteFile(c.BeegoProFile, input, 0644)
+	if err != nil {
+		beeLogger.Log.Fatalf("create beegopro.toml file err, %s", err.Error())
+		return
+	}
+	beeLogger.Log.Success("Successfully created file beegopro.toml")
+}
+
+//form https://github.com/beego/beego-pro.git
+//get beego/beego-pro
+func (c *Container) GetLocalPath() {
+	if c.UserOption.GitLocalPath != "" {
+		return
+	}
+	if GitRemotePath != "" {
+		c.UserOption.GitRemotePath = GitRemotePath.String()
+	}
+	if c.UserOption.GitRemotePath == "" {
+		c.UserOption.GitRemotePath = "https://github.com/beego/beego-pro.git"
+	}
+	parse, err := url.Parse(c.UserOption.GitRemotePath)
+	if err != nil {
+		beeLogger.Log.Fatalf("git GitRemotePath err, %s", err.Error())
+		return
+	}
+	s := parse.Path
+	s = strings.TrimRight(s, ".git")
+	c.UserOption.GitLocalPath = system.BeegoHome + s
 }

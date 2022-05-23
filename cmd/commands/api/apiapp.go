@@ -99,7 +99,11 @@ import (
 )
 
 func main() {
-	orm.RegisterDataBase("default", "{{.DriverName}}", beego.AppConfig.String("sqlconn"))
+	sqlConn,err := beego.AppConfig.String("sqlconn")
+	if err != nil {
+		beeLogger.Log.Fatal("%s", err)
+	}
+	orm.RegisterDataBase("default", "{{.DriverName}}", sqlConn)
 	if beego.BConfig.RunMode == "dev" {
 		beego.BConfig.WebConfig.DirectoryIndex = true
 		beego.BConfig.WebConfig.StaticDir["/swagger"] = "swagger"
@@ -575,14 +579,14 @@ func createAPI(cmd *commands.Command, args []string) int {
 	var packPath string
 	var err error
 	if gopath == `true` {
-		beeLogger.Log.Info("generate api project support GOPATH")
+		beeLogger.Log.Info("Generate api project support GOPATH")
 		version.ShowShortVersionBanner()
 		appPath, packPath, err = utils.CheckEnv(args[0])
 		if err != nil {
 			beeLogger.Log.Fatalf("%s", err)
 		}
 	} else {
-		beeLogger.Log.Info("generate api project support go modules.")
+		beeLogger.Log.Info("Generate api project support go modules.")
 		appPath = path.Join(utils.GetBeeWorkPath(), args[0])
 		packPath = args[0]
 		if beegoVersion.String() == `` {

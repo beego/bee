@@ -32,6 +32,7 @@ func init() {
 	CmdBeegoPro.Flag.Var(&beegopro.SQL, "sql", "sql file path")
 	CmdBeegoPro.Flag.Var(&beegopro.SQLMode, "sqlmode", "sql mode")
 	CmdBeegoPro.Flag.Var(&beegopro.SQLModePath, "sqlpath", "sql mode path")
+	CmdBeegoPro.Flag.Var(&beegopro.GitRemotePath, "url", "git remote path")
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdBeegoPro)
 }
 
@@ -48,6 +49,8 @@ func BeegoPro(cmd *commands.Command, args []string) int {
 	switch gcmd {
 	case "gen":
 		beegopro.DefaultBeegoPro.Run()
+	case "toml":
+		beegopro.DefaultBeegoPro.InitToml()
 	case "config":
 		beegopro.DefaultBeegoPro.GenConfig()
 	case "migration":

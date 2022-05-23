@@ -9,7 +9,7 @@ Bee is a command-line tool facilitating development of Beego-based application.
 
 ## Requirements
 
-- Go version >= 1.12
+- Go version >= 1.13
 
 ## Installation
 
@@ -41,6 +41,7 @@ Bee provides a variety of commands which can be helpful at various stages of dev
     api         Creates a Beego API application
     bale        Transforms non-Go files to Go source files
     fix         Fixes your application by making it compatible with newer versions of Beego
+    pro         Source code generator
     dlv         Start a debugging session using Delve
     dockerize   Generates a Dockerfile for your Beego application
     generate    Source code generator
@@ -49,7 +50,8 @@ Bee provides a variety of commands which can be helpful at various stages of dev
     pack        Compresses a Beego application into a single file
     rs          Run customized scripts
     run         Run the application by starting a local development server
-
+    server      serving static content over HTTP on port
+    update      Update Bee
 ```
 
 ### bee version
@@ -63,17 +65,17 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
+\____/  \___| \___| v2.0.3
 
-├── Beego     : 1.7.2
-├── GoVersion : go1.7.4
-├── GOOS      : linux
+├── Beego     : 2.0.3
+├── GoVersion : go1.14.1
+├── GOOS      : darwin
 ├── GOARCH    : amd64
-├── NumCPU    : 2
+├── NumCPU    : 4
 ├── GOPATH    : /home/beeuser/.go
-├── GOROOT    : /usr/lib/go
+├── GOROOT    : /usr/local/Cellar/go/1.14.1/libexec
 ├── Compiler  : gc
-└── Date      : Monday, 26 Dec 2016
+└── Published : 2020-09-13
 ```
 
 You can also change the output format using `-o` flag:
@@ -81,15 +83,16 @@ You can also change the output format using `-o` flag:
 ```bash
 $ bee version -o json
 {
-    "GoVersion": "go1.7.4",
-    "GOOS": "linux",
+    "GoVersion": "go1.14.1",
+    "GOOS": "darwin",
     "GOARCH": "amd64",
-    "NumCPU": 2,
+    "NumCPU": 4,
     "GOPATH": "/home/beeuser/.go",
-    "GOROOT": "/usr/lib/go",
+    "GOROOT": "/usr/local/Cellar/go/1.14.1/libexec",
     "Compiler": "gc",
-    "BeeVersion": "1.6.2",
-    "BeegoVersion": "1.7.2"
+    "BeeVersion": "2.0.3",
+    "BeegoVersion": "2.0.3",
+    "Published": "2020-09-13"
 }
 ```
 
@@ -101,31 +104,27 @@ To create a new Beego web application:
 
 ```bash
 $ bee new my-web-app
-______
-| ___ \
-| |_/ /  ___   ___
-| ___ \ / _ \ / _ \
-| |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:28:11 INFO     ▶ 0001 Creating application...
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/conf/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/models/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/routers/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/tests/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/js/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/css/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/static/img/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/views/
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/conf/app.conf
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/default.go
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/views/index.tpl
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/routers/router.go
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/tests/default_test.go
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/main.go
-2016/12/26 22:28:11 SUCCESS  ▶ 0002 New application successfully created!
+2020/09/14 22:28:51 INFO     ▶ 0001 generate new project support go modules.
+2020/09/14 22:28:51 INFO     ▶ 0002 Creating application...
+	create	 /Users/beeuser/learn/my-web-app/go.mod
+	create	 /Users/beeuser/learn/my-web-app/
+	create	 /Users/beeuser/learn/my-web-app/conf/
+	create	 /Users/beeuser/learn/my-web-app/controllers/
+	create	 /Users/beeuser/learn/my-web-app/models/
+	create	 /Users/beeuser/learn/my-web-app/routers/
+	create	 /Users/beeuser/learn/my-web-app/tests/
+	create	 /Users/beeuser/learn/my-web-app/static/
+	create	 /Users/beeuser/learn/my-web-app/static/js/
+	create	 /Users/beeuser/learn/my-web-app/static/css/
+	create	 /Users/beeuser/learn/my-web-app/static/img/
+	create	 /Users/beeuser/learn/my-web-app/views/
+	create	 /Users/beeuser/learn/my-web-app/conf/app.conf
+	create	 /Users/beeuser/learn/my-web-app/controllers/default.go
+	create	 /Users/beeuser/learn/my-web-app/views/index.tpl
+	create	 /Users/beeuser/learn/my-web-app/routers/router.go
+	create	 /Users/beeuser/learn/my-web-app/tests/default_test.go
+	create	 /Users/beeuser/learn/my-web-app/main.go
+2020/09/14 22:28:51 SUCCESS  ▶ 0003 New application successfully created!
 ```
 
 For more information on the usage, run `bee help new`.
@@ -136,12 +135,6 @@ To run the application we just created, you can navigate to the application fold
 
 ```bash
 $ cd my-web-app && bee run
-```
-
-Or from anywhere in your machine:
-
-```
-$ bee run github.com/user/my-web-app
 ```
 
 For more information on the usage, run `bee help run`.
@@ -157,7 +150,7 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
+\____/  \___| \___| v2.0.0
 2016/12/26 22:29:29 INFO     ▶ 0001 Packaging application on '/home/beeuser/.go/src/github.com/user/my-web-app'...
 2016/12/26 22:29:29 INFO     ▶ 0002 Building application...
 2016/12/26 22:29:29 INFO     ▶ 0003 Using: GOOS=linux GOARCH=amd64
@@ -213,23 +206,25 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:30:12 INFO     ▶ 0001 Creating API...
-    create   /home/beeuser/.go/src/github.com/user/my-api
-    create   /home/beeuser/.go/src/github.com/user/my-api/conf
-    create   /home/beeuser/.go/src/github.com/user/my-api/controllers
-    create   /home/beeuser/.go/src/github.com/user/my-api/tests
-    create   /home/beeuser/.go/src/github.com/user/my-api/conf/app.conf
-    create   /home/beeuser/.go/src/github.com/user/my-api/models
-    create   /home/beeuser/.go/src/github.com/user/my-api/routers/
-    create   /home/beeuser/.go/src/github.com/user/my-api/controllers/object.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/controllers/user.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/tests/default_test.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/routers/router.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/models/object.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/models/user.go
-    create   /home/beeuser/.go/src/github.com/user/my-api/main.go
-2016/12/26 22:30:12 SUCCESS  ▶ 0002 New API successfully created!
+\____/  \___| \___| v2.0.0
+2020/09/14 22:35:11 INFO     ▶ 0001 generate api project support go modules.
+2020/09/14 22:35:11 INFO     ▶ 0002 Creating API...
+	create	 /Users/beeuser/code/learn/my-api/go.mod
+	create	 /Users/beeuser/code/learn/my-api
+	create	 /Users/beeuser/code/learn/my-api/conf
+	create	 /Users/beeuser/code/learn/my-api/controllers
+	create	 /Users/beeuser/code/learn/my-api/tests
+	create	 /Users/beeuser/code/learn/my-api/conf/app.conf
+	create	 /Users/beeuser/code/learn/my-api/models
+	create	 /Users/beeuser/code/learn/my-api/routers/
+	create	 /Users/beeuser/code/learn/my-api/controllers/object.go
+	create	 /Users/beeuser/code/learn/my-api/controllers/user.go
+	create	 /Users/beeuser/code/learn/my-api/tests/default_test.go
+	create	 /Users/beeuser/code/learn/my-api/routers/router.go
+	create	 /Users/beeuser/code/learn/my-api/models/object.go
+	create	 /Users/beeuser/code/learn/my-api/models/user.go
+	create	 /Users/beeuser/code/learn/my-api/main.go
+2020/09/14 22:35:11 SUCCESS  ▶ 0003 New API successfully created!
 ```
 
 For more information on the usage, run `bee help api`.
@@ -245,26 +240,18 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:30:58 INFO     ▶ 0001 Creating application...
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/conf/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/controllers/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/models/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/routers/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/tests/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/js/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/css/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/static/img/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/views/
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/conf/app.conf
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/controllers/default.go
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/views/index.tpl
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/routers/router.go
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/tests/default_test.go
-    create   /home/beeuser/.go/src/github.com/user/my-rpc-app/main.go
-2016/12/26 22:30:58 SUCCESS  ▶ 0002 New application successfully created!
+\____/  \___| \___| v2.0.0
+2020/09/14 22:36:39 INFO     ▶ 0001 generate api project support go modules.
+2020/09/14 22:36:39 INFO     ▶ 0002 Creating Hprose application...
+	create	 /Users/beeuser/code/learn/my-rpc-app/go.mod
+	create	 /Users/beeuser/code/learn/my-rpc-app
+	create	 /Users/beeuser/code/learn/my-rpc-app/conf
+	create	 /Users/beeuser/code/learn/my-rpc-app/conf/app.conf
+	create	 /Users/beeuser/code/learn/my-rpc-app/models
+	create	 /Users/beeuser/code/learn/my-rpc-app/models/object.go
+	create	 /Users/beeuser/code/learn/my-rpc-app/models/user.go
+	create	 /Users/beeuser/code/learn/my-rpc-app/main.go
+2020/09/14 22:36:39 SUCCESS  ▶ 0003 New Hprose application successfully created!
 ```
 
 For more information on the usage, run `bee help hprose`.
@@ -280,9 +267,8 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:32:41 INFO     ▶ 0001 Loading configuration from 'bee.json'...
-2016/12/26 22:32:41 SUCCESS  ▶ 0002 Baled resources successfully!
+\____/  \___| \___| v2.0.0
+2020/09/14 22:37:56 SUCCESS  ▶ 0001 Baled resources successfully!
 ```
 
 For more information on the usage, run `bee help bale`.
@@ -306,11 +292,11 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:33:58 INFO     ▶ 0001 Using 'Hello' as controller name
-2016/12/26 22:33:58 INFO     ▶ 0002 Using 'controllers' as package name
-    create   /home/beeuser/.go/src/github.com/user/my-web-app/controllers/hello.go
-2016/12/26 22:33:58 SUCCESS  ▶ 0003 Controller successfully generated!
+\____/  \___| \___| v2.0.0
+2020/09/14 22:38:44 INFO     ▶ 0001 Using 'Hello' as controller name
+2020/09/14 22:38:44 INFO     ▶ 0002 Using 'controllers' as package name
+	create	 /Users/beeuser/code/learn/my-api/controllers/hello.go
+2020/09/14 22:38:44 SUCCESS  ▶ 0003 Controller successfully generated!
 ```
 
 For more information on the usage, run `bee help generate`.
@@ -328,9 +314,9 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.6.2
-2016/12/26 22:34:54 INFO     ▶ 0001 Generating Dockerfile...
-2016/12/26 22:34:54 SUCCESS  ▶ 0002 Dockerfile generated.
+\____/  \___| \___| v2.0.0
+2020/09/14 22:40:12 INFO     ▶ 0001 Generating Dockerfile...
+2020/09/14 22:40:12 SUCCESS  ▶ 0002 Dockerfile generated.
 ```
 
 For more information on the usage, run `bee help dockerize`.
@@ -345,8 +331,8 @@ ______
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v1.8.0
-2017/03/22 11:17:05 INFO     ▶ 0001 Starting Delve Debugger...
+\____/  \___| \___| v2.0.0
+2020/09/14 22:40:12 INFO     ▶ 0001 Starting Delve Debugger...
 Type 'help' for list of commands.
 (dlv) break main.main
 Breakpoint 1 set at 0x40100f for main.main() ./main.go:8
@@ -366,6 +352,68 @@ Breakpoint 1 set at 0x40100f for main.main() ./main.go:8
 
 For more information on the usage, run `bee help dlv`.
 
+### bee pro 
+
+#### bee pro toml
+
+To create a beegopro.toml file
+
+```bash
+$ bee pro toml
+2020/09/14 22:51:18 SUCCESS  ▶ 0001 Successfully created file beegopro.toml
+2020/09/14 22:51:18 SUCCESS  ▶ 0002 Toml successfully generated!
+```
+
+#### bee pro gen
+
+Source code generator by beegopro.toml
+
+```bash
+$ bee pro gen
+2020/09/14 23:01:13 INFO     ▶ 0001 Create /Users/beeuser/.beego/beego-pro Success!
+2020/09/14 23:01:13 INFO     ▶ 0002 git pull /Users/beeuser/.beego/beego-pro
+2020/09/14 23:01:15 INFO     ▶ 0003 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0004 Using 'example' as package name from controllers
+2020/09/14 23:01:15 INFO     ▶ 0005 create file '/Users/beeuser/code/learn/my-web-app/controllers/bee_default_controller.go' from controllers
+2020/09/14 23:01:15 INFO     ▶ 0006 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0007 Using 'example' as package name from controllers
+2020/09/14 23:01:15 INFO     ▶ 0008 create file '/Users/beeuser/code/learn/my-web-app/controllers/example.go' from controllers
+2020/09/14 23:01:15 INFO     ▶ 0009 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0010 Using 'example' as package name from models
+2020/09/14 23:01:15 INFO     ▶ 0011 create file '/Users/beeuser/code/learn/my-web-app/models/bee_default_model.go' from models
+2020/09/14 23:01:15 INFO     ▶ 0012 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0013 Using 'example' as package name from models
+2020/09/14 23:01:15 INFO     ▶ 0014 create file '/Users/beeuser/code/learn/my-web-app/models/example.go' from models
+2020/09/14 23:01:15 INFO     ▶ 0015 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0016 Using 'example' as package name from routers
+2020/09/14 23:01:15 INFO     ▶ 0017 create file '/Users/beeuser/code/learn/my-web-app/routers/example.go' from routers
+2020/09/14 23:01:15 INFO     ▶ 0018 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0019 Using 'example' as package name from example
+2020/09/14 23:01:15 INFO     ▶ 0020 create file '/Users/beeuser/code/learn/my-web-app/ant/src/pages/example/list.tsx' from example
+2020/09/14 23:01:15 INFO     ▶ 0021 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0022 Using 'example' as package name from example
+2020/09/14 23:01:15 INFO     ▶ 0023 create file '/Users/beeuser/code/learn/my-web-app/ant/src/pages/example/formconfig.tsx' from example
+2020/09/14 23:01:15 INFO     ▶ 0024 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0025 Using 'example' as package name from example
+2020/09/14 23:01:15 INFO     ▶ 0026 create file '/Users/beeuser/code/learn/my-web-app/ant/src/pages/example/create.tsx' from example
+2020/09/14 23:01:15 INFO     ▶ 0027 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0028 Using 'example' as package name from example
+2020/09/14 23:01:15 INFO     ▶ 0029 create file '/Users/beeuser/code/learn/my-web-app/ant/src/pages/example/update.tsx' from example
+2020/09/14 23:01:15 INFO     ▶ 0030 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0031 Using 'example' as package name from example
+2020/09/14 23:01:15 INFO     ▶ 0032 create file '/Users/beeuser/code/learn/my-web-app/ant/src/pages/example/info.tsx' from example
+2020/09/14 23:01:15 INFO     ▶ 0033 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0034 Using 'example' as package name from sql
+2020/09/14 23:01:15 INFO     ▶ 0035 create file '/Users/beeuser/code/learn/my-web-app/sql/example_up.sql' from sql
+2020/09/14 23:01:15 INFO     ▶ 0036 2020/09/14 23:01:15 INFO     ▶ 0001 db exec info ./sql/example_up.sql
+2020/09/14 23:01:15 SUCCESS  ▶ 0002 Migration successfully generated!
+2020/09/14 23:01:15 INFO     ▶ 0037 Using 'example' as name
+2020/09/14 23:01:15 INFO     ▶ 0038 Using 'example' as package name from sql
+2020/09/14 23:01:15 INFO     ▶ 0039 create file '/Users/beeuser/code/learn/my-web-app/sql/example_down.sql' from sql
+2020/09/14 23:01:15 SUCCESS  ▶ 0040 Gen successfully generated!
+```
+
+#### 
 ## Shortcuts
 
 Because you'll likely type these generator commands over and over, it makes sense to create aliases:
@@ -520,7 +568,7 @@ Rebasing will update your branch with the most recent code and make your changes
 ## Licence
 
 ```text
-Copyright 2016 bee authors
+Copyright 2020 bee authors
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.

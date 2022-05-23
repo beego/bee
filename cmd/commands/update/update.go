@@ -8,6 +8,7 @@ import (
 	"github.com/beego/bee/v2/cmd/commands"
 	"github.com/beego/bee/v2/config"
 	beeLogger "github.com/beego/bee/v2/logger"
+	"github.com/beego/bee/v2/utils"
 )
 
 var CmdUpdate = &commands.Command{
@@ -34,5 +35,7 @@ func updateBee(cmd *commands.Command, args []string) int {
 	if err := cmdUp.Run(); err != nil {
 		beeLogger.Log.Warnf("Run cmd err:%s", err)
 	}
+	// update the Time when updateBee every time
+	utils.UpdateLastPublishedTime()
 	return 0
 }

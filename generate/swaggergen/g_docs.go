@@ -35,6 +35,8 @@ import (
 
 	yaml "gopkg.in/yaml.v2"
 
+	bu "github.com/beego/bee/v2/utils"
+
 	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/beego/v2/core/utils"
 	"github.com/beego/beego/v2/server/web/swagger"
@@ -61,6 +63,7 @@ var controllerList map[string]map[string]*swagger.Item //controllername Paths it
 var modelsList map[string]map[string]swagger.Schema
 var rootapi swagger.Swagger
 var astPkgs []*ast.Package
+var pkgLoadedCache map[string]struct{}
 
 // refer to builtin.go
 var basicTypes = map[string]string{
@@ -93,6 +96,10 @@ var stdlibObject = map[string]string{
 	"&{json RawMessage}": "json.RawMessage",
 }
 
+var customObject = map[string]string{
+	"&{base ObjectID}": "string",
+}
+
 func init() {
 	pkgCache = make(map[string]struct{})
 	controllerComments = make(map[string]string)
@@ -100,6 +107,7 @@ func init() {
 	controllerList = make(map[string]map[string]*swagger.Item)
 	modelsList = make(map[string]map[string]swagger.Schema)
 	astPkgs = make([]*ast.Package, 0)
+	pkgLoadedCache = make(map[string]struct{})
 }
 
 // parsePackagesFromDir parses packages from a given directory
@@ -152,6 +160,16 @@ func parsePackageFromDir(path string) error {
 		astPkgs = append(astPkgs, v)
 	}
 
+	if len(folderPkgs) != 0 {
+		workPath := bu.GetBeeWorkPath()
+		parentPath := filepath.Dir(workPath)
+		rel, err := filepath.Rel(parentPath, path)
+		if err != nil {
+			return err
+		}
+		pkgLoadedCache[rel] = struct{}{}
+	}
+
 	return nil
 }
 
@@ -182,7 +200,7 @@ func GenerateDocs(curpath string) {
 				} else if strings.HasPrefix(s, "@Title") {
 					rootapi.Infos.Title = strings.TrimSpace(s[len("@Title"):])
 				} else if strings.HasPrefix(s, "@Description") {
-					rootapi.Infos.Description = strings.TrimSpace(s[len("@Description"):])
+					rootapi.Infos.Description += fmt.Sprintf("%s\n", strings.TrimSpace(s[len("@Description"):]))
 				} else if strings.HasPrefix(s, "@TermsOfServiceUrl") {
 					rootapi.Infos.TermsOfService = strings.TrimSpace(s[len("@TermsOfServiceUrl"):])
 				} else if strings.HasPrefix(s, "@Contact") {
@@ -552,7 +570,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			} else if strings.HasPrefix(t, "@Title") {
 				opts.OperationID = controllerName + "." + strings.TrimSpace(t[len("@Title"):])
 			} else if strings.HasPrefix(t, "@Description") {
-				opts.Description = strings.TrimSpace(t[len("@Description"):])
+				opts.Description += fmt.Sprintf("%s\n<br>", strings.TrimSpace(t[len("@Description"):]))
 			} else if strings.HasPrefix(t, "@Summary") {
 				opts.Summary = strings.TrimSpace(t[len("@Summary"):])
 			} else if strings.HasPrefix(t, "@Success") {
@@ -933,7 +951,8 @@ L:
 							// Still searching for the right object
 							continue
 						}
-						parseObject(d, k, &m, &realTypes, astPkgs, packageName)
+
+						parseObject(fl.Imports, d, k, &m, &realTypes, astPkgs, packageName)
 
 						// When we've found the correct object, we can stop searching
 						break L
@@ -958,7 +977,7 @@ L:
 	return str, m, realTypes
 }
 
-func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
+func parseObject(imports []*ast.ImportSpec, d *ast.Object, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	ts, ok := d.Decl.(*ast.TypeSpec)
 	if !ok {
 		beeLogger.Log.Fatalf("Unknown type without TypeSec: %v", d)
@@ -983,7 +1002,7 @@ func parseObject(d *ast.Object, k string, m *swagger.Schema, realTypes *[]string
 	case *ast.Ident:
 		parseIdent(t, k, m, astPkgs)
 	case *ast.StructType:
-		parseStruct(t, k, m, realTypes, astPkgs, packageName)
+		parseStruct(imports, t, k, m, realTypes, astPkgs, packageName)
 	}
 }
 
@@ -1068,7 +1087,7 @@ func parseIdent(st *ast.Ident, k string, m *swagger.Schema, astPkgs []*ast.Packa
 
 }
 
-func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
+func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swagger.Schema, realTypes *[]string, astPkgs []*ast.Package, packageName string) {
 	m.Title = k
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
@@ -1084,6 +1103,11 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					realType = packageName + "." + realType
 				}
 			}
+
+			if !isBasicType(realType) && sType == astTypeObject {
+				checkAndLoadPackage(imports, realType, packageName)
+			}
+
 			*realTypes = append(*realTypes, realType)
 			mp := swagger.Propertie{}
 			isObject := false
@@ -1143,6 +1167,10 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 					}
 				}
 
+				if ignore := stag.Get("ignore"); ignore != "" {
+					continue
+				}
+
 				tag := stag.Get("json")
 				if tag != "" {
 					tagValues = strings.Split(tag, ",")
@@ -1156,17 +1184,29 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 						name = tagValues[0]
 					}
 
+					// set property type to the second tag value only if it is not omitempty and isBasicType
+					if len(tagValues) > 1 && tagValues[1] != "omitempty" && isBasicType(tagValues[1]) {
+						typeFormat := strings.Split(basicTypes[tagValues[1]], ":")
+						mp.Type = typeFormat[0]
+						mp.Format = typeFormat[1]
+						mp.Ref = ""
+					}
+
 					if thrifttag := stag.Get("thrift"); thrifttag != "" {
 						ts := strings.Split(thrifttag, ",")
 						if ts[0] != "" {
 							name = ts[0]
 						}
 					}
-					if required := stag.Get("required"); required != "" {
+					if required := stag.Get("required"); strings.EqualFold(required, "true") {
 						m.Required = append(m.Required, name)
 					}
 					if desc := stag.Get("description"); desc != "" {
 						mp.Description = desc
+					}
+
+					if mp.Description == "" && field.Comment != nil {
+						mp.Description = strings.TrimSpace(field.Comment.Text())
 					}
 
 					if example := stag.Get("example"); example != "" && !isObject && !isSlice {
@@ -1175,15 +1215,15 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 
 					m.Properties[name] = mp
 				}
-				if ignore := stag.Get("ignore"); ignore != "" {
-					continue
-				}
 			} else {
 				// only parse case of when embedded field is TypeName
 				// cases of *TypeName and Interface are not handled, maybe useless for swagger spec
 				tag := ""
 				if field.Tag != nil {
 					stag := reflect.StructTag(strings.Trim(field.Tag.Value, "`"))
+					if ignore := stag.Get("ignore"); ignore != "" {
+						continue
+					}
 					tag = stag.Get("json")
 				}
 
@@ -1204,7 +1244,7 @@ func parseStruct(st *ast.StructType, k string, m *swagger.Schema, realTypes *[]s
 						for _, fl := range pkg.Files {
 							for nameOfObj, obj := range fl.Scope.Objects {
 								if pkg.Name+"."+obj.Name == realType {
-									parseObject(obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
+									parseObject(imports, obj, nameOfObj, nm, realTypes, astPkgs, pkg.Name)
 								}
 							}
 						}
@@ -1224,6 +1264,9 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 	if arr, ok := f.Type.(*ast.ArrayType); ok {
 		if isBasicType(fmt.Sprint(arr.Elt)) {
 			return true, fmt.Sprintf("[]%v", arr.Elt), basicTypes[fmt.Sprint(arr.Elt)]
+		}
+		if object, isCustomObject := customObject[fmt.Sprint(arr.Elt)]; isCustomObject {
+			return true, fmt.Sprintf("[]%v", object), basicTypes[object]
 		}
 		if mp, ok := arr.Elt.(*ast.MapType); ok {
 			return false, fmt.Sprintf("map[%v][%v]", mp.Key, mp.Value), astTypeObject
@@ -1249,6 +1292,8 @@ func typeAnalyser(f *ast.Field) (isSlice bool, realType, swaggerType string) {
 			return false, astTypeMap, basicTypes[val]
 		}
 		return false, val, astTypeObject
+	case *ast.InterfaceType:
+		return false, "interface", astTypeObject
 	}
 	basicType := fmt.Sprint(f.Type)
 	if object, isStdLibObject := stdlibObject[basicType]; isStdLibObject {
@@ -1340,4 +1385,71 @@ func str2RealType(s string, typ string) interface{} {
 	}
 
 	return ret
+}
+
+func checkAndLoadPackage(imports []*ast.ImportSpec, realType, curPkgName string) {
+	arr := strings.Split(realType, ".")
+	if len(arr) != 2 {
+		return
+	}
+	objectPkgName := arr[0]
+	if objectPkgName == curPkgName {
+		return
+	}
+	pkgPath := ""
+	for _, im := range imports {
+		importPath := ""
+		if im.Path != nil {
+			importPath = strings.Trim(im.Path.Value, `"`)
+		}
+
+		if importPath == "" {
+			continue
+		}
+
+		if im.Name != nil && im.Name.Name == objectPkgName {
+			pkgPath = importPath
+			break
+		}
+
+		_, pkgName := filepath.Split(importPath)
+		if pkgName == objectPkgName {
+			pkgPath = importPath
+			break
+		}
+	}
+
+	if pkgPath == "" {
+		beeLogger.Log.Warnf("%s missing import package", realType)
+		return
+	}
+
+	if isSystemPackage(pkgPath) {
+		return
+	}
+	if _, ok := pkgLoadedCache[pkgPath]; ok {
+		return
+	}
+
+	pkg, err := build.Default.Import(pkgPath, ".", build.FindOnly)
+	if err != nil {
+		beeLogger.Log.Warnf("Package %s cannot be imported, err:%v", pkgPath, err)
+		return
+	}
+	pkgRealpath := pkg.Dir
+
+	fileSet := token.NewFileSet()
+	pkgs, err := parser.ParseDir(fileSet, pkgRealpath, func(info os.FileInfo) bool {
+		name := info.Name()
+		return !info.IsDir() && !strings.HasPrefix(name, ".") && strings.HasSuffix(name, ".go")
+	}, parser.ParseComments)
+	if err != nil {
+		beeLogger.Log.Warnf("Error while parsing dir at '%s': %s", pkgRealpath, err)
+	}
+
+	for _, pkg := range pkgs {
+		astPkgs = append(astPkgs, pkg)
+	}
+
+	pkgLoadedCache[pkgPath] = struct{}{}
 }
