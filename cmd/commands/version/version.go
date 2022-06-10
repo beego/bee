@@ -5,18 +5,14 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
-	"os"
-	"os/exec"
-	"runtime"
-	"strings"
-
 	"gopkg.in/yaml.v2"
+	"os"
+	"runtime"
 
 	"github.com/beego/bee/v2/cmd/commands"
 	"github.com/beego/bee/v2/config"
 	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/bee/v2/logger/colors"
-	"github.com/beego/bee/v2/utils"
 )
 
 const verboseVersionBanner string = `%s%s______
@@ -33,7 +29,7 @@ const verboseVersionBanner string = `%s%s______
 ├── GOPATH    : {{ .GOPATH }}
 ├── GOROOT    : {{ .GOROOT }}
 ├── Compiler  : {{ .Compiler }}
-└── Published : {{ .Published }}%s
+└── Date      : {{ Now "Monday, 2 Jan 2006" }}%s
 `
 
 const shortVersionBanner = `______
@@ -70,15 +66,14 @@ func versionCmd(cmd *commands.Command, args []string) int {
 
 	if outputFormat != "" {
 		runtimeInfo := RuntimeInfo{
-			GetGoVersion(),
-			runtime.GOOS,
-			runtime.GOARCH,
-			runtime.NumCPU(),
-			os.Getenv("GOPATH"),
-			runtime.GOROOT(),
-			runtime.Compiler,
-			version,
-			utils.GetLastPublishedTime(),
+			GoVersion:  runtime.Version(),
+			GOOS:       runtime.GOOS,
+			GOARCH:     runtime.GOARCH,
+			NumCPU:     runtime.NumCPU(),
+			GOPATH:     os.Getenv("GOPATH"),
+			GOROOT:     runtime.GOROOT(),
+			Compiler:   runtime.Compiler,
+			BeeVersion: version,
 		}
 		switch outputFormat {
 		case "json":
@@ -112,16 +107,4 @@ func versionCmd(cmd *commands.Command, args []string) int {
 func ShowShortVersionBanner() {
 	output := colors.NewColorWriter(os.Stdout)
 	InitBanner(output, bytes.NewBufferString(colors.MagentaBold(shortVersionBanner)))
-}
-
-func GetGoVersion() string {
-	var (
-		cmdOut []byte
-		err    error
-	)
-
-	if cmdOut, err = exec.Command("go", "version").Output(); err != nil {
-		beeLogger.Log.Fatalf("There was an error running 'go version' command: %s", err)
-	}
-	return strings.Split(string(cmdOut), " ")[2]
 }
