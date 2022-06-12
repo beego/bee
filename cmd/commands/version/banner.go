@@ -15,15 +15,15 @@ import (
 
 // RuntimeInfo holds information about the current runtime.
 type RuntimeInfo struct {
-	GoVersion    string
-	GOOS         string
-	GOARCH       string
-	NumCPU       int
-	GOPATH       string
-	GOROOT       string
-	Compiler     string
-	BeeVersion   string
-	Published    string
+	GoVersion  string
+	GOOS       string
+	GOARCH     string
+	NumCPU     int
+	GOPATH     string
+	GOROOT     string
+	Compiler   string
+	BeeVersion string
+	Published  string
 }
 
 // InitBanner loads the banner and prints it to output
@@ -52,7 +52,7 @@ func show(out io.Writer, content string) {
 	}
 
 	err = t.Execute(out, RuntimeInfo{
-		GetGoVersion(),
+		runtime.Version(),
 		runtime.GOOS,
 		runtime.GOARCH,
 		runtime.NumCPU(),
