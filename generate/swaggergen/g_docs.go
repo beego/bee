@@ -695,23 +695,49 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				}
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
+				ss := strings.TrimSpace(t[len("@Failure"):])
 				rs := swagger.Response{}
-				st := strings.TrimSpace(t[len("@Failure"):])
-				var cd []rune
-				var start bool
-				for i, s := range st {
-					if unicode.IsSpace(s) {
-						if start {
-							rs.Description = strings.TrimSpace(st[i+1:])
-							break
-						} else {
-							continue
-						}
+				respCode, pos := peekNextSplitString(ss)
+				ss = strings.TrimSpace(ss[pos:])
+				respType, pos := peekNextSplitString(ss)
+				if respType == "{object}" || respType == "{array}" {
+					isArray := respType == "{array}"
+					ss = strings.TrimSpace(ss[pos:])
+					schemaName, pos := peekNextSplitString(ss)
+					if schemaName == "" {
+						beeLogger.Log.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
 					}
-					start = true
-					cd = append(cd, s)
+					if strings.HasPrefix(schemaName, "[]") {
+						schemaName = schemaName[2:]
+						isArray = true
+					}
+					schema := swagger.Schema{}
+					if sType, ok := basicTypes[schemaName]; ok {
+						typeFormat := strings.Split(sType, ":")
+						schema.Type = typeFormat[0]
+						schema.Format = typeFormat[1]
+					} else {
+						m, mod, realTypes := getModel(schemaName)
+						schema.Ref = "#/definitions/" + m
+						if _, ok := modelsList[pkgpath+controllerName]; !ok {
+							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+						}
+						modelsList[pkgpath+controllerName][schemaName] = mod
+						appendModels(pkgpath, controllerName, realTypes)
+					}
+					if isArray {
+						rs.Schema = &swagger.Schema{
+							Type:  astTypeArray,
+							Items: &schema,
+						}
+					} else {
+						rs.Schema = &schema
+					}
+					rs.Description = strings.TrimSpace(ss[pos:])
+				} else {
+					rs.Description = strings.TrimSpace(ss)
 				}
-				opts.Responses[string(cd)] = rs
+				opts.Responses[respCode] = rs
 			} else if strings.HasPrefix(t, "@Deprecated") {
 				opts.Deprecated, _ = strconv.ParseBool(strings.TrimSpace(t[len("@Deprecated"):]))
 			} else if strings.HasPrefix(t, "@Accept") {
