@@ -574,47 +574,12 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 			} else if strings.HasPrefix(t, "@Summary") {
 				opts.Summary = strings.TrimSpace(t[len("@Summary"):])
 			} else if strings.HasPrefix(t, "@Success") {
-				ss := strings.TrimSpace(t[len("@Success"):])
-				rs := swagger.Response{}
-				respCode, pos := peekNextSplitString(ss)
-				ss = strings.TrimSpace(ss[pos:])
-				respType, pos := peekNextSplitString(ss)
-				if respType == "{object}" || respType == "{array}" {
-					isArray := respType == "{array}"
-					ss = strings.TrimSpace(ss[pos:])
-					schemaName, pos := peekNextSplitString(ss)
-					if schemaName == "" {
-						beeLogger.Log.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
-					}
-					if strings.HasPrefix(schemaName, "[]") {
-						schemaName = schemaName[2:]
-						isArray = true
-					}
-					schema := swagger.Schema{}
-					if sType, ok := basicTypes[schemaName]; ok {
-						typeFormat := strings.Split(sType, ":")
-						schema.Type = typeFormat[0]
-						schema.Format = typeFormat[1]
-					} else {
-						m, mod, realTypes := getModel(schemaName)
-						schema.Ref = "#/definitions/" + m
-						if _, ok := modelsList[pkgpath+controllerName]; !ok {
-							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
-						}
-						modelsList[pkgpath+controllerName][schemaName] = mod
-						appendModels(pkgpath, controllerName, realTypes)
-					}
-					if isArray {
-						rs.Schema = &swagger.Schema{
-							Type:  astTypeArray,
-							Items: &schema,
-						}
-					} else {
-						rs.Schema = &schema
-					}
-					rs.Description = strings.TrimSpace(ss[pos:])
-				} else {
-					rs.Description = strings.TrimSpace(ss)
+				respCode, rs, schemas := parseResponse(t)
+				if _, ok := modelsList[pkgpath+controllerName]; !ok {
+					modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+				}
+				for k, v := range schemas {
+					modelsList[pkgpath+controllerName][k] = v
 				}
 				opts.Responses[respCode] = rs
 			} else if strings.HasPrefix(t, "@Param") {
@@ -695,47 +660,12 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				}
 				opts.Parameters = append(opts.Parameters, para)
 			} else if strings.HasPrefix(t, "@Failure") {
-				ss := strings.TrimSpace(t[len("@Failure"):])
-				rs := swagger.Response{}
-				respCode, pos := peekNextSplitString(ss)
-				ss = strings.TrimSpace(ss[pos:])
-				respType, pos := peekNextSplitString(ss)
-				if respType == "{object}" || respType == "{array}" {
-					isArray := respType == "{array}"
-					ss = strings.TrimSpace(ss[pos:])
-					schemaName, pos := peekNextSplitString(ss)
-					if schemaName == "" {
-						beeLogger.Log.Fatalf("[%s.%s] Schema must follow {object} or {array}", controllerName, funcName)
-					}
-					if strings.HasPrefix(schemaName, "[]") {
-						schemaName = schemaName[2:]
-						isArray = true
-					}
-					schema := swagger.Schema{}
-					if sType, ok := basicTypes[schemaName]; ok {
-						typeFormat := strings.Split(sType, ":")
-						schema.Type = typeFormat[0]
-						schema.Format = typeFormat[1]
-					} else {
-						m, mod, realTypes := getModel(schemaName)
-						schema.Ref = "#/definitions/" + m
-						if _, ok := modelsList[pkgpath+controllerName]; !ok {
-							modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
-						}
-						modelsList[pkgpath+controllerName][schemaName] = mod
-						appendModels(pkgpath, controllerName, realTypes)
-					}
-					if isArray {
-						rs.Schema = &swagger.Schema{
-							Type:  astTypeArray,
-							Items: &schema,
-						}
-					} else {
-						rs.Schema = &schema
-					}
-					rs.Description = strings.TrimSpace(ss[pos:])
-				} else {
-					rs.Description = strings.TrimSpace(ss)
+				respCode, rs, schemas := parseResponse(t)
+				if _, ok := modelsList[pkgpath+controllerName]; !ok {
+					modelsList[pkgpath+controllerName] = make(map[string]swagger.Schema)
+				}
+				for k, v := range schemas {
+					modelsList[pkgpath+controllerName][k] = v
 				}
 				opts.Responses[respCode] = rs
 			} else if strings.HasPrefix(t, "@Deprecated") {
@@ -815,6 +745,50 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 		controllerList[pkgpath+controllerName][routerPath] = item
 	}
 	return nil
+}
+
+func parseResponse(annotation string) (respCode string, rs swagger.Response, schemas map[string]swagger.Schema) {
+	rs = swagger.Response{}
+	schemas = make(map[string]swagger.Schema)
+	ss := strings.TrimSpace(annotation[strings.Index(annotation, " "):])
+	respCode, pos := peekNextSplitString(ss)
+	ss = strings.TrimSpace(ss[pos:])
+	respType, pos := peekNextSplitString(ss)
+	if respType == "{object}" || respType == "{array}" {
+		isArray := respType == "{array}"
+		ss = strings.TrimSpace(ss[pos:])
+		schemaName, pos := peekNextSplitString(ss)
+		if schemaName == "" {
+			beeLogger.Log.Fatalf("Schema must follow {object} or {array}")
+		}
+		if strings.HasPrefix(schemaName, "[]") {
+			schemaName = schemaName[2:]
+			isArray = true
+		}
+		schema := swagger.Schema{}
+		if sType, ok := basicTypes[schemaName]; ok {
+			typeFormat := strings.Split(sType, ":")
+			schema.Type = typeFormat[0]
+			schema.Format = typeFormat[1]
+		} else {
+			m, mod, realTypes := getModel(schemaName)
+			schema.Ref = "#/definitions/" + m
+			schemas[schemaName] = mod
+			appendSchemas(realTypes, schemas)
+		}
+		if isArray {
+			rs.Schema = &swagger.Schema{
+				Type:  astTypeArray,
+				Items: &schema,
+			}
+		} else {
+			rs.Schema = &schema
+		}
+		rs.Description = strings.TrimSpace(ss[pos:])
+	} else {
+		rs.Description = strings.TrimSpace(ss)
+	}
+	return
 }
 
 func setParamType(para *swagger.Parameter, typ string, pkgpath, controllerName string) {
@@ -1349,6 +1323,20 @@ func appendModels(pkgpath, controllerName string, realTypes []string) {
 			_, mod, newRealTypes := getModel(realType)
 			modelsList[pkgpath+controllerName][realType] = mod
 			appendModels(pkgpath, controllerName, newRealTypes)
+		}
+	}
+}
+
+func appendSchemas(realTypes []string, schemas map[string]swagger.Schema) {
+	for _, realType := range realTypes {
+		if realType != "" && !isBasicType(strings.TrimLeft(realType, "[]")) &&
+			!strings.HasPrefix(realType, astTypeMap) && !strings.HasPrefix(realType, "&") {
+			if _, ok := schemas[realType]; ok {
+				continue
+			}
+			_, mod, newRealTypes := getModel(realType)
+			schemas[realType] = mod
+			appendSchemas(newRealTypes, schemas)
 		}
 	}
 }
