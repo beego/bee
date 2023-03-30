@@ -94,6 +94,7 @@ import (
 	_ "{{.Appname}}/routers"
 
 	beego "github.com/beego/beego/v2/server/web"
+	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/beego/v2/client/orm"
 	{{.DriverPkg}}
 )
