@@ -128,7 +128,7 @@ func dockerizeApp(cmd *commands.Command, args []string) int {
 		BaseImage:  baseImage,
 		Appdir:     appdir,
 		Entrypoint: entrypoint,
-		Expose:     expose,
+		Expose:     exposedockerfile,
 	}
 	composefile := Composefile{
 		Appname:    entrypoint,
