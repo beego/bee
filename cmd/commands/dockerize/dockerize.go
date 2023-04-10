@@ -28,25 +28,30 @@ import (
 	"github.com/beego/bee/v2/utils"
 )
 
-const dockerBuildTemplate = `FROM {{.BaseImage}}
+const dockerBuildTemplate = `# Build Golang binary
+FROM {{.BaseImage}} AS build-golang
 
-# Godep for vendoring
-RUN go get github.com/tools/godep
+WORKDIR {{.Appdir}}
 
-# Recompile the standard library without CGO
-RUN CGO_ENABLED=0 go install -a std
-
-ENV APP_DIR $GOPATH{{.Appdir}}
-RUN mkdir -p $APP_DIR
-
-# Set the entrypoint
-ENTRYPOINT (cd $APP_DIR && ./{{.Entrypoint}})
-ADD . $APP_DIR
-
-# Compile the binary and statically link
-RUN cd $APP_DIR && CGO_ENABLED=0 godep go build -ldflags '-d -w -s'
+COPY . .
+RUN go get -v && go build -v -o /usr/local/bin/{{.Entrypoint}}
 
 EXPOSE {{.Expose}}
+CMD ["{{.Entrypoint}}"]
+`
+
+const composeBuildTemplate = `version: '3'
+networks:
+  {{.Appname}}_network_compose:
+    driver: bridge 
+services:
+  {{.Appname}}:
+    container_name: {{.Appname}}
+    build: .
+    restart: unless-stopped
+    networks:
+      {{.Appname}}_network_compose:
+    ports:{{.Expose}}
 `
 
 // Dockerfile holds the information about the Docker container.
@@ -57,13 +62,19 @@ type Dockerfile struct {
 	Expose     string
 }
 
+// docker-compose.yaml
+type Composefile struct {
+	Appname   string
+	Expose    string
+}
+
 var CmdDockerize = &commands.Command{
 	CustomFlags: true,
 	UsageLine:   "dockerize",
-	Short:       "Generates a Dockerfile for your Beego application",
-	Long: `Dockerize generates a Dockerfile for your Beego Web Application.
-  The Dockerfile will compile, get the dependencies with {{"godep"|bold}}, and set the entrypoint.
-
+	Short:       "Generates a Dockerfile and docker-compose.yaml for your Beego application",
+	Long: `Dockerize generates a Dockerfile and docker-compose.yaml for your Beego Web Application.
+  The Dockerfile will compile and run the application.
+  The docker-compose.yaml can be used to build and deploy the generated Dockerfile.
   {{"Example:"|bold}}
     $ bee dockerize -expose="3000,80,25"
   `,
@@ -78,8 +89,8 @@ var (
 
 func init() {
 	fs := flag.NewFlagSet("dockerize", flag.ContinueOnError)
-	fs.StringVar(&baseImage, "image", "library/golang", "Set the base image of the Docker container.")
-	fs.StringVar(&expose, "expose", "8080", "Port(s) to expose in the Docker container.")
+	fs.StringVar(&baseImage, "baseimage", "golang:1.20.2", "Set the base image of the Docker container.")
+	fs.StringVar(&expose, "expose", "8080", "Port(s) to expose for the Docker container.")
 	CmdDockerize.Flag = *fs
 	commands.AvailableCommands = append(commands.AvailableCommands, CmdDockerize)
 }
@@ -89,7 +100,7 @@ func dockerizeApp(cmd *commands.Command, args []string) int {
 		beeLogger.Log.Fatalf("Error parsing flags: %v", err.Error())
 	}
 
-	beeLogger.Log.Info("Generating Dockerfile...")
+	beeLogger.Log.Info("Generating Dockerfile and docker-compose.yaml...")
 
 	gopath := os.Getenv("GOPATH")
 	dir, err := filepath.Abs(".")
@@ -102,17 +113,31 @@ func dockerizeApp(cmd *commands.Command, args []string) int {
 	// In case of multiple ports to expose inside the container,
 	// replace all the commas with whitespaces.
 	// See the verb EXPOSE in the Docker documentation.
-	expose = strings.Replace(expose, ",", " ", -1)
-
+	exposedockerfile := strings.Replace(expose, ",", " ", -1)
+	
+	// Multiple ports expose for docker-compose.yaml
+        ports := strings.Fields(strings.Replace(expose, ",", " ", -1))
+        exposecompose := ""
+        for _, port := range ports {
+            composeport := ("\n    - " + "\"" + port + ":" + port + "\"")
+            exposecompose += composeport
+        }
+	
+	
 	_, entrypoint := path.Split(appdir)
 	dockerfile := Dockerfile{
 		BaseImage:  baseImage,
 		Appdir:     appdir,
 		Entrypoint: entrypoint,
-		Expose:     expose,
+		Expose:     exposedockerfile,
+	}
+	composefile := Composefile{
+		Appname:    entrypoint,
+		Expose:     exposecompose,
 	}
 
 	generateDockerfile(dockerfile)
+	generatecomposefile(composefile)
 	return 0
 }
 
@@ -128,4 +153,18 @@ func generateDockerfile(df Dockerfile) {
 	t.Execute(f, df)
 
 	beeLogger.Log.Success("Dockerfile generated.")
+}
+
+func generatecomposefile(df Composefile) {
+	t := template.Must(template.New("composeBuildTemplate").Parse(composeBuildTemplate)).Funcs(utils.BeeFuncMap())
+
+	f, err := os.Create("docker-compose.yaml")
+	if err != nil {
+		beeLogger.Log.Fatalf("Error writing docker-compose.yaml: %v", err.Error())
+	}
+	defer utils.CloseFile(f)
+
+	t.Execute(f, df)
+
+	beeLogger.Log.Success("docker-compose.yaml generated.")
 }
