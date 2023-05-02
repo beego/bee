@@ -13,16 +13,24 @@ Bee is a command-line tool facilitating development of Beego-based application.
 
 ## Installation
 
+To install or update `bee` use the `go install` command:
+
+```bash
+go install github.com/beego/bee/v2@latest
+```
+
+## Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
+
+```bash
+export PATH=$PATH:<your_main_gopath>/bin
+```
+
+## Installing and updating bee prior Go version 1.17
+
 To install `bee` use the `go get` command:
 
 ```bash
 go get github.com/beego/bee/v2
-```
-
-Then you can add `bee` binary to PATH environment variable in your `~/.bashrc` or `~/.bash_profile` file:
-
-```bash
-export PATH=$PATH:<your_main_gopath>/bin
 ```
 
 > If you already have `bee` installed, updating `bee` is simple:
@@ -43,7 +51,7 @@ Bee provides a variety of commands which can be helpful at various stages of dev
     fix         Fixes your application by making it compatible with newer versions of Beego
     pro         Source code generator
     dlv         Start a debugging session using Delve
-    dockerize   Generates a Dockerfile for your Beego application
+    dockerize   Generates a Dockerfile and docker-compose.yaml for your Beego application
     generate    Source code generator
     hprose      Creates an RPC application based on Hprose and Beego frameworks
     new         Creates a Beego application
@@ -303,20 +311,21 @@ For more information on the usage, run `bee help generate`.
 
 ### bee dockerize
 
-Bee also helps you dockerize your Beego application by generating a Dockerfile.
+Bee also helps you dockerize your Beego application by generating a Dockerfile and a docker-compose.yaml file.
 
-For example, to generate a Dockerfile with `Go version 1.6.4` and exposing port `9000`:
+For example, to generate a Dockerfile with `golang:1.20.1` baseimage and exposing port `9000`:
 
 ```bash
-$ bee dockerize -image="library/golang:1.6.4" -expose=9000
+$ bee dockerize -baseimage=golang:1.20.1 -expose=9000
 ______
 | ___ \
 | |_/ /  ___   ___
 | ___ \ / _ \ / _ \
 | |_/ /|  __/|  __/
-\____/  \___| \___| v2.0.0
-2020/09/14 22:40:12 INFO     ▶ 0001 Generating Dockerfile...
-2020/09/14 22:40:12 SUCCESS  ▶ 0002 Dockerfile generated.
+\____/  \___| \___| v2.0.4
+2023/05/02 21:03:05 INFO     ▶ 0001 Generating Dockerfile and docker-compose.yaml...
+2023/05/02 21:03:05 SUCCESS  ▶ 0002 Dockerfile generated.
+2023/05/02 21:03:05 SUCCESS  ▶ 0003 docker-compose.yaml generated.
 ```
 
 For more information on the usage, run `bee help dockerize`.
