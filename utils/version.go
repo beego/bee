@@ -14,4 +14,4 @@
 
 package utils
 
-const BEEGO_VERSION = "v2.0.1"
+const BEEGO_VERSION = "v2.1.0"
