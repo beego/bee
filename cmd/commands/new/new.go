@@ -31,7 +31,7 @@ var gopath utils.DocValue
 var beegoVersion utils.DocValue
 
 var CmdNew = &commands.Command{
-	UsageLine: "new [appname] [-gopath=false] [-beego=v1.12.3]",
+	UsageLine: "new [appname] [-gopath=false] [-beego=v2.1.0]",
 	Short:     "Creates a Beego application",
 	Long: `
 Creates a Beego application for the given app name in the current directory.
