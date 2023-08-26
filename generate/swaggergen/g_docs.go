@@ -558,7 +558,7 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 				elements := strings.TrimSpace(t[len("@router"):])
 				e1 := strings.SplitN(elements, " ", 2)
 				if len(e1) < 1 {
-					return errors.New("you should has router infomation")
+					return errors.New("you should has router information")
 				}
 				routerPath = e1[0]
 				if len(e1) == 2 && e1[1] != "" {
