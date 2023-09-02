@@ -37,9 +37,10 @@ import (
 
 	bu "github.com/beego/bee/v2/utils"
 
-	beeLogger "github.com/beego/bee/v2/logger"
 	"github.com/beego/beego/v2/core/utils"
 	"github.com/beego/beego/v2/server/web/swagger"
+
+	beeLogger "github.com/beego/bee/v2/logger"
 )
 
 const (
@@ -1092,6 +1093,17 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 	if st.Fields.List != nil {
 		m.Properties = make(map[string]swagger.Propertie)
 		for _, field := range st.Fields.List {
+			// skip processing if field is not exported
+			var exported = field.Names == nil
+			for _, ident := range field.Names {
+				if ident.IsExported() {
+					exported = true
+				}
+			}
+			if !exported {
+				continue
+			}
+
 			isSlice, realType, sType := typeAnalyser(field)
 			if (isSlice && isBasicType(realType)) || sType == astTypeObject {
 				if len(strings.Split(realType, " ")) > 1 {
