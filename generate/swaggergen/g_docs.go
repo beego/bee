@@ -1213,6 +1213,10 @@ func parseStruct(imports []*ast.ImportSpec, st *ast.StructType, k string, m *swa
 						mp.Example = str2RealType(example, realType)
 					}
 
+					if len(tagValues) == 2 && tagValues[1] == "string" {
+						mp.Type = "string"
+					}
+
 					m.Properties[name] = mp
 				}
 			} else {
