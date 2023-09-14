@@ -188,6 +188,7 @@ func GenerateDocs(curpath string) {
 		beeLogger.Log.Fatalf("Error while parsing router.go: %s", err)
 	}
 
+	rootapi.BasePath = "/"
 	rootapi.Infos = swagger.Information{}
 	rootapi.SwaggerVersion = "2.0"
 
@@ -303,9 +304,7 @@ func GenerateDocs(curpath string) {
 								continue
 							}
 							version, params := analyseNewNamespace(v)
-							if rootapi.BasePath == "" && version != "" {
-								rootapi.BasePath = version
-							}
+
 							for _, p := range params {
 								switch pp := p.(type) {
 								case *ast.CallExpr:
@@ -316,7 +315,7 @@ func GenerateDocs(curpath string) {
 											switch pp := sp.(type) {
 											case *ast.CallExpr:
 												if pp.Fun.(*ast.SelectorExpr).Sel.String() == "NSInclude" {
-													controllerName = analyseNSInclude(s, pp)
+													controllerName = analyseNSInclude(version+s, pp)
 													if v, ok := controllerComments[controllerName]; ok {
 														rootapi.Tags = append(rootapi.Tags, swagger.Tag{
 															Name:        strings.Trim(s, "/"),
@@ -568,7 +567,9 @@ func parserComments(f *ast.FuncDecl, controllerName, pkgpath string) error {
 					HTTPMethod = "GET"
 				}
 			} else if strings.HasPrefix(t, "@Title") {
-				opts.OperationID = controllerName + "." + strings.TrimSpace(t[len("@Title"):])
+				ti := strings.TrimSpace(t[len("@Title"):])
+				opts.OperationID = controllerName + "." + ti
+				opts.Summary = ti // set default value
 			} else if strings.HasPrefix(t, "@Description") {
 				opts.Description += fmt.Sprintf("%s\n<br>", strings.TrimSpace(t[len("@Description"):]))
 			} else if strings.HasPrefix(t, "@Summary") {
