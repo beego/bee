@@ -35,7 +35,7 @@ var CmdApiapp = &commands.Command{
 	Short:     "Creates a Beego API application",
 	Long: `
   The command 'api' creates a Beego API application.
-  now default supoort generate a go modules project.
+  now default support generate a go modules project.
 
   {{"Example:"|bold}}
       $ bee api [appname] [-tables=""] [-driver=mysql] [-conn="root:@tcp(127.0.0.1:3306)/test"]  [-gopath=false] [-beego=v1.12.3]
