@@ -46,5 +46,5 @@ func GenerateScaffold(sname, fields, currpath, driver, conn string) {
 	if utils.AskForConfirmation() {
 		migrate.MigrateUpdate(currpath, driver, conn, "")
 	}
-	beeLogger.Log.Successf("All done! Don't forget to add  beego.Router(\"/%s\" ,&controllers.%sController{}) to routers/route.go\n", sname, strings.Title(sname))
+	beeLogger.Log.Successf("All done! Don't forget to add  beego.AutoPrefix(\"/%s\" ,&controllers.%sController{}) to routers/route.go\n", sname, strings.Title(sname))
 }

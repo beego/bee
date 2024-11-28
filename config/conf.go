@@ -27,7 +27,7 @@ import (
 const confVer = 0
 
 const (
-	Version       = "2.1.0"
+	Version       = "2.3.0"
 	GitRemotePath = "github.com/beego/bee/v2"
 )
 
