@@ -533,7 +533,7 @@ how many commits your changes require.
 
 - Write insightful and descriptive commit messages. It lets us and future contributors quickly understand your changes
 without having to read your changes. Please provide a summary in the first line (50-72 characters) and eventually,
-go to greater lengths in your message's body. A good example can be found in [Angular commit message format](https://github.com/angular/angular.js/blob/master/CONTRIBUTING.md#commit-message-format).
+go to greater lengths in your message's body. A good example can be found in [Angular commit message format](https://github.com/angular/angular.js/blob/master/DEVELOPERS.md#commit-message-format).
 
 - Please **include the appropriate test cases** for your patch.
 
