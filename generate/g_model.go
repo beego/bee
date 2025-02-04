@@ -144,6 +144,7 @@ import (
 	"fmt"
 	"reflect"
 	"strings"
+	"strconv"
 	{{timePkg}}
 	"github.com/beego/beego/v2/client/orm"
 )
@@ -183,7 +184,21 @@ func GetAll{{modelName}}(query map[string]string, fields []string, sortby []stri
 	for k, v := range query {
 		// rewrite dot-notation to Object__Attribute
 		k = strings.Replace(k, ".", "__", -1)
-		qs = qs.Filter(k, v)
+		//value should be boolean
+		if v == "true" || v == "false" {
+			v2, _ := strconv.ParseBool(v)
+			qs = qs.Filter(k, v2)
+		//Filter contain array of values using "in" filter
+		} else if strings.HasSuffix(k, "__in") {
+			var v2 []interface{}
+			args := strings.Split(v, ",")
+			for _, v3 := range args {
+				v2 = append(v2, v3)
+			}
+			qs = qs.Filter(k, v2...)
+		} else {
+			qs = qs.Filter(k, v)
+		}
 	}
 	// order by:
 	var sortFields []string
